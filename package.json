@@ -5,6 +5,11 @@
   "version": "0.2.0",
   "publisher": "innohi",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/INNO-HI-Inc/md-viewer"
+  },
+  "icon": "icon.png",
   "engines": {
     "vscode": "^1.74.0"
   },
