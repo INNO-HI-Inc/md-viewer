@@ -1,0 +1,30 @@
+{
+  "name": "md-pretty-viewer",
+  "displayName": "MD Pretty Viewer",
+  "description": "A beautiful markdown editor with live preview, formatting toolbar, and outline sidebar",
+  "version": "0.2.0",
+  "publisher": "innohi",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "main": "./extension.js",
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "mdPrettyViewer.editor",
+        "displayName": "MD Pretty Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.md"
+          }
+        ],
+        "priority": "default"
+      }
+    ]
+  }
+}
