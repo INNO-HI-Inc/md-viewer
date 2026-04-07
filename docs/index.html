@@ -9,429 +9,616 @@
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css');
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
             --accent: #448CFF;
-            --accent-light: rgba(68, 140, 255, 0.08);
-            --accent-border: rgba(68, 140, 255, 0.2);
-            --bg: #fdfdfd;
-            --text: #1a1a1a;
-            --dim: #666;
-            --border: #e8e8e8;
-            --code-bg: #f5f5f5;
+            --accent-soft: rgba(68, 140, 255, 0.1);
+            --bg: #09090b;
+            --surface: #131316;
+            --surface-2: #1a1a1f;
+            --text: #fafafa;
+            --dim: #71717a;
+            --border: #27272a;
+            --glow: rgba(68, 140, 255, 0.15);
         }
+
+        html { scroll-behavior: smooth; }
 
         body {
             font-family: 'Pretendard Variable', -apple-system, sans-serif;
             color: var(--text);
             background: var(--bg);
-            line-height: 1.8;
+            line-height: 1.7;
             -webkit-font-smoothing: antialiased;
-            transition: --accent 0.3s;
+            overflow-x: hidden;
         }
 
         a { color: var(--accent); text-decoration: none; }
-        a:hover { text-decoration: underline; }
 
-        .wrap {
-            max-width: 640px;
-            margin: 0 auto;
-            padding: 80px 24px 120px;
-        }
-
-        /* ── Header ── */
-        header {
-            margin-bottom: 64px;
-        }
-
-        .logo-row {
+        /* ── Nav ── */
+        nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 56px;
             display: flex;
             align-items: center;
-            gap: 14px;
-            margin-bottom: 24px;
+            justify-content: space-between;
+            padding: 0 clamp(20px, 4vw, 48px);
+            background: rgba(9, 9, 11, 0.8);
+            backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
         }
 
-        .logo-row img {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-        }
-
-        .logo-row span {
-            font-size: 20px;
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             font-weight: 700;
-            letter-spacing: -0.03em;
+            font-size: 14px;
+            letter-spacing: -0.02em;
         }
 
-        h1 {
-            font-size: 32px;
-            font-weight: 800;
-            letter-spacing: -0.04em;
-            line-height: 1.35;
-            margin-bottom: 16px;
+        .nav-left img { width: 24px; height: 24px; border-radius: 5px; }
+
+        .nav-right {
+            display: flex;
+            gap: 28px;
+            align-items: center;
         }
 
-        header p {
-            font-size: 16px;
+        .nav-right a {
             color: var(--dim);
-            line-height: 1.8;
+            font-size: 13px;
+            font-weight: 500;
+            transition: color 0.2s;
         }
 
-        .buttons {
+        .nav-right a:hover { color: var(--text); }
+
+        .nav-btn {
+            padding: 6px 14px;
+            background: var(--accent);
+            color: #fff !important;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+        .nav-btn:hover { opacity: 0.85; }
+
+        /* ── Hero ── */
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 120px 24px 60px;
+        }
+
+        .hero-glow {
+            position: absolute;
+            top: -20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--glow) 0%, transparent 65%);
+            pointer-events: none;
+            transition: background 0.5s;
+        }
+
+        .hero-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 14px 5px 8px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 12px;
+            color: var(--dim);
+            margin-bottom: 32px;
+            position: relative;
+        }
+
+        .hero-tag .dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: #22c55e;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .hero h1 {
+            font-size: clamp(36px, 5.5vw, 64px);
+            font-weight: 800;
+            letter-spacing: -0.05em;
+            line-height: 1.15;
+            max-width: 600px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .hero h1 .accent {
+            background: linear-gradient(135deg, var(--accent), #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            transition: background 0.5s;
+        }
+
+        .hero-desc {
+            font-size: clamp(15px, 2vw, 17px);
+            color: var(--dim);
+            max-width: 400px;
+            margin-bottom: 36px;
+            line-height: 1.75;
+        }
+
+        .hero-btns {
             display: flex;
             gap: 12px;
-            margin-top: 28px;
-            flex-wrap: wrap;
         }
 
         .btn {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 10px 20px;
-            border-radius: 8px;
+            gap: 7px;
+            padding: 11px 24px;
+            border-radius: 10px;
             font-size: 14px;
             font-weight: 600;
             font-family: inherit;
-            cursor: pointer;
-            transition: all 0.15s;
             border: none;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        .btn-fill {
+        .btn-primary {
             background: var(--accent);
             color: #fff;
+            transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
         }
-        .btn-fill:hover { opacity: 0.85; text-decoration: none; }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px var(--glow);
+        }
 
-        .btn-outline {
-            background: transparent;
+        .btn-ghost {
+            background: var(--surface);
             color: var(--text);
             border: 1px solid var(--border);
         }
-        .btn-outline:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+        .btn-ghost:hover { border-color: var(--dim); }
 
         /* ── Screenshot ── */
-        .screenshot {
-            margin: 56px -40px;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid var(--border);
+        .shot-wrap {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 0 24px 100px;
+            position: relative;
         }
 
-        .screenshot img {
-            width: 100%;
+        .shot-frame {
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 80px var(--glow);
+            transition: box-shadow 0.5s;
+        }
+
+        .shot-frame img { width: 100%; display: block; }
+
+        /* ── Section common ── */
+        .section {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 100px 24px;
+        }
+
+        .section-label {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--accent);
+            margin-bottom: 16px;
+            transition: color 0.3s;
+        }
+
+        .section h2 {
+            font-size: clamp(26px, 3.5vw, 36px);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            margin-bottom: 48px;
+            line-height: 1.25;
+        }
+
+        /* ── Feature cards ── */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .feature-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 28px 24px;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+
+        .feature-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-3px);
+        }
+
+        .feature-card .icon {
+            font-size: 24px;
+            margin-bottom: 16px;
             display: block;
         }
 
-        /* ── Section ── */
-        section {
-            margin-top: 56px;
-        }
-
-        h2 {
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--accent);
-            display: inline-block;
-        }
-
-        h3 {
-            font-size: 16px;
-            font-weight: 700;
-            margin: 28px 0 8px;
-            letter-spacing: -0.01em;
-        }
-
-        p, li {
+        .feature-card h3 {
             font-size: 15px;
-            color: var(--dim);
-            line-height: 1.85;
-        }
-
-        ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        ul li {
-            padding: 6px 0;
-            padding-left: 20px;
-            position: relative;
-        }
-
-        ul li::before {
-            content: '—';
-            position: absolute;
-            left: 0;
-            color: var(--accent);
             font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
         }
 
-        /* ── Theme Picker (interactive) ── */
-        .theme-section {
-            margin-top: 56px;
+        .feature-card p {
+            font-size: 13px;
+            color: var(--dim);
+            line-height: 1.7;
         }
 
-        .theme-row {
+        /* ── Theme section ── */
+        .theme-picker {
             display: flex;
-            gap: 16px;
-            margin-top: 20px;
+            gap: 20px;
             flex-wrap: wrap;
-            align-items: center;
+            margin-top: 32px;
         }
 
-        .theme-btn {
-            width: 40px;
-            height: 40px;
+        .t-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .t-dot {
+            width: 44px; height: 44px;
             border-radius: 50%;
             border: 3px solid transparent;
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
+            transition: all 0.25s;
         }
 
-        .theme-btn:hover {
-            transform: scale(1.12);
-        }
+        .t-dot:hover { transform: scale(1.15); }
 
-        .theme-btn.active {
+        .t-dot.active {
             border-color: var(--text);
             box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--text);
         }
 
-        .theme-label {
-            font-size: 12px;
+        .t-label {
+            font-size: 11px;
             color: var(--dim);
-            margin-top: 4px;
-            text-align: center;
+            font-weight: 500;
         }
 
-        .theme-item {
+        .theme-desc {
+            font-size: 15px;
+            color: var(--dim);
+            line-height: 1.8;
+            max-width: 480px;
+        }
+
+        /* ── Shortcuts ── */
+        .shortcut-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        .shortcut-item {
             display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 6px;
-        }
-
-        /* ── Code block ── */
-        code {
-            font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
-            font-size: 13px;
-            background: var(--code-bg);
-            padding: 2px 7px;
-            border-radius: 4px;
-        }
-
-        pre {
-            background: #1a1a2e;
-            color: #e4e4ed;
-            padding: 20px 24px;
+            justify-content: space-between;
+            padding: 14px 18px;
+            background: var(--surface);
+            border: 1px solid var(--border);
             border-radius: 10px;
-            overflow-x: auto;
-            margin: 16px 0;
+        }
+
+        .shortcut-item span {
             font-size: 13px;
+            color: var(--dim);
+        }
+
+        kbd {
+            font-family: 'SF Mono', 'JetBrains Mono', monospace;
+            font-size: 11px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 3px 7px;
+            color: var(--text);
+        }
+
+        /* ── Install ── */
+        .install-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 32px;
+        }
+
+        .install-box p {
+            font-size: 14px;
+            color: var(--dim);
+            margin-bottom: 16px;
             line-height: 1.7;
         }
 
-        pre code {
-            background: none;
-            padding: 0;
-            color: inherit;
-        }
-
-        /* ── Table ── */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 16px 0;
-            font-size: 14px;
-        }
-
-        th, td {
-            text-align: left;
-            padding: 10px 14px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        th {
-            font-weight: 600;
-            color: var(--text);
-            font-size: 13px;
-        }
-
-        td { color: var(--dim); }
-
-        /* ── Kbd ── */
-        kbd {
-            display: inline-block;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            background: var(--code-bg);
+        .install-box code {
+            display: block;
+            background: var(--bg);
             border: 1px solid var(--border);
-            border-radius: 4px;
-            padding: 1px 6px;
-            box-shadow: inset 0 -1px 0 var(--border);
+            border-radius: 8px;
+            padding: 14px 20px;
+            font-family: 'JetBrains Mono', 'SF Mono', monospace;
+            font-size: 13px;
+            color: var(--accent);
+            margin-bottom: 16px;
+            overflow-x: auto;
+            transition: color 0.3s;
+        }
+
+        .install-box .alt {
+            font-size: 13px;
+            color: var(--dim);
+            margin-bottom: 0;
+        }
+
+        /* ── CTA ── */
+        .cta {
+            text-align: center;
+            padding: 100px 24px 120px;
+        }
+
+        .cta h2 {
+            font-size: clamp(24px, 3vw, 32px);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            margin-bottom: 16px;
+        }
+
+        .cta p {
+            color: var(--dim);
+            font-size: 15px;
+            margin-bottom: 32px;
         }
 
         /* ── Footer ── */
         footer {
-            margin-top: 80px;
-            padding-top: 24px;
+            padding: 24px;
+            text-align: center;
             border-top: 1px solid var(--border);
-            font-size: 13px;
+            font-size: 12px;
             color: var(--dim);
+        }
+
+        /* ── Divider ── */
+        .divider {
+            height: 1px;
+            background: var(--border);
+            max-width: 860px;
+            margin: 0 auto;
+        }
+
+        /* ── Animate on scroll ── */
+        .fade-up {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .fade-up.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         /* ── Responsive ── */
         @media (max-width: 700px) {
-            .wrap { padding: 48px 20px 80px; }
-            h1 { font-size: 26px; }
-            .screenshot { margin: 40px -8px; }
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg: #111;
-                --text: #e8e8e8;
-                --dim: #999;
-                --border: #2a2a2a;
-                --code-bg: #1e1e1e;
-            }
+            .feature-grid { grid-template-columns: 1fr; }
+            .shortcut-grid { grid-template-columns: 1fr; }
+            .nav-right a:not(.nav-btn) { display: none; }
+            .hero-btns { flex-direction: column; align-items: center; }
+            .shot-wrap { padding: 0 12px 60px; }
         }
     </style>
 </head>
 <body>
 
-<div class="wrap">
+<!-- Nav -->
+<nav>
+    <div class="nav-left">
+        <img src="icon.png" alt="">
+        <span>MD Pretty Viewer</span>
+    </div>
+    <div class="nav-right">
+        <a href="#features">Features</a>
+        <a href="#themes">Themes</a>
+        <a href="https://github.com/INNO-HI-Inc/md-viewer" target="_blank">GitHub</a>
+        <a class="nav-btn" href="https://github.com/INNO-HI-Inc/md-viewer/releases/latest" target="_blank">Download</a>
+    </div>
+</nav>
 
-    <!-- Header -->
-    <header>
-        <div class="logo-row">
-            <img src="icon.png" alt="">
-            <span>MD Pretty Viewer</span>
-        </div>
-        <h1>VS Code에서 마크다운을<br>깔끔하게 읽고 쓰기</h1>
-        <p>
-            .md 파일을 열면 바로 렌더링된 프리뷰가 보입니다.<br>
-            편집도 되고, 테마도 바꿀 수 있고, 아웃라인도 나옵니다.<br>
-            무료이고 오픈소스입니다.
-        </p>
-        <div class="buttons">
-            <a class="btn btn-fill" href="https://github.com/INNO-HI-Inc/md-viewer/releases/latest">Download (.vsix)</a>
-            <a class="btn btn-outline" href="https://github.com/INNO-HI-Inc/md-viewer">GitHub</a>
-        </div>
-    </header>
+<!-- Hero -->
+<section class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-tag"><span class="dot"></span> v0.2.0 — Open Source</div>
+    <h1>마크다운을<br><span class="accent">예쁘게</span> 보다</h1>
+    <p class="hero-desc">
+        VS Code에서 .md 파일을 열면 바로 깔끔한 프리뷰.<br>
+        편집, 테마, 아웃라인까지. 무료.
+    </p>
+    <div class="hero-btns">
+        <a class="btn btn-primary" href="https://github.com/INNO-HI-Inc/md-viewer/releases/latest" target="_blank">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Download
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/INNO-HI-Inc/md-viewer" target="_blank">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            GitHub
+        </a>
+    </div>
+</section>
 
-    <!-- Screenshot -->
-    <div class="screenshot">
+<!-- Screenshot -->
+<div class="shot-wrap fade-up">
+    <div class="shot-frame">
         <img src="screenshot.png" alt="MD Pretty Viewer">
     </div>
-
-    <!-- Features -->
-    <section>
-        <h2>뭘 할 수 있나요</h2>
-
-        <h3>세 가지 모드</h3>
-        <p>상단 탭에서 Preview, Edit, Split을 전환합니다. Preview에서 더블클릭하면 바로 편집 모드로 넘어갑니다.</p>
-
-        <h3>서식 도구</h3>
-        <p>Edit 모드에서 툴바가 나타납니다. 헤딩, 볼드, 이탤릭, 코드, 링크, 리스트, 인용을 버튼으로 넣을 수 있습니다. 텍스트를 선택하고 누르면 선택 영역에만 적용됩니다.</p>
-
-        <h3>아웃라인</h3>
-        <p>오른쪽 상단의 목록 아이콘을 누르면 H1~H4 헤딩 구조가 사이드바에 표시됩니다. 항목을 클릭하면 해당 위치로 이동합니다.</p>
-
-        <h3>코드 하이라이팅</h3>
-        <p>highlight.js 기반으로 코드 블록을 자동 하이라이팅합니다. 선택한 테마 색상에 맞춰 코드 색상도 함께 바뀝니다.</p>
-
-        <h3>기타</h3>
-        <ul>
-            <li>폰트 크기 12px~24px 조절, 설정 자동 저장</li>
-            <li>상대 경로 이미지 렌더링</li>
-            <li>GFM (테이블, 체크박스, 취소선) 지원</li>
-            <li>Split 모드에서 에디터/프리뷰 스크롤 동기화</li>
-        </ul>
-    </section>
-
-    <!-- Themes -->
-    <section class="theme-section">
-        <h2>테마</h2>
-        <p>상단바의 색상 점을 클릭하면 테마가 바뀝니다. 7가지 있습니다.<br>
-        아래 점을 눌러보세요. 이 페이지의 색상이 바뀝니다.</p>
-
-        <div class="theme-row">
-            <div class="theme-item">
-                <button class="theme-btn active" data-color="#448CFF" data-name="Blue" style="background:#448CFF;" onclick="setTheme(this)"></button>
-                <span class="theme-label">Blue</span>
-            </div>
-            <div class="theme-item">
-                <button class="theme-btn" data-color="#10B981" data-name="Green" style="background:#10B981;" onclick="setTheme(this)"></button>
-                <span class="theme-label">Green</span>
-            </div>
-            <div class="theme-item">
-                <button class="theme-btn" data-color="#F43F5E" data-name="Rose" style="background:#F43F5E;" onclick="setTheme(this)"></button>
-                <span class="theme-label">Rose</span>
-            </div>
-            <div class="theme-item">
-                <button class="theme-btn" data-color="#8B5CF6" data-name="Purple" style="background:#8B5CF6;" onclick="setTheme(this)"></button>
-                <span class="theme-label">Purple</span>
-            </div>
-            <div class="theme-item">
-                <button class="theme-btn" data-color="#F59E0B" data-name="Amber" style="background:#F59E0B;" onclick="setTheme(this)"></button>
-                <span class="theme-label">Amber</span>
-            </div>
-            <div class="theme-item">
-                <button class="theme-btn" data-color="#64748B" data-name="Neutral" style="background:#64748B;" onclick="setTheme(this)"></button>
-                <span class="theme-label">Neutral</span>
-            </div>
-            <div class="theme-item">
-                <button class="theme-btn" data-color="#1a1a1a" data-name="Mono" style="background:#1a1a1a; border: 2px solid #aaa;" onclick="setTheme(this)"></button>
-                <span class="theme-label">Mono</span>
-            </div>
-        </div>
-    </section>
-
-    <!-- Shortcuts -->
-    <section>
-        <h2>단축키</h2>
-        <table>
-            <tr><th>단축키</th><th>기능</th></tr>
-            <tr><td><kbd>Cmd</kbd>+<kbd>E</kbd></td><td>Preview / Edit 전환</td></tr>
-            <tr><td><kbd>Cmd</kbd>+<kbd>B</kbd></td><td>볼드</td></tr>
-            <tr><td><kbd>Cmd</kbd>+<kbd>I</kbd></td><td>이탤릭</td></tr>
-            <tr><td><kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd></td><td>코드</td></tr>
-            <tr><td><kbd>Tab</kbd></td><td>들여쓰기</td></tr>
-        </table>
-    </section>
-
-    <!-- Install -->
-    <section>
-        <h2>설치</h2>
-        <p><a href="https://github.com/INNO-HI-Inc/md-viewer/releases/latest">Releases</a>에서 <code>.vsix</code> 파일을 받은 뒤:</p>
-        <pre><code>code --install-extension md-pretty-viewer-0.2.0.vsix</code></pre>
-        <p>또는 VS Code에서 Extensions &gt; <code>...</code> &gt; Install from VSIX 선택.</p>
-        <p>설치 후 아무 <code>.md</code> 파일을 열면 자동으로 적용됩니다.</p>
-    </section>
-
-    <footer>
-        <a href="https://github.com/INNO-HI-Inc">INNO-HI Inc.</a> &middot; MIT License
-    </footer>
-
 </div>
 
+<div class="divider"></div>
+
+<!-- Features -->
+<section class="section fade-up" id="features">
+    <span class="section-label">Features</span>
+    <h2>필요한 건 다 있습니다</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <span class="icon">&#9654;</span>
+            <h3>세 가지 모드</h3>
+            <p>Preview, Edit, Split. 더블클릭으로 바로 편집. Cmd+E로 토글.</p>
+        </div>
+        <div class="feature-card">
+            <span class="icon">&#9998;</span>
+            <h3>서식 도구</h3>
+            <p>헤딩, 볼드, 이탤릭, 코드, 링크, 리스트. 선택 후 버튼 클릭이면 끝.</p>
+        </div>
+        <div class="feature-card">
+            <span class="icon">&#9776;</span>
+            <h3>아웃라인</h3>
+            <p>H1~H4 구조를 사이드바에 표시. 클릭하면 해당 위치로 이동.</p>
+        </div>
+        <div class="feature-card">
+            <span class="icon">&lt;/&gt;</span>
+            <h3>코드 하이라이팅</h3>
+            <p>highlight.js 기반. 테마 색상에 맞춰 코드 색도 자동 변경.</p>
+        </div>
+        <div class="feature-card">
+            <span class="icon">Aa</span>
+            <h3>폰트 크기</h3>
+            <p>12px ~ 24px. 상단바에서 바로 조절. 설정 자동 저장.</p>
+        </div>
+        <div class="feature-card">
+            <span class="icon">&#10003;</span>
+            <h3>GFM 지원</h3>
+            <p>테이블, 체크박스, 취소선. GitHub Flavored Markdown 완벽 호환.</p>
+        </div>
+    </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Themes -->
+<section class="section fade-up" id="themes">
+    <span class="section-label">Themes</span>
+    <h2>7가지 색으로 바꿔보세요</h2>
+    <p class="theme-desc">
+        아래 점을 눌러보세요. 이 페이지 전체 색상이 바뀝니다.<br>
+        VS Code 라이트/다크 모드에 맞춰 자동 최적화됩니다.
+    </p>
+    <div class="theme-picker">
+        <div class="t-item" onclick="setTheme('#448CFF', this)"><div class="t-dot active" style="background:#448CFF;"></div><span class="t-label">Blue</span></div>
+        <div class="t-item" onclick="setTheme('#10B981', this)"><div class="t-dot" style="background:#10B981;"></div><span class="t-label">Green</span></div>
+        <div class="t-item" onclick="setTheme('#F43F5E', this)"><div class="t-dot" style="background:#F43F5E;"></div><span class="t-label">Rose</span></div>
+        <div class="t-item" onclick="setTheme('#8B5CF6', this)"><div class="t-dot" style="background:#8B5CF6;"></div><span class="t-label">Purple</span></div>
+        <div class="t-item" onclick="setTheme('#F59E0B', this)"><div class="t-dot" style="background:#F59E0B;"></div><span class="t-label">Amber</span></div>
+        <div class="t-item" onclick="setTheme('#64748B', this)"><div class="t-dot" style="background:#64748B;"></div><span class="t-label">Neutral</span></div>
+        <div class="t-item" onclick="setTheme('#e5e5e5', this)"><div class="t-dot" style="background:#1a1a1a; border: 2px solid #555;"></div><span class="t-label">Mono</span></div>
+    </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Shortcuts -->
+<section class="section fade-up">
+    <span class="section-label">Shortcuts</span>
+    <h2>키보드로 빠르게</h2>
+    <div class="shortcut-grid">
+        <div class="shortcut-item"><span>모드 전환</span><div><kbd>Cmd</kbd> <kbd>E</kbd></div></div>
+        <div class="shortcut-item"><span>볼드</span><div><kbd>Cmd</kbd> <kbd>B</kbd></div></div>
+        <div class="shortcut-item"><span>이탤릭</span><div><kbd>Cmd</kbd> <kbd>I</kbd></div></div>
+        <div class="shortcut-item"><span>코드</span><div><kbd>Cmd</kbd> <kbd>Shift</kbd> <kbd>C</kbd></div></div>
+        <div class="shortcut-item"><span>들여쓰기</span><div><kbd>Tab</kbd></div></div>
+    </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Install -->
+<section class="section fade-up">
+    <span class="section-label">Install</span>
+    <h2>30초면 설치 끝</h2>
+    <div class="install-box">
+        <p><a href="https://github.com/INNO-HI-Inc/md-viewer/releases/latest">GitHub Releases</a>에서 .vsix 파일을 받고:</p>
+        <code>code --install-extension md-pretty-viewer-0.2.0.vsix</code>
+        <p class="alt">또는 VS Code &rarr; Extensions &rarr; <strong>...</strong> &rarr; Install from VSIX</p>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta fade-up">
+    <h2>마크다운, 이제 예쁘게 보세요</h2>
+    <p>무료이고 오픈소스입니다. 피드백은 GitHub Issues에.</p>
+    <a class="btn btn-primary" href="https://github.com/INNO-HI-Inc/md-viewer/releases/latest" target="_blank">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Download v0.2.0
+    </a>
+</section>
+
+<footer>INNO-HI Inc. &middot; MIT License</footer>
+
 <script>
-function setTheme(el) {
-    var color = el.dataset.color;
-    document.documentElement.style.setProperty('--accent', color);
-    document.documentElement.style.setProperty('--accent-light', color + '14');
-    document.documentElement.style.setProperty('--accent-border', color + '33');
-    document.querySelectorAll('.theme-btn').forEach(function(b) { b.classList.remove('active'); });
-    el.classList.add('active');
+// Theme switcher
+function setTheme(color, el) {
+    var root = document.documentElement;
+    root.style.setProperty('--accent', color);
+    root.style.setProperty('--glow', color + '26');
+    root.style.setProperty('--accent-soft', color + '1a');
+    document.querySelectorAll('.t-dot').forEach(function(d) { d.classList.remove('active'); });
+    el.querySelector('.t-dot').classList.add('active');
 }
+
+// Scroll animation
+var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+        }
+    });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.fade-up').forEach(function(el) {
+    observer.observe(el);
+});
 </script>
 
 </body>
