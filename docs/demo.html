@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MD Pretty Viewer — Live Demo</title>
+    <link rel="icon" href="icon.png">
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css');
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --accent: #448CFF;
+            --bg: #09090b;
+            --surface: #131316;
+            --surface-2: #1a1a1f;
+            --text: #fafafa;
+            --dim: #71717a;
+            --border: #27272a;
+        }
+
+        html, body { height: 100%; overflow: hidden; }
+
+        body {
+            font-family: 'Pretendard Variable', -apple-system, sans-serif;
+            color: var(--text);
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── Topbar ── */
+        .topbar {
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+            flex-shrink: 0;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .topbar-left a {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .topbar-left img {
+            width: 22px;
+            height: 22px;
+            border-radius: 5px;
+        }
+
+        .topbar-left .sep {
+            width: 1px;
+            height: 18px;
+            background: var(--border);
+        }
+
+        .file-name {
+            font-size: 13px;
+            color: var(--dim);
+            font-weight: 500;
+        }
+
+        .topbar-center {
+            display: flex;
+            gap: 4px;
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 3px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .mode-btn {
+            padding: 5px 18px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: inherit;
+            border: none;
+            background: none;
+            color: var(--dim);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .mode-btn.active {
+            background: var(--surface);
+            color: var(--text);
+        }
+
+        .mode-btn:hover:not(.active) {
+            color: var(--text);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Theme dots in topbar */
+        .theme-dots {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-right: 8px;
+        }
+
+        .td {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .td:hover { transform: scale(1.2); }
+        .td.active { border-color: var(--text); }
+
+        .back-btn {
+            padding: 5px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: inherit;
+            background: var(--surface-2);
+            color: var(--dim);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+
+        .back-btn:hover { color: var(--text); border-color: var(--dim); }
+
+        /* ── Editor area ── */
+        .editor-wrap {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .editor-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-width: 0;
+        }
+
+        .editor-textarea {
+            flex: 1;
+            width: 100%;
+            border: none;
+            outline: none;
+            resize: none;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+            font-size: 14px;
+            line-height: 1.75;
+            padding: 32px 40px;
+            tab-size: 4;
+        }
+
+        .editor-textarea::placeholder {
+            color: var(--dim);
+            opacity: 0.4;
+        }
+
+        .preview-pane {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-width: 0;
+        }
+
+        /* Split divider */
+        .editor-wrap.mode-split .editor-pane {
+            border-right: 1px solid var(--border);
+        }
+
+        .editor-wrap.mode-preview .editor-pane { display: none; }
+        .editor-wrap.mode-edit .preview-pane { display: none; }
+
+        /* ── Preview styling ── */
+        .md-body {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 32px 40px 80px;
+            font-size: 15px;
+            line-height: 1.8;
+            color: var(--text);
+        }
+
+        .md-body h1 {
+            font-size: 2em;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1.2;
+            margin: 0 0 0.6em;
+            padding-bottom: 0.4em;
+            border-bottom: 3px solid var(--accent);
+        }
+
+        .md-body h2 {
+            font-size: 1.5em;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin: 1.8em 0 0.5em;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .md-body h3 {
+            font-size: 1.2em;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin: 1.4em 0 0.4em;
+        }
+
+        .md-body h4 { font-size: 1.05em; font-weight: 600; margin: 1.2em 0 0.3em; }
+        .md-body p { margin-bottom: 1em; }
+        .md-body strong { font-weight: 700; color: var(--text); }
+        .md-body em { font-style: italic; }
+
+        .md-body a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        .md-body a:hover { border-bottom-color: var(--accent); }
+
+        .md-body ul, .md-body ol {
+            padding-left: 1.6em;
+            margin-bottom: 1em;
+        }
+
+        .md-body li { margin-bottom: 0.3em; line-height: 1.7; }
+
+        .md-body code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.88em;
+            background: var(--surface-2);
+            color: var(--accent);
+            padding: 0.15em 0.45em;
+            border-radius: 5px;
+        }
+
+        .md-body pre {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 18px 22px;
+            overflow-x: auto;
+            margin: 1.2em 0;
+        }
+
+        .md-body pre code {
+            background: none;
+            padding: 0;
+            color: var(--text);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .md-body blockquote {
+            border-left: 4px solid var(--accent);
+            padding: 0.6em 1.2em;
+            margin: 1.2em 0;
+            color: var(--dim);
+            background: rgba(255,255,255,0.02);
+            border-radius: 0 8px 8px 0;
+        }
+
+        .md-body blockquote p { margin-bottom: 0.3em; }
+
+        .md-body hr {
+            border: none;
+            height: 3px;
+            background: linear-gradient(135deg, var(--accent), rgba(167,139,250,0.6));
+            border-radius: 3px;
+            margin: 2em 0;
+            opacity: 0.4;
+        }
+
+        .md-body table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 1.2em 0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            font-size: 0.95em;
+        }
+
+        .md-body th {
+            text-align: left;
+            padding: 10px 14px;
+            background: var(--surface);
+            font-weight: 600;
+            border-bottom: 2px solid var(--border);
+            font-size: 0.9em;
+        }
+
+        .md-body td {
+            padding: 9px 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--dim);
+        }
+
+        .md-body tbody tr:last-child td { border-bottom: none; }
+        .md-body tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+        .md-body img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 1em 0;
+        }
+
+        /* ── Statusbar ── */
+        .statusbar {
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            font-size: 11px;
+            border-top: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--dim);
+            flex-shrink: 0;
+        }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 7px; height: 7px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+        @media (max-width: 700px) {
+            .editor-textarea { padding: 20px 16px; }
+            .md-body { padding: 20px 16px 60px; }
+            .topbar-center { position: static; transform: none; }
+            .theme-dots { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+    <div class="topbar-left">
+        <a href="index.html">
+            <img src="icon.png" alt="">
+            <span>MD Pretty Viewer</span>
+        </a>
+        <span class="sep"></span>
+        <span class="file-name">demo.md</span>
+    </div>
+
+    <div class="topbar-center">
+        <button class="mode-btn" onclick="setMode('edit', this)">Edit</button>
+        <button class="mode-btn active" onclick="setMode('split', this)">Split</button>
+        <button class="mode-btn" onclick="setMode('preview', this)">Preview</button>
+    </div>
+
+    <div class="topbar-right">
+        <div class="theme-dots">
+            <span class="td active" style="background:#448CFF;" onclick="pickTheme('#448CFF',this)"></span>
+            <span class="td" style="background:#10B981;" onclick="pickTheme('#10B981',this)"></span>
+            <span class="td" style="background:#F43F5E;" onclick="pickTheme('#F43F5E',this)"></span>
+            <span class="td" style="background:#8B5CF6;" onclick="pickTheme('#8B5CF6',this)"></span>
+            <span class="td" style="background:#F59E0B;" onclick="pickTheme('#F59E0B',this)"></span>
+            <span class="td" style="background:#64748B;" onclick="pickTheme('#64748B',this)"></span>
+            <span class="td" style="background:#1a1a1a; border: 1px solid #555;" onclick="pickTheme('#e5e5e5',this)"></span>
+        </div>
+        <a class="back-btn" href="index.html">Back</a>
+    </div>
+</div>
+
+<!-- Editor -->
+<div class="editor-wrap mode-split" id="editorWrap">
+    <div class="editor-pane">
+        <textarea class="editor-textarea" id="editor" spellcheck="false" placeholder="마크다운을 입력하세요..."></textarea>
+    </div>
+    <div class="preview-pane">
+        <div class="md-body" id="preview"></div>
+    </div>
+</div>
+
+<!-- Statusbar -->
+<div class="statusbar">
+    <span id="statsLeft"></span>
+    <span id="statsRight"></span>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+var editor = document.getElementById('editor');
+var preview = document.getElementById('preview');
+var statsLeft = document.getElementById('statsLeft');
+var statsRight = document.getElementById('statsRight');
+
+marked.setOptions({ gfm: true, breaks: true });
+
+var sample = '# Hello, Markdown!\n\n이것은 **MD Pretty Viewer**의 라이브 데모입니다.\n자유롭게 편집해보세요. 실시간으로 반영됩니다.\n\n---\n\n## 타이포그래피\n\n일반 텍스트입니다. **굵은 글씨**와 *기울임 글씨*, 취소선도 ~~이렇게~~ 표현합니다.\n한글과 English가 혼합된 문장도 자연스럽게 렌더링됩니다.\n\n## 인라인 코드\n\n변수 `const greeting = "안녕하세요"` 를 선언합니다. `npm install` 명령어로\n패키지를 설치하세요.\n\n## 코드 블록\n\n```javascript\n// JavaScript 예시\nfunction fibonacci(n) {\n    if (n <= 1) return n;\n    return fibonacci(n - 1) + fibonacci(n - 2);\n}\n\nconsole.log(fibonacci(10)); // 55\n```\n\n```python\n# Python 예시\ndef greet(name: str) -> str:\n    \"\"\"인사말을 반환합니다.\"\"\"\n    return f\"안녕하세요, {name}님!\"\n\nprint(greet(\"세계\"))\n```\n\n## 리스트\n\n### 순서 없는 리스트\n- 실시간 마크다운 프리뷰\n- 7가지 컬러 테마 지원\n- 아웃라인 사이드바\n- 코드 하이라이팅\n\n### 순서 있는 리스트\n1. VSIX 파일을 다운로드합니다\n2. VS Code에서 Install from VSIX를 선택합니다\n3. .md 파일을 열면 자동 적용됩니다\n\n## 인용문\n\n> AI 시대에는 정책이 축적·관리되는 방식을 혁신하는 것 자체가 중요하다.\n>\n> — 임문영 상근 부위원장\n\n## 테이블\n\n| 테마 | 색상 | 분위기 |\n|------|------|--------|\n| Blue | #448CFF | 차분한 블루 톤 |\n| Green | #10B981 | 눈이 편안한 그린 |\n| Rose | #F43F5E | 따뜻한 핑크 |\n| Purple | #8B5CF6 | 개발자 감성 |\n| Amber | #F59E0B | 가을 느낌 |\n| Neutral | #64748B | 무채색 미니멀 |\n| Mono | #171717 | 흑백 집중 모드 |\n\n## 체크리스트\n\n- [x] 실시간 프리뷰\n- [x] 7가지 테마\n- [x] 아웃라인 사이드바\n- [x] 서식 도구 모음\n- [ ] Marketplace 등록\n\n---\n\n*이 데모에서 왼쪽 에디터의 마크다운을 수정하면 오른쪽 프리뷰에 실시간으로 반영됩니다.*';
+
+editor.value = sample;
+
+function render() {
+    preview.innerHTML = marked.parse(editor.value);
+    updateStats();
+}
+
+function updateStats() {
+    var text = editor.value.trim();
+    var words = text === '' ? 0 : text.split(/\s+/).length;
+    var chars = text.length;
+    var lines = editor.value === '' ? 0 : editor.value.split('\n').length;
+    var readMin = Math.max(1, Math.ceil(words / 200));
+    statsLeft.textContent = words.toLocaleString() + ' words \u00B7 ' + chars.toLocaleString() + ' chars \u00B7 ' + readMin + ' min read';
+    statsRight.textContent = lines.toLocaleString() + ' lines';
+}
+
+render();
+editor.addEventListener('input', render);
+
+// Mode switch
+function setMode(mode, btn) {
+    var wrap = document.getElementById('editorWrap');
+    wrap.className = 'editor-wrap mode-' + mode;
+    document.querySelectorAll('.mode-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    if (mode === 'edit') setTimeout(function() { editor.focus(); }, 50);
+}
+
+// Theme
+function pickTheme(color, el) {
+    document.documentElement.style.setProperty('--accent', color);
+    document.querySelectorAll('.td').forEach(function(d) { d.classList.remove('active'); });
+    el.classList.add('active');
+}
+
+// Tab key support
+editor.addEventListener('keydown', function(e) {
+    if (e.key === 'Tab') {
+        e.preventDefault();
+        var start = editor.selectionStart;
+        var end = editor.selectionEnd;
+        editor.value = editor.value.substring(0, start) + '    ' + editor.value.substring(end);
+        editor.selectionStart = editor.selectionEnd = start + 4;
+        render();
+    }
+});
+</script>
+
+</body>
+</html>

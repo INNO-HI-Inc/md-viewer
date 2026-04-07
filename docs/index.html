@@ -612,7 +612,7 @@
     <div class="nav-right">
         <a href="#features">Features</a>
         <a href="#themes">Themes</a>
-        <a href="#demo">Demo</a>
+        <a href="demo.html">Demo</a>
         <a href="https://github.com/INNO-HI-Inc/md-viewer" target="_blank">GitHub</a>
         <a class="nav-btn" href="https://github.com/INNO-HI-Inc/md-viewer/releases/latest" target="_blank">Download</a>
     </div>
@@ -739,19 +739,22 @@
 <div class="divider"></div>
 <section class="section fade-up" id="demo">
     <span class="section-label">Try it</span>
-    <h2>지금 바로 써보세요</h2>
-    <div class="demo-wrap">
+    <h2>설치 없이 지금 바로 써보세요</h2>
+    <div class="demo-wrap" style="cursor:pointer;" onclick="window.location.href='demo.html'">
         <div class="demo-topbar">
             <span>demo.md</span>
             <div class="demo-tabs">
-                <button class="demo-tab" onclick="setDemoMode('edit', this)">Edit</button>
-                <button class="demo-tab active" onclick="setDemoMode('split', this)">Split</button>
-                <button class="demo-tab" onclick="setDemoMode('preview', this)">Preview</button>
+                <button class="demo-tab">Edit</button>
+                <button class="demo-tab active">Split</button>
+                <button class="demo-tab">Preview</button>
             </div>
         </div>
         <div class="demo-body" id="demoBody">
-            <textarea class="demo-editor" id="demoEditor" spellcheck="false"></textarea>
+            <textarea class="demo-editor" id="demoEditor" spellcheck="false" readonly style="cursor:pointer;"></textarea>
             <div class="demo-preview" id="demoPreview"></div>
+        </div>
+        <div style="padding:20px; text-align:center; border-top:1px solid var(--border); background:var(--surface-2);">
+            <span style="font-size:14px; font-weight:600; color:var(--accent);">클릭해서 전체화면 데모 열기 &rarr;</span>
         </div>
     </div>
 </section>
