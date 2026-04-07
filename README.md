@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="icon.png" width="80" alt="MD Pretty Viewer">
+  <img src="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/icon.png" width="80" alt="MD Pretty Viewer">
 </p>
 
 <h1 align="center">MD Pretty Viewer</h1>

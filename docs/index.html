@@ -393,6 +393,156 @@
             margin-bottom: 0;
         }
 
+        /* ── Demo ── */
+        .demo-wrap {
+            max-width: 860px;
+            margin: 0 auto;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            background: var(--surface);
+        }
+
+        .demo-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface-2);
+        }
+
+        .demo-topbar span {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--dim);
+            letter-spacing: 0.02em;
+        }
+
+        .demo-tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg);
+            border-radius: 6px;
+            padding: 3px;
+        }
+
+        .demo-tab {
+            padding: 4px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: inherit;
+            border: none;
+            background: none;
+            color: var(--dim);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .demo-tab.active {
+            background: var(--surface);
+            color: var(--text);
+        }
+
+        .demo-body {
+            display: flex;
+            height: 420px;
+        }
+
+        .demo-editor {
+            flex: 1;
+            border: none;
+            outline: none;
+            resize: none;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+            font-size: 13px;
+            line-height: 1.75;
+            padding: 20px 24px;
+            border-right: 1px solid var(--border);
+        }
+
+        .demo-editor::placeholder { color: var(--dim); opacity: 0.5; }
+
+        .demo-preview {
+            flex: 1;
+            padding: 20px 24px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.75;
+            color: var(--text);
+        }
+
+        .demo-preview h1 { font-size: 1.8em; font-weight: 800; margin: 0 0 0.5em; letter-spacing: -0.03em; }
+        .demo-preview h2 { font-size: 1.4em; font-weight: 700; margin: 1.2em 0 0.4em; letter-spacing: -0.02em; }
+        .demo-preview h3 { font-size: 1.15em; font-weight: 700; margin: 1em 0 0.3em; }
+        .demo-preview p { margin-bottom: 0.8em; }
+        .demo-preview strong { font-weight: 700; color: var(--text); }
+        .demo-preview em { font-style: italic; }
+        .demo-preview a { color: var(--accent); }
+        .demo-preview ul, .demo-preview ol { padding-left: 1.5em; margin-bottom: 0.8em; }
+        .demo-preview li { margin-bottom: 0.2em; }
+        .demo-preview code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.88em;
+            background: var(--surface-2);
+            padding: 0.15em 0.4em;
+            border-radius: 4px;
+            color: var(--accent);
+        }
+        .demo-preview pre {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 18px;
+            overflow-x: auto;
+            margin: 0.8em 0;
+        }
+        .demo-preview pre code {
+            background: none;
+            padding: 0;
+            color: var(--text);
+            font-size: 13px;
+        }
+        .demo-preview blockquote {
+            border-left: 3px solid var(--accent);
+            padding: 0.4em 1em;
+            margin: 0.8em 0;
+            color: var(--dim);
+        }
+        .demo-preview hr {
+            border: none;
+            height: 2px;
+            background: var(--border);
+            margin: 1.5em 0;
+            border-radius: 2px;
+        }
+        .demo-preview table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.8em 0;
+            font-size: 13px;
+        }
+        .demo-preview th, .demo-preview td {
+            text-align: left;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .demo-preview th { font-weight: 600; color: var(--text); }
+
+        .demo-body.mode-preview .demo-editor { display: none; }
+        .demo-body.mode-preview .demo-preview { flex: 1; }
+        .demo-body.mode-edit .demo-preview { display: none; }
+        .demo-body.mode-edit .demo-editor { flex: 1; }
+
+        @media (max-width: 700px) {
+            .demo-body { flex-direction: column; height: 600px; }
+            .demo-editor { border-right: none; border-bottom: 1px solid var(--border); height: 50%; }
+            .demo-preview { height: 50%; }
+        }
+
         /* ── CTA ── */
         .cta {
             text-align: center;
@@ -462,6 +612,7 @@
     <div class="nav-right">
         <a href="#features">Features</a>
         <a href="#themes">Themes</a>
+        <a href="#demo">Demo</a>
         <a href="https://github.com/INNO-HI-Inc/md-viewer" target="_blank">GitHub</a>
         <a class="nav-btn" href="https://github.com/INNO-HI-Inc/md-viewer/releases/latest" target="_blank">Download</a>
     </div>
@@ -584,6 +735,27 @@
     </div>
 </section>
 
+<!-- Demo -->
+<div class="divider"></div>
+<section class="section fade-up" id="demo">
+    <span class="section-label">Try it</span>
+    <h2>지금 바로 써보세요</h2>
+    <div class="demo-wrap">
+        <div class="demo-topbar">
+            <span>demo.md</span>
+            <div class="demo-tabs">
+                <button class="demo-tab" onclick="setDemoMode('edit', this)">Edit</button>
+                <button class="demo-tab active" onclick="setDemoMode('split', this)">Split</button>
+                <button class="demo-tab" onclick="setDemoMode('preview', this)">Preview</button>
+            </div>
+        </div>
+        <div class="demo-body" id="demoBody">
+            <textarea class="demo-editor" id="demoEditor" spellcheck="false"></textarea>
+            <div class="demo-preview" id="demoPreview"></div>
+        </div>
+    </div>
+</section>
+
 <!-- CTA -->
 <section class="cta fade-up">
     <h2>마크다운, 이제 예쁘게 보세요</h2>
@@ -596,6 +768,7 @@
 
 <footer>INNO-HI Inc. &middot; MIT License</footer>
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
 // Theme switcher
 function setTheme(color, el) {
@@ -619,6 +792,29 @@ var observer = new IntersectionObserver(function(entries) {
 document.querySelectorAll('.fade-up').forEach(function(el) {
     observer.observe(el);
 });
+
+// Demo
+var sampleMd = '# Hello, Markdown!\n\n이것은 **MD Pretty Viewer**의 라이브 데모입니다.\n자유롭게 편집해보세요.\n\n## 기능\n\n- **볼드**, *이탤릭*, `인라인 코드`\n- 리스트, 테이블, 인용문\n- 코드 하이라이팅\n\n> 마크다운은 AI와 사람 모두 읽기 쉬운 포맷입니다.\n\n## 코드 블록\n\n```js\nfunction greet(name) {\n    return `안녕하세요, ${name}님!`;\n}\nconsole.log(greet("World"));\n```\n\n## 테이블\n\n| 테마 | 색상 |\n|------|------|\n| Blue | #448CFF |\n| Rose | #F43F5E |\n| Purple | #8B5CF6 |\n\n---\n\n*왼쪽에서 편집하면 오른쪽에서 실시간으로 반영됩니다.*';
+
+var demoEditor = document.getElementById('demoEditor');
+var demoPreview = document.getElementById('demoPreview');
+
+marked.setOptions({ gfm: true, breaks: true });
+
+function renderDemo() {
+    demoPreview.innerHTML = marked.parse(demoEditor.value);
+}
+
+demoEditor.value = sampleMd;
+renderDemo();
+demoEditor.addEventListener('input', renderDemo);
+
+function setDemoMode(mode, btn) {
+    var body = document.getElementById('demoBody');
+    body.className = 'demo-body mode-' + mode;
+    document.querySelectorAll('.demo-tab').forEach(function(t) { t.classList.remove('active'); });
+    btn.classList.add('active');
+}
 </script>
 
 </body>
