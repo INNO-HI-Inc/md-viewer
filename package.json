@@ -1,21 +1,44 @@
 {
   "name": "md-pretty-viewer",
   "displayName": "MD Pretty Viewer",
-  "description": "A beautiful markdown editor with live preview, formatting toolbar, and outline sidebar",
-  "version": "0.2.0",
+  "description": "마크다운을 Notion처럼 예쁘게. 실시간 프리뷰, 7가지 컬러 테마, 아웃라인 사이드바, 서식 도구를 제공하는 VS Code 마크다운 뷰어.",
+  "version": "0.2.1",
   "publisher": "innohi",
+  "author": {
+    "name": "INNO-HI Inc."
+  },
   "license": "MIT",
+  "homepage": "https://inno-hi-inc.github.io/md-viewer/",
   "repository": {
     "type": "git",
     "url": "https://github.com/INNO-HI-Inc/md-viewer"
   },
+  "bugs": {
+    "url": "https://github.com/INNO-HI-Inc/md-viewer/issues"
+  },
   "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#1a1f3a",
+    "theme": "dark"
+  },
+  "keywords": [
+    "markdown",
+    "preview",
+    "viewer",
+    "editor",
+    "md",
+    "마크다운",
+    "notion",
+    "korean"
+  ],
   "engines": {
     "vscode": "^1.74.0"
   },
   "main": "./extension.js",
   "categories": [
-    "Other"
+    "Other",
+    "Visualization",
+    "Formatters"
   ],
   "activationEvents": [],
   "contributes": {
