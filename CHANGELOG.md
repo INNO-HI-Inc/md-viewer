@@ -5,6 +5,17 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.4.0] - 2026-04-14
+
+### Added
+- **에이투지체 (AtoZ) 폰트 번들링** — 오토노머스에이투지 X 이주임 제작, OFL 라이선스
+  - 6가지 웨이트 (300 Light ~ 800 ExtraBold) 번들
+  - 전체 UI에 자동 적용, 시스템 폰트보다 우선 사용
+  - 한글 가독성 대폭 향상
+
+### Documentation
+- NOTICE.md에 에이투지체 OFL 라이선스 전문 추가
+
 ## [0.3.1] - 2026-04-14
 
 ### Added

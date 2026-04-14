@@ -7,6 +7,12 @@
     <meta name="description" content="VS Code에서 마크다운을 깔끔하게 보여주는 확장 프로그램">
     <link rel="icon" href="icon.png">
     <style>
+        /* AtoZ Font (에이투지체, OFL license by 오토노머스에이투지 X 이주임) */
+        @font-face { font-family: 'AtoZ'; font-weight: 400; font-display: swap; src: url('fonts/atoz-400.woff2') format('woff2'); }
+        @font-face { font-family: 'AtoZ'; font-weight: 500; font-display: swap; src: url('fonts/atoz-500.woff2') format('woff2'); }
+        @font-face { font-family: 'AtoZ'; font-weight: 600; font-display: swap; src: url('fonts/atoz-600.woff2') format('woff2'); }
+        @font-face { font-family: 'AtoZ'; font-weight: 700; font-display: swap; src: url('fonts/atoz-700.woff2') format('woff2'); }
+        @font-face { font-family: 'AtoZ'; font-weight: 800; font-display: swap; src: url('fonts/atoz-800.woff2') format('woff2'); }
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css');
 
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -26,7 +32,7 @@
         html { scroll-behavior: smooth; }
 
         body {
-            font-family: 'Pretendard Variable', -apple-system, sans-serif;
+            font-family: 'AtoZ', 'Pretendard Variable', -apple-system, sans-serif;
             color: var(--text);
             background: var(--bg);
             line-height: 1.7;

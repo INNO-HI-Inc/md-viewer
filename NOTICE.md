@@ -81,14 +81,67 @@ POSSIBILITY OF SUCH DAMAGE.
 
 ---
 
-## Fonts (외부 로드, 번들되지 않음)
+## 에이투지체 (AtoZ Font)
 
-이 확장은 다음 폰트를 **참조만** 하며, 실제 파일은 번들하지 않습니다. 시스템에 설치되어 있거나, 홈페이지에서 사용자의 브라우저가 CDN에서 로드합니다:
+- **Project**: https://autoa2z.co.kr
+- **Designer**: 오토노머스에이투지(Autonomous a2z) X 이주임
+- **Version**: v1.001
+- **License**: SIL Open Font License 1.1 (OFL)
+- **Location in package**: `media/fonts/atoz-*.woff2`
+
+이 확장은 에이투지체를 번들 포함하며, OFL 조건에 따라 상업적 이용, 수정, 재배포가 허용됩니다. 단, 폰트 파일 자체를 판매하지 않습니다.
+
+```
+SIL Open Font License, Version 1.1
+
+Copyright © 오토노머스에이투지(Autonomous a2z) X 이주임. All Rights Reserved.
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is copied below, and is also available with a FAQ at:
+https://openfontlicense.org
+
+PERMISSION & CONDITIONS
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of the Font Software, to use, study, copy, merge, embed, modify,
+redistribute, and sell modified and unmodified copies of the Font
+Software, subject to the following conditions:
+
+1) Neither the Font Software nor any of its individual components,
+in Original or Modified Versions, may be sold by itself.
+
+2) Original or Modified Versions of the Font Software may be bundled,
+redistributed and/or sold with any software, provided that each copy
+contains the above copyright notice and this license.
+
+3) No Modified Version of the Font Software may use the Reserved Font
+Name(s) unless explicit written permission is granted by the corresponding
+Copyright Holder.
+
+4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
+Software shall not be used to promote, endorse or advertise any
+Modified Version, except to acknowledge the contribution(s) of the
+Copyright Holder(s) and the Author(s) or with their explicit written
+permission.
+
+5) The Font Software, modified or unmodified, in part or in whole,
+must be distributed entirely under this license, and must not be
+distributed under any other license.
+
+TERMINATION
+This license becomes null and void if any of the above conditions are not met.
+
+DISCLAIMER
+THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+```
+
+---
+
+## Other Fonts (시스템/CDN)
+
+다음 폰트는 **fallback용**으로 참조되며 번들되지 않습니다:
 
 - **Pretendard Variable** (OFL-1.1) — https://github.com/orioncactus/pretendard
 - **JetBrains Mono** (OFL-1.1) — https://github.com/JetBrains/JetBrainsMono
-
-시스템에 해당 폰트가 없는 경우 기본 시스템 폰트로 fallback됩니다.
 
 ---
 
