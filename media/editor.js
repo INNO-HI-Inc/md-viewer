@@ -668,7 +668,6 @@ function setupMessageListener() {
         var msg = e.data;
         if (msg.type === 'update') {
             currentContent = msg.content;
-            // Protect user input: skip editor update if user is typing
             if (editorEl && document.activeElement !== editorEl) {
                 editorEl.value = currentContent;
             }
@@ -676,6 +675,24 @@ function setupMessageListener() {
                 renderPreview();
             }
             updateStats();
+        } else if (msg.type === 'command') {
+            if (msg.action === 'toggleMode') {
+                setMode(currentMode === 'preview' ? 'edit' : 'preview');
+            } else if (msg.action === 'bold') {
+                if (currentMode === 'edit' || currentMode === 'split') toolbarAction('bold');
+            } else if (msg.action === 'italic') {
+                if (currentMode === 'edit' || currentMode === 'split') toolbarAction('italic');
+            } else if (msg.action === 'code') {
+                if (currentMode === 'edit' || currentMode === 'split') toolbarAction('code');
+            }
+        } else if (msg.type === 'configChange') {
+            if (msg.settings && msg.settings.defaultTheme) {
+                applyTheme(msg.settings.defaultTheme);
+            }
+            if (msg.settings && msg.settings.defaultFontSize) {
+                document.documentElement.style.setProperty('--md-font-size', msg.settings.defaultFontSize + 'px');
+                if (fontSizeDisplayEl) fontSizeDisplayEl.textContent = msg.settings.defaultFontSize;
+            }
         }
     });
 }
@@ -683,22 +700,49 @@ function setupMessageListener() {
 /* ───────────────────────────────────────────
    initEditor — global entry point
    ─────────────────────────────────────────── */
-function initEditor(content, fileName, baseUri) {
+function initEditor(content, fileName, baseUri, initialSettings) {
     currentContent = content;
     docBaseUri = baseUri || '';
     configureMarked();
-    // Load saved font size
+
+    var settings = initialSettings || {};
+
+    // Font size: saved > settings > default
     var savedFontSize = localStorage.getItem('md-viewer-font-size');
-    if (savedFontSize) {
-        document.documentElement.style.setProperty('--md-font-size', savedFontSize);
+    var fontSize = savedFontSize || (settings.defaultFontSize ? settings.defaultFontSize + 'px' : null);
+    if (fontSize) {
+        document.documentElement.style.setProperty('--md-font-size', fontSize);
     }
-    // Load saved theme
+
+    // Theme: saved > settings > default
     var savedTheme = localStorage.getItem('md-viewer-theme');
-    if (savedTheme) {
-        currentTheme = savedTheme;
+    currentTheme = savedTheme || settings.defaultTheme || 'blue';
+
+    // Default mode
+    if (settings.defaultMode) {
+        currentMode = settings.defaultMode;
     }
+
+    // Outline default
+    if (settings.showOutline) {
+        outlineVisible = true;
+    }
+
     buildUI(fileName);
     applyTheme(currentTheme);
+
+    // Apply initial mode if not preview
+    if (currentMode !== 'preview') {
+        setMode(currentMode);
+    }
+
+    // Apply initial outline state
+    if (outlineVisible && outlineEl) {
+        outlineEl.classList.remove('hidden');
+        var outlineBtn = document.querySelector('.outline-toggle');
+        if (outlineBtn) outlineBtn.classList.add('active');
+    }
+
     renderPreview();
     updateStats();
     setupScrollSync();

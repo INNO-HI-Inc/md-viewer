@@ -1,6 +1,9 @@
 const vscode = require('vscode');
 const path = require('path');
 
+// Track active webviews so commands can target them
+const activeWebviews = new Set();
+
 class MarkdownEditorProvider {
     static viewType = 'mdPrettyViewer.editor';
 
@@ -27,12 +30,20 @@ class MarkdownEditorProvider {
         const docBaseUri = webview.asWebviewUri(docDir);
         const nonce = getNonce();
 
-        webview.html = getHtml(webview, nonce, mediaUri, document, docBaseUri);
+        const config = vscode.workspace.getConfiguration('mdPrettyViewer');
+        const initialSettings = {
+            defaultTheme: config.get('defaultTheme', 'blue'),
+            defaultFontSize: config.get('defaultFontSize', 16),
+            defaultMode: config.get('defaultMode', 'preview'),
+            showOutline: config.get('showOutline', false)
+        };
 
-        // Track whether the webview is triggering the edit to avoid echo loops
+        webview.html = getHtml(webview, nonce, mediaUri, document, docBaseUri, initialSettings);
+
+        activeWebviews.add(webview);
+
         let isWebviewEdit = false;
 
-        // Document -> Webview synchronization
         const changeDocSub = vscode.workspace.onDidChangeTextDocument(e => {
             if (e.document.uri.toString() === document.uri.toString()) {
                 if (isWebviewEdit) {
@@ -46,7 +57,21 @@ class MarkdownEditorProvider {
             }
         });
 
-        // Webview -> Document synchronization
+        const configSub = vscode.workspace.onDidChangeConfiguration(e => {
+            if (e.affectsConfiguration('mdPrettyViewer')) {
+                const cfg = vscode.workspace.getConfiguration('mdPrettyViewer');
+                webview.postMessage({
+                    type: 'configChange',
+                    settings: {
+                        defaultTheme: cfg.get('defaultTheme'),
+                        defaultFontSize: cfg.get('defaultFontSize'),
+                        defaultMode: cfg.get('defaultMode'),
+                        showOutline: cfg.get('showOutline')
+                    }
+                });
+            }
+        });
+
         webview.onDidReceiveMessage(async msg => {
             if (msg.type === 'edit') {
                 const fullRange = new vscode.Range(
@@ -61,14 +86,17 @@ class MarkdownEditorProvider {
         });
 
         webviewPanel.onDidDispose(() => {
+            activeWebviews.delete(webview);
             changeDocSub.dispose();
+            configSub.dispose();
         });
     }
 }
 
-function getHtml(webview, nonce, mediaUri, document, docBaseUri) {
+function getHtml(webview, nonce, mediaUri, document, docBaseUri, settings) {
     const fileName = path.basename(document.uri.fsPath);
     const content = document.getText();
+    const initialMode = settings.defaultMode || 'preview';
 
     return `<!DOCTYPE html>
 <html lang="ko">
@@ -79,13 +107,13 @@ function getHtml(webview, nonce, mediaUri, document, docBaseUri) {
     <link rel="stylesheet" href="${mediaUri('editor.css')}">
     <title>${escapeHtml(fileName)}</title>
 </head>
-<body class="mode-preview">
+<body class="mode-${initialMode}">
     <div id="app"></div>
     <script nonce="${nonce}" src="${mediaUri('marked.min.js')}"></script>
     <script nonce="${nonce}" src="${mediaUri('highlight.min.js')}"></script>
     <script nonce="${nonce}" src="${mediaUri('editor.js')}"></script>
     <script nonce="${nonce}">
-        initEditor(${JSON.stringify(content)}, ${JSON.stringify(fileName)}, ${JSON.stringify(docBaseUri.toString())});
+        initEditor(${JSON.stringify(content)}, ${JSON.stringify(fileName)}, ${JSON.stringify(docBaseUri.toString())}, ${JSON.stringify(settings)});
     </script>
 </body>
 </html>`;
@@ -105,6 +133,10 @@ function getNonce() {
     return text;
 }
 
+function broadcast(type, payload) {
+    activeWebviews.forEach(wv => wv.postMessage({ type, ...payload }));
+}
+
 function activate(context) {
     context.subscriptions.push(
         vscode.window.registerCustomEditorProvider(
@@ -114,6 +146,21 @@ function activate(context) {
                 webviewOptions: { retainContextWhenHidden: true }
             }
         )
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('mdPrettyViewer.toggleMode', () => {
+            broadcast('command', { action: 'toggleMode' });
+        }),
+        vscode.commands.registerCommand('mdPrettyViewer.bold', () => {
+            broadcast('command', { action: 'bold' });
+        }),
+        vscode.commands.registerCommand('mdPrettyViewer.italic', () => {
+            broadcast('command', { action: 'italic' });
+        }),
+        vscode.commands.registerCommand('mdPrettyViewer.code', () => {
+            broadcast('command', { action: 'code' });
+        })
     );
 }
 

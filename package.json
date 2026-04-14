@@ -2,7 +2,7 @@
   "name": "md-pretty-viewer",
   "displayName": "MD Pretty Viewer",
   "description": "마크다운을 Notion처럼 예쁘게. 실시간 프리뷰, 7가지 컬러 테마, 아웃라인 사이드바, 서식 도구를 제공하는 VS Code 마크다운 뷰어.",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "publisher": "innohi",
   "author": {
     "name": "INNO-HI Inc."
@@ -53,6 +53,95 @@
         ],
         "priority": "default"
       }
-    ]
+    ],
+    "commands": [
+      {
+        "command": "mdPrettyViewer.toggleMode",
+        "title": "MD Pretty Viewer: Toggle Preview/Edit Mode",
+        "category": "MD Pretty Viewer"
+      },
+      {
+        "command": "mdPrettyViewer.bold",
+        "title": "MD Pretty Viewer: Bold",
+        "category": "MD Pretty Viewer"
+      },
+      {
+        "command": "mdPrettyViewer.italic",
+        "title": "MD Pretty Viewer: Italic",
+        "category": "MD Pretty Viewer"
+      },
+      {
+        "command": "mdPrettyViewer.code",
+        "title": "MD Pretty Viewer: Code",
+        "category": "MD Pretty Viewer"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "mdPrettyViewer.toggleMode",
+        "key": "ctrl+e",
+        "mac": "cmd+e",
+        "when": "activeCustomEditorId == 'mdPrettyViewer.editor'"
+      },
+      {
+        "command": "mdPrettyViewer.bold",
+        "key": "ctrl+b",
+        "mac": "cmd+b",
+        "when": "activeCustomEditorId == 'mdPrettyViewer.editor'"
+      },
+      {
+        "command": "mdPrettyViewer.italic",
+        "key": "ctrl+i",
+        "mac": "cmd+i",
+        "when": "activeCustomEditorId == 'mdPrettyViewer.editor'"
+      },
+      {
+        "command": "mdPrettyViewer.code",
+        "key": "ctrl+shift+c",
+        "mac": "cmd+shift+c",
+        "when": "activeCustomEditorId == 'mdPrettyViewer.editor'"
+      }
+    ],
+    "configuration": {
+      "title": "MD Pretty Viewer",
+      "properties": {
+        "mdPrettyViewer.defaultTheme": {
+          "type": "string",
+          "enum": [
+            "blue",
+            "green",
+            "rose",
+            "purple",
+            "amber",
+            "neutral",
+            "mono"
+          ],
+          "default": "blue",
+          "description": "기본 컬러 테마를 선택합니다."
+        },
+        "mdPrettyViewer.defaultFontSize": {
+          "type": "number",
+          "default": 16,
+          "minimum": 12,
+          "maximum": 24,
+          "description": "기본 프리뷰 폰트 크기 (px)."
+        },
+        "mdPrettyViewer.defaultMode": {
+          "type": "string",
+          "enum": [
+            "preview",
+            "edit",
+            "split"
+          ],
+          "default": "preview",
+          "description": "마크다운 파일을 열 때 기본 모드."
+        },
+        "mdPrettyViewer.showOutline": {
+          "type": "boolean",
+          "default": false,
+          "description": "아웃라인 사이드바를 기본으로 표시합니다."
+        }
+      }
+    }
   }
 }
