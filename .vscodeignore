@@ -1,3 +1,7 @@
 .claude/
+.github/
 test-sample.md
 .gitignore
+docs/
+*.vsix
+CONTRIBUTING.md

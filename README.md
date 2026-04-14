@@ -5,16 +5,17 @@
 <h1 align="center">MD Pretty Viewer</h1>
 
 <p align="center">
-  <strong>마크다운을 예쁘게. VS Code에서.</strong>
+  <strong>Beautiful markdown, in VS Code.</strong><br>
+  <sub>마크다운을 예쁘게. VS Code에서.</sub>
 </p>
 
 <p align="center">
-  실시간 프리뷰 · 7가지 컬러 테마 · 아웃라인 사이드바 · 서식 도구 · 코드 하이라이팅
+  Live preview · 7 color themes · Outline sidebar · Formatting toolbar · Syntax highlighting
 </p>
 
 <p align="center">
   <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer">
-    <img src="https://img.shields.io/visual-studio-marketplace/v/innohi.md-pretty-viewer?color=448CFF&label=VS%20Code%20Marketplace" alt="Marketplace">
+    <img src="https://img.shields.io/visual-studio-marketplace/v/innohi.md-pretty-viewer?color=448CFF&label=Marketplace" alt="Marketplace">
   </a>
   <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer">
     <img src="https://img.shields.io/visual-studio-marketplace/d/innohi.md-pretty-viewer?color=448CFF&label=installs" alt="Installs">
@@ -25,107 +26,114 @@
 </p>
 
 <p align="center">
-  <a href="https://inno-hi-inc.github.io/md-viewer/">🏠 홈페이지</a> ·
-  <a href="https://inno-hi-inc.github.io/md-viewer/demo.html">▶ 라이브 데모</a> ·
-  <a href="https://github.com/INNO-HI-Inc/md-viewer/issues">🐛 이슈 신고</a>
+  <a href="https://inno-hi-inc.github.io/md-viewer/">🏠 Homepage</a> ·
+  <a href="https://inno-hi-inc.github.io/md-viewer/demo.html">▶ Live Demo</a> ·
+  <a href="https://github.com/INNO-HI-Inc/md-viewer/issues">🐛 Report Issue</a>
+</p>
+
+<p align="center">
+  <a href="#english">English</a> · <a href="#한국어">한국어</a>
 </p>
 
 ---
 
-## 스크린샷
-
-![MD Pretty Viewer 스크린샷](https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/screenshot.png)
+![MD Pretty Viewer Screenshot](https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/screenshot.png)
 
 ---
 
-## 주요 기능
+<a name="english"></a>
 
-### 🎯 세 가지 뷰 모드
-- **Preview**: 렌더링된 마크다운을 깔끔하게 읽기
-- **Edit**: 원문 마크다운 직접 편집 (모노스페이스 에디터)
-- **Split**: 좌우 분할 — 실시간 동기화 + 스크롤 동기화
+## ✨ Features
 
-Preview 모드에서 **더블클릭**하면 바로 Edit 모드로 전환됩니다.
+### 🎯 Three View Modes
+- **Preview** — Read the rendered markdown beautifully
+- **Edit** — Edit raw markdown in a clean monospace editor
+- **Split** — Side-by-side editor and preview with scroll sync
 
-### 🎨 7가지 컬러 테마
+Double-click on preview mode to switch to edit instantly.
+
+### 🎨 7 Color Themes
 Blue · Green · Rose · Purple · Amber · Neutral · Mono
-VS Code의 라이트 / 다크 / 하이콘트라스트 모드에 맞춰 자동 최적화.
+Auto-optimized for VS Code's light / dark / high-contrast modes.
 
-### 🛠 서식 도구 모음
-헤딩(H1-H3), 볼드, 이탤릭, 코드, 링크, 리스트(불릿/번호), 인용, 수평선 — 텍스트 선택 후 버튼 한 번으로 적용.
+### 🛠 Formatting Toolbar
+Headings (H1-H3), bold, italic, code, links, lists (bullet/numbered), blockquote, horizontal rule — apply with a single click after selecting text.
 
-### 📑 아웃라인 사이드바
-H1-H4 헤딩을 자동 추출해 트리 구조로 표시. 클릭 시 해당 위치로 스무스 스크롤.
+### 📑 Outline Sidebar
+Automatically extracts H1-H4 headings into a navigable tree. Click to smooth-scroll to any section.
 
-### 💻 코드 하이라이팅
-[highlight.js](https://highlightjs.org/) 기반. 선택한 테마 색상에 맞춰 코드 색상도 자동 변경.
+### 💻 Code Highlighting
+Based on [highlight.js](https://highlightjs.org/). Code block colors adapt to your selected theme.
 
-### 📝 GitHub Flavored Markdown 완벽 지원
-테이블 · 체크박스 · 취소선 · 펜스드 코드 블록 · 자동 링크 · 이모지.
+### 📝 Full GitHub Flavored Markdown Support
+Tables · checkboxes · strikethrough · fenced code blocks · autolinks · emoji.
 
-### 🔤 폰트 크기 조절
-12px ~ 24px 범위. 설정 자동 저장.
+### 🔤 Font Size Control
+12px to 24px, adjustable from the toolbar. Settings persist automatically.
+
+### 🇰🇷 Korean Typography
+Bundles [에이투지체 (AtoZ font)](https://autoa2z.co.kr) for exceptional Korean text rendering (OFL licensed).
 
 ---
 
-## 설치
+## 📦 Installation
 
-### VS Code Marketplace (권장)
-1. VS Code Extensions 탭 열기 (`Ctrl+Shift+X` / `Cmd+Shift+X`)
-2. `md pretty viewer` 검색
-3. **Install** 클릭
+### From Marketplace (Recommended)
+1. Open Extensions panel (`Ctrl+Shift+X` / `Cmd+Shift+X`)
+2. Search `md pretty viewer`
+3. Click **Install**
 
-### 명령어
+### Command Line
 ```bash
 code --install-extension innohi.md-pretty-viewer
 ```
 
-### VSIX 직접 설치
-[Releases 페이지](https://github.com/INNO-HI-Inc/md-viewer/releases/latest)에서 `.vsix` 다운로드 후:
+### Manual VSIX
+Download `.vsix` from [Releases](https://github.com/INNO-HI-Inc/md-viewer/releases/latest), then:
 ```bash
-code --install-extension md-pretty-viewer-0.3.0.vsix
+code --install-extension md-pretty-viewer-0.4.0.vsix
 ```
 
 ---
 
-## 키보드 단축키
+## ⌨️ Keyboard Shortcuts
 
-| 단축키 | 기능 |
-|--------|------|
-| `Ctrl/Cmd + E` | Preview ↔ Edit 모드 전환 |
-| `Ctrl/Cmd + B` | 볼드 |
-| `Ctrl/Cmd + I` | 이탤릭 |
-| `Ctrl/Cmd + Shift + C` | 코드 |
-| `Tab` | 들여쓰기 (4칸) |
-| 더블클릭 | Preview → Edit 전환 |
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl/Cmd + E` | Toggle Preview/Edit mode |
+| `Ctrl/Cmd + B` | Bold |
+| `Ctrl/Cmd + I` | Italic |
+| `Ctrl/Cmd + Shift + C` | Code |
+| `Tab` | Indent (4 spaces) |
+| Double-click | Preview → Edit |
 
 ---
 
-## 설정 (Settings)
+## ⚙️ Settings
 
-`settings.json`에서 다음 설정을 조정할 수 있습니다:
+Configure via `settings.json`:
 
 ```jsonc
 {
-  // 기본 컬러 테마 (blue / green / rose / purple / amber / neutral / mono)
+  // Default color theme (blue | green | rose | purple | amber | neutral | mono)
   "mdPrettyViewer.defaultTheme": "blue",
 
-  // 기본 프리뷰 폰트 크기 (12-24px)
+  // Default preview font size (12-24px)
   "mdPrettyViewer.defaultFontSize": 16,
 
-  // 파일을 열 때 기본 모드 (preview / edit / split)
+  // Default view mode when opening a .md file (preview | edit | split)
   "mdPrettyViewer.defaultMode": "preview",
 
-  // 아웃라인 사이드바 기본 표시 여부
+  // Show outline sidebar by default
   "mdPrettyViewer.showOutline": false
 }
 ```
 
 ---
 
-## 명령어 (Commands)
+## 🖥 Commands
 
-`Ctrl/Cmd + Shift + P`로 Command Palette 열고 `MD Pretty Viewer` 검색:
+Open Command Palette (`Ctrl/Cmd + Shift + P`) and search `MD Pretty Viewer`:
 
 - `MD Pretty Viewer: Toggle Preview/Edit Mode`
 - `MD Pretty Viewer: Bold`
@@ -134,63 +142,117 @@ code --install-extension md-pretty-viewer-0.3.0.vsix
 
 ---
 
-## 요구 사항
+## 📋 Requirements
 
-- **VS Code**: 1.74.0 이상
-- **플랫폼**: Windows / macOS / Linux 모두 지원
-- **외부 의존성**: 없음 (marked.js, highlight.js 번들링)
-
----
-
-## 알려진 제한 사항
-
-- 단일 파일 편집용으로 설계 (다중 탭 동시 편집 시 각 탭은 독립적으로 작동)
-- 매우 큰 마크다운 파일 (>10,000 줄) 렌더링 시 성능 저하 가능
-- Mermaid, PlantUML 같은 다이어그램 렌더링은 지원하지 않음
+- **VS Code**: 1.74.0 or later
+- **Platforms**: Windows, macOS, Linux
+- **External dependencies**: None (marked.js and highlight.js are bundled)
 
 ---
 
-## 보안
+## ⚠️ Known Limitations
 
-이 확장은 VS Code 웹뷰의 엄격한 CSP (Content Security Policy)를 사용하며, 마크다운 내 원시 HTML과 `javascript:`/`vbscript:`/`data:` 스키마 URL을 차단합니다. 자세한 내용은 [SECURITY.md](SECURITY.md) 참조.
-
-취약점을 발견하셨다면 **GitHub Issues를 통하지 말고** 직접 연락해주세요:
-📧 `security@innohi.ai.kr`
-
----
-
-## 기여
-
-이슈, 기능 요청, PR 모두 환영합니다.
-
-- [버그 신고](https://github.com/INNO-HI-Inc/md-viewer/issues/new?labels=bug)
-- [기능 요청](https://github.com/INNO-HI-Inc/md-viewer/issues/new?labels=enhancement)
-- [기여 가이드](CONTRIBUTING.md)
+- Designed for single-file editing (multiple tabs work independently)
+- Very large markdown files (>10,000 lines) may show performance degradation
+- Diagram rendering (Mermaid, PlantUML) is not supported
 
 ---
 
-## 변경 이력
+## 🔒 Security
 
-[CHANGELOG.md](CHANGELOG.md) 참조.
+This extension uses strict VS Code webview CSP and defensively blocks:
+- Raw HTML in markdown (auto-escaped)
+- `javascript:`, `vbscript:`, `data:` URL schemes in links and images
+- Adds `rel="noopener noreferrer"` to all external links
 
----
+No data is collected or sent over the network.
 
-## 번들된 오픈소스
+See [SECURITY.md](SECURITY.md) for full security design and vulnerability reporting.
 
-이 확장은 다음 오픈소스 라이브러리를 번들합니다:
-
-| 라이브러리 | 버전 | 라이선스 | 용도 |
-|-----------|------|---------|------|
-| [marked](https://github.com/markedjs/marked) | 15.x | MIT | 마크다운 파서 |
-| [highlight.js](https://github.com/highlightjs/highlight.js) | 11.x | BSD-3-Clause | 코드 하이라이팅 |
-
-자세한 라이선스 전문은 [NOTICE.md](NOTICE.md) 참조.
+To report a vulnerability: 📧 `security@innohi.ai.kr`
 
 ---
 
-## 라이선스
+## 🤝 Contributing
+
+Issues, feature requests, and PRs are welcome.
+
+- [Report a bug](https://github.com/INNO-HI-Inc/md-viewer/issues/new?labels=bug)
+- [Request a feature](https://github.com/INNO-HI-Inc/md-viewer/issues/new?labels=enhancement)
+- [Contributing Guide](CONTRIBUTING.md)
+
+---
+
+## 📜 Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for release history.
+
+---
+
+## 📦 Bundled Open Source
+
+This extension bundles the following libraries:
+
+| Library | Version | License | Purpose |
+|---------|---------|---------|---------|
+| [marked](https://github.com/markedjs/marked) | 15.x | MIT | Markdown parser |
+| [highlight.js](https://github.com/highlightjs/highlight.js) | 11.x | BSD-3-Clause | Syntax highlighting |
+| [AtoZ font](https://autoa2z.co.kr) | 1.001 | OFL-1.1 | Korean typography |
+
+Full license texts in [NOTICE.md](NOTICE.md).
+
+---
+
+## 📄 License
 
 [MIT License](LICENSE) © 2026 [INNO-HI Inc.](https://www.innohi.ai.kr)
+
+---
+
+<a name="한국어"></a>
+
+## 🇰🇷 한국어
+
+### 주요 기능
+
+- **3가지 뷰 모드** — Preview / Edit / Split. 더블클릭으로 즉시 편집
+- **7가지 컬러 테마** — Blue, Green, Rose, Purple, Amber, Neutral, Mono
+- **서식 도구** — 헤딩, 볼드, 이탤릭, 코드, 링크, 리스트, 인용, 수평선
+- **아웃라인 사이드바** — H1~H4 자동 추출, 클릭으로 이동
+- **코드 하이라이팅** — highlight.js 기반, 테마 색상 자동 적용
+- **한글 최적화** — 에이투지체(AtoZ font, OFL) 번들로 깔끔한 한글 표기
+- **폰트 크기** — 12px ~ 24px 자유 조절
+- **GFM 완벽 지원** — 테이블, 체크박스, 취소선
+
+### 설치
+
+VS Code Extensions에서 `md pretty viewer` 검색 후 Install. 또는:
+
+```bash
+code --install-extension innohi.md-pretty-viewer
+```
+
+### 설정
+
+`settings.json`에서 조정:
+
+```jsonc
+{
+  "mdPrettyViewer.defaultTheme": "blue",       // 기본 테마
+  "mdPrettyViewer.defaultFontSize": 16,         // 기본 폰트 크기
+  "mdPrettyViewer.defaultMode": "preview",      // 기본 모드
+  "mdPrettyViewer.showOutline": false           // 아웃라인 기본 표시
+}
+```
+
+### 단축키
+
+| 단축키 | 기능 |
+|--------|------|
+| `Cmd/Ctrl + E` | Preview/Edit 모드 전환 |
+| `Cmd/Ctrl + B` | 볼드 |
+| `Cmd/Ctrl + I` | 이탤릭 |
+| `Cmd/Ctrl + Shift + C` | 코드 |
 
 ---
 

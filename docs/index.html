@@ -597,17 +597,49 @@
             transform: translateY(0);
         }
 
+        /* ── Language Toggle ── */
+        .lang-toggle {
+            display: flex;
+            gap: 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 2px;
+            margin-right: 8px;
+        }
+        .lang-toggle button {
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            font-family: inherit;
+            border: none;
+            background: transparent;
+            color: var(--dim);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.15s;
+            letter-spacing: 0.05em;
+        }
+        .lang-toggle button.active {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        /* Language visibility */
+        body[data-lang="en"] .ko { display: none; }
+        body[data-lang="ko"] .en { display: none; }
+
         /* ── Responsive ── */
         @media (max-width: 700px) {
             .feature-grid { grid-template-columns: 1fr; }
             .shortcut-grid { grid-template-columns: 1fr; }
-            .nav-right a:not(.nav-btn) { display: none; }
+            .nav-right a:not(.nav-btn):not(.lang-toggle) { display: none; }
             .hero-btns { flex-direction: column; align-items: center; }
             .shot-wrap { padding: 0 12px 60px; }
         }
     </style>
 </head>
-<body>
+<body data-lang="ko">
 
 <!-- Nav -->
 <nav>
@@ -619,29 +651,36 @@
         <a href="#features">Features</a>
         <a href="#themes">Themes</a>
         <a href="demo.html">Demo</a>
+        <div class="lang-toggle">
+            <button id="langKo" class="active" onclick="setLang('ko')">KO</button>
+            <button id="langEn" onclick="setLang('en')">EN</button>
+        </div>
         <a class="nav-btn" style="background:transparent; border:1px solid var(--border); color:var(--text);" href="https://github.com/INNO-HI-Inc/md-viewer" target="_blank">GitHub</a>
-        <a class="nav-btn" style="background:transparent; border:1px solid var(--accent); color:var(--accent);" href="demo.html">체험하기</a>
-        <a class="nav-btn" href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer" target="_blank">다운로드</a>
+        <a class="nav-btn" style="background:transparent; border:1px solid var(--accent); color:var(--accent);" href="demo.html"><span class="ko">체험하기</span><span class="en">Try Demo</span></a>
+        <a class="nav-btn" href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer" target="_blank"><span class="ko">다운로드</span><span class="en">Install</span></a>
     </div>
 </nav>
 
 <!-- Hero -->
 <section class="hero">
     <div class="hero-glow"></div>
-    <div class="hero-tag"><span class="dot"></span> v0.2.0 — Open Source</div>
-    <h1>마크다운을<br><span class="accent">예쁘게</span> 보다</h1>
+    <div class="hero-tag"><span class="dot"></span> v0.4.0 — Open Source</div>
+    <h1>
+        <span class="ko">마크다운을<br><span class="accent">예쁘게</span> 보다</span>
+        <span class="en">Beautiful<br><span class="accent">Markdown</span></span>
+    </h1>
     <p class="hero-desc">
-        VS Code에서 .md 파일을 열면 바로 깔끔한 프리뷰.<br>
-        편집, 테마, 아웃라인까지. 무료.
+        <span class="ko">VS Code에서 .md 파일을 열면 바로 깔끔한 프리뷰.<br>편집, 테마, 아웃라인까지. 무료.</span>
+        <span class="en">Open any .md file in VS Code — get a beautiful preview instantly.<br>Edit, themes, outline. Free & open source.</span>
     </p>
     <div class="hero-btns">
         <a class="btn btn-primary" href="demo.html">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
-            체험하기
+            <span class="ko">체험하기</span><span class="en">Try Demo</span>
         </a>
         <a class="btn btn-ghost" href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer" target="_blank">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-            다운로드
+            <span class="ko">다운로드</span><span class="en">Install</span>
         </a>
     </div>
 </section>
@@ -652,7 +691,7 @@
         <div class="shot-frame" style="position:relative;">
             <img src="screenshot.png" alt="MD Pretty Viewer">
             <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);opacity:0;transition:opacity 0.3s;border-radius:14px;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">
-                <span style="padding:12px 28px;background:var(--accent);color:#fff;border-radius:10px;font-size:15px;font-weight:700;">Demo 체험하기</span>
+                <span style="padding:12px 28px;background:var(--accent);color:#fff;border-radius:10px;font-size:15px;font-weight:700;"><span class="ko">Demo 체험하기</span><span class="en">Try Live Demo</span></span>
             </div>
         </div>
     </a>
@@ -663,37 +702,40 @@
 <!-- Features -->
 <section class="section fade-up" id="features">
     <span class="section-label">Features</span>
-    <h2>필요한 건 다 있습니다</h2>
+    <h2>
+        <span class="ko">필요한 건 다 있습니다</span>
+        <span class="en">Everything you need</span>
+    </h2>
     <div class="feature-grid">
         <div class="feature-card">
             <span class="icon">&#9654;</span>
-            <h3>세 가지 모드</h3>
-            <p>Preview, Edit, Split. 더블클릭으로 바로 편집. Cmd+E로 토글.</p>
+            <h3><span class="ko">세 가지 모드</span><span class="en">Three modes</span></h3>
+            <p><span class="ko">Preview, Edit, Split. 더블클릭으로 바로 편집. Cmd+E로 토글.</span><span class="en">Preview, Edit, Split. Double-click to edit. Cmd+E to toggle.</span></p>
         </div>
         <div class="feature-card">
             <span class="icon">&#9998;</span>
-            <h3>서식 도구</h3>
-            <p>헤딩, 볼드, 이탤릭, 코드, 링크, 리스트. 선택 후 버튼 클릭이면 끝.</p>
+            <h3><span class="ko">서식 도구</span><span class="en">Formatting toolbar</span></h3>
+            <p><span class="ko">헤딩, 볼드, 이탤릭, 코드, 링크, 리스트. 선택 후 버튼 클릭이면 끝.</span><span class="en">Headings, bold, italic, code, links, lists. Select text, click a button.</span></p>
         </div>
         <div class="feature-card">
             <span class="icon">&#9776;</span>
-            <h3>아웃라인</h3>
-            <p>H1~H4 구조를 사이드바에 표시. 클릭하면 해당 위치로 이동.</p>
+            <h3><span class="ko">아웃라인</span><span class="en">Outline sidebar</span></h3>
+            <p><span class="ko">H1~H4 구조를 사이드바에 표시. 클릭하면 해당 위치로 이동.</span><span class="en">H1-H4 hierarchy in a sidebar. Click to smooth-scroll to any section.</span></p>
         </div>
         <div class="feature-card">
             <span class="icon">&lt;/&gt;</span>
-            <h3>코드 하이라이팅</h3>
-            <p>highlight.js 기반. 테마 색상에 맞춰 코드 색도 자동 변경.</p>
+            <h3><span class="ko">코드 하이라이팅</span><span class="en">Code highlighting</span></h3>
+            <p><span class="ko">highlight.js 기반. 테마 색상에 맞춰 코드 색도 자동 변경.</span><span class="en">Powered by highlight.js. Code colors adapt to your theme.</span></p>
         </div>
         <div class="feature-card">
             <span class="icon">Aa</span>
-            <h3>폰트 크기</h3>
-            <p>12px ~ 24px. 상단바에서 바로 조절. 설정 자동 저장.</p>
+            <h3><span class="ko">폰트 크기</span><span class="en">Font size</span></h3>
+            <p><span class="ko">12px ~ 24px. 상단바에서 바로 조절. 설정 자동 저장.</span><span class="en">12px to 24px, adjustable from the toolbar. Settings persist.</span></p>
         </div>
         <div class="feature-card">
             <span class="icon">&#10003;</span>
-            <h3>GFM 지원</h3>
-            <p>테이블, 체크박스, 취소선. GitHub Flavored Markdown 완벽 호환.</p>
+            <h3><span class="ko">GFM 지원</span><span class="en">GFM support</span></h3>
+            <p><span class="ko">테이블, 체크박스, 취소선. GitHub Flavored Markdown 완벽 호환.</span><span class="en">Tables, checkboxes, strikethrough. Full GitHub Flavored Markdown.</span></p>
         </div>
     </div>
 </section>
@@ -703,10 +745,13 @@
 <!-- Themes -->
 <section class="section fade-up" id="themes">
     <span class="section-label">Themes</span>
-    <h2>7가지 색으로 바꿔보세요</h2>
+    <h2>
+        <span class="ko">7가지 색으로 바꿔보세요</span>
+        <span class="en">7 colors to choose from</span>
+    </h2>
     <p class="theme-desc">
-        아래 점을 눌러보세요. 이 페이지 전체 색상이 바뀝니다.<br>
-        VS Code 라이트/다크 모드에 맞춰 자동 최적화됩니다.
+        <span class="ko">아래 점을 눌러보세요. 이 페이지 전체 색상이 바뀝니다.<br>VS Code 라이트/다크 모드에 맞춰 자동 최적화됩니다.</span>
+        <span class="en">Click any dot below — this entire page will change color.<br>Auto-optimized for VS Code light / dark / high-contrast modes.</span>
     </p>
     <div class="theme-picker">
         <div class="t-item" onclick="setTheme('#448CFF', this)"><div class="t-dot active" style="background:#448CFF;"></div><span class="t-label">Blue</span></div>
@@ -724,13 +769,16 @@
 <!-- Shortcuts -->
 <section class="section fade-up">
     <span class="section-label">Shortcuts</span>
-    <h2>키보드로 빠르게</h2>
+    <h2>
+        <span class="ko">키보드로 빠르게</span>
+        <span class="en">Keyboard-first workflow</span>
+    </h2>
     <div class="shortcut-grid">
-        <div class="shortcut-item"><span>모드 전환</span><div><kbd>Cmd</kbd> <kbd>E</kbd></div></div>
-        <div class="shortcut-item"><span>볼드</span><div><kbd>Cmd</kbd> <kbd>B</kbd></div></div>
-        <div class="shortcut-item"><span>이탤릭</span><div><kbd>Cmd</kbd> <kbd>I</kbd></div></div>
-        <div class="shortcut-item"><span>코드</span><div><kbd>Cmd</kbd> <kbd>Shift</kbd> <kbd>C</kbd></div></div>
-        <div class="shortcut-item"><span>들여쓰기</span><div><kbd>Tab</kbd></div></div>
+        <div class="shortcut-item"><span><span class="ko">모드 전환</span><span class="en">Toggle mode</span></span><div><kbd>Cmd</kbd> <kbd>E</kbd></div></div>
+        <div class="shortcut-item"><span><span class="ko">볼드</span><span class="en">Bold</span></span><div><kbd>Cmd</kbd> <kbd>B</kbd></div></div>
+        <div class="shortcut-item"><span><span class="ko">이탤릭</span><span class="en">Italic</span></span><div><kbd>Cmd</kbd> <kbd>I</kbd></div></div>
+        <div class="shortcut-item"><span><span class="ko">코드</span><span class="en">Code</span></span><div><kbd>Cmd</kbd> <kbd>Shift</kbd> <kbd>C</kbd></div></div>
+        <div class="shortcut-item"><span><span class="ko">들여쓰기</span><span class="en">Indent</span></span><div><kbd>Tab</kbd></div></div>
     </div>
 </section>
 
@@ -739,11 +787,20 @@
 <!-- Install -->
 <section class="section fade-up">
     <span class="section-label">Install</span>
-    <h2>30초면 설치 끝</h2>
+    <h2>
+        <span class="ko">30초면 설치 끝</span>
+        <span class="en">Install in 30 seconds</span>
+    </h2>
     <div class="install-box">
-        <p>VS Code Marketplace에서 <strong>md pretty viewer</strong> 검색, 또는:</p>
+        <p>
+            <span class="ko">VS Code Marketplace에서 <strong>md pretty viewer</strong> 검색, 또는:</span>
+            <span class="en">Search <strong>md pretty viewer</strong> in VS Code Extensions, or run:</span>
+        </p>
         <code>code --install-extension innohi.md-pretty-viewer</code>
-        <p class="alt">또는 VS Code &rarr; Extensions &rarr; <strong>...</strong> &rarr; Install from VSIX</p>
+        <p class="alt">
+            <span class="ko">또는 VS Code &rarr; Extensions &rarr; <strong>...</strong> &rarr; Install from VSIX</span>
+            <span class="en">Or: VS Code &rarr; Extensions &rarr; <strong>...</strong> &rarr; Install from VSIX</span>
+        </p>
     </div>
 </section>
 
@@ -751,7 +808,10 @@
 <div class="divider"></div>
 <section class="section fade-up" id="demo">
     <span class="section-label">Try it</span>
-    <h2>설치 없이 지금 바로 써보세요</h2>
+    <h2>
+        <span class="ko">설치 없이 지금 바로 써보세요</span>
+        <span class="en">Try it right now, no install needed</span>
+    </h2>
     <div class="demo-wrap" style="cursor:pointer;" onclick="window.location.href='demo.html'">
         <div class="demo-topbar">
             <span>demo.md</span>
@@ -766,18 +826,24 @@
             <div class="demo-preview" id="demoPreview"></div>
         </div>
         <div style="padding:20px; text-align:center; border-top:1px solid var(--border); background:var(--surface-2);">
-            <span style="font-size:14px; font-weight:600; color:var(--accent);">클릭해서 전체화면 데모 열기 &rarr;</span>
+            <span style="font-size:14px; font-weight:600; color:var(--accent);"><span class="ko">클릭해서 전체화면 데모 열기 &rarr;</span><span class="en">Click to open fullscreen demo &rarr;</span></span>
         </div>
     </div>
 </section>
 
 <!-- CTA -->
 <section class="cta fade-up">
-    <h2>마크다운, 이제 예쁘게 보세요</h2>
-    <p>무료이고 오픈소스입니다. 피드백은 GitHub Issues에.</p>
+    <h2>
+        <span class="ko">마크다운, 이제 예쁘게 보세요</span>
+        <span class="en">Beautiful markdown, finally.</span>
+    </h2>
+    <p>
+        <span class="ko">무료이고 오픈소스입니다. 피드백은 GitHub Issues에.</span>
+        <span class="en">Free & open source. Feedback welcome on GitHub Issues.</span>
+    </p>
     <a class="btn btn-primary" href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer" target="_blank">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-        다운로드 v0.2.0
+        <span class="ko">다운로드 v0.4.0</span><span class="en">Install v0.4.0</span>
     </a>
 </section>
 
@@ -785,6 +851,26 @@
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
+// Language switcher
+function setLang(lang) {
+    document.body.setAttribute('data-lang', lang);
+    document.getElementById('langKo').classList.toggle('active', lang === 'ko');
+    document.getElementById('langEn').classList.toggle('active', lang === 'en');
+    localStorage.setItem('md-viewer-lang', lang);
+    document.documentElement.lang = lang;
+}
+
+// Auto-detect browser language
+(function() {
+    var saved = localStorage.getItem('md-viewer-lang');
+    if (saved) {
+        setLang(saved);
+    } else {
+        var browserLang = (navigator.language || navigator.userLanguage || 'ko').toLowerCase();
+        setLang(browserLang.startsWith('ko') ? 'ko' : 'en');
+    }
+})();
+
 // Theme switcher
 function setTheme(color, el) {
     var root = document.documentElement;
