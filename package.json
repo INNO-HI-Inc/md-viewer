@@ -1,35 +1,46 @@
 {
   "name": "md-pretty-viewer",
   "displayName": "MD Pretty Viewer",
-  "description": "마크다운을 Notion처럼 예쁘게. 실시간 프리뷰, 7가지 컬러 테마, 아웃라인 사이드바, 서식 도구를 제공하는 VS Code 마크다운 뷰어.",
-  "version": "0.3.0",
+  "description": "마크다운을 Notion처럼 예쁘게. 실시간 프리뷰, 7가지 컬러 테마, 아웃라인 사이드바, 서식 도구를 제공하는 VS Code 마크다운 뷰어. A beautiful markdown viewer & editor with live preview, 7 color themes, outline, and formatting toolbar.",
+  "version": "0.3.1",
   "publisher": "innohi",
   "author": {
-    "name": "INNO-HI Inc."
+    "name": "INNO-HI Inc.",
+    "url": "https://www.innohi.ai.kr"
   },
   "license": "MIT",
   "homepage": "https://inno-hi-inc.github.io/md-viewer/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/INNO-HI-Inc/md-viewer"
+    "url": "https://github.com/INNO-HI-Inc/md-viewer.git"
   },
   "bugs": {
-    "url": "https://github.com/INNO-HI-Inc/md-viewer/issues"
+    "url": "https://github.com/INNO-HI-Inc/md-viewer/issues",
+    "email": "hello@innohi.ai.kr"
   },
   "icon": "icon.png",
   "galleryBanner": {
-    "color": "#1a1f3a",
+    "color": "#0E1128",
     "theme": "dark"
   },
+  "qna": "https://github.com/INNO-HI-Inc/md-viewer/issues",
   "keywords": [
     "markdown",
     "preview",
     "viewer",
     "editor",
     "md",
-    "마크다운",
     "notion",
-    "korean"
+    "outline",
+    "theme",
+    "마크다운",
+    "프리뷰",
+    "에디터",
+    "뷰어",
+    "테마",
+    "korean",
+    "gfm",
+    "github"
   ],
   "engines": {
     "vscode": "^1.74.0"
@@ -40,6 +51,10 @@
     "Visualization",
     "Formatters"
   ],
+  "extensionKind": [
+    "ui",
+    "workspace"
+  ],
   "activationEvents": [],
   "contributes": {
     "customEditors": [
@@ -49,6 +64,15 @@
         "selector": [
           {
             "filenamePattern": "*.md"
+          },
+          {
+            "filenamePattern": "*.markdown"
+          },
+          {
+            "filenamePattern": "*.mdown"
+          },
+          {
+            "filenamePattern": "*.mkd"
           }
         ],
         "priority": "default"
@@ -57,22 +81,22 @@
     "commands": [
       {
         "command": "mdPrettyViewer.toggleMode",
-        "title": "MD Pretty Viewer: Toggle Preview/Edit Mode",
+        "title": "Toggle Preview/Edit Mode",
         "category": "MD Pretty Viewer"
       },
       {
         "command": "mdPrettyViewer.bold",
-        "title": "MD Pretty Viewer: Bold",
+        "title": "Bold",
         "category": "MD Pretty Viewer"
       },
       {
         "command": "mdPrettyViewer.italic",
-        "title": "MD Pretty Viewer: Italic",
+        "title": "Italic",
         "category": "MD Pretty Viewer"
       },
       {
         "command": "mdPrettyViewer.code",
-        "title": "MD Pretty Viewer: Code",
+        "title": "Code",
         "category": "MD Pretty Viewer"
       }
     ],
@@ -116,15 +140,24 @@
             "neutral",
             "mono"
           ],
+          "enumDescriptions": [
+            "차분한 파란색 (기본)",
+            "에메랄드 그린",
+            "로즈 핑크",
+            "바이올렛 퍼플",
+            "앰버 오렌지",
+            "슬레이트 그레이",
+            "흑백"
+          ],
           "default": "blue",
-          "description": "기본 컬러 테마를 선택합니다."
+          "description": "마크다운 프리뷰의 기본 컬러 테마. Default color theme for the markdown preview."
         },
         "mdPrettyViewer.defaultFontSize": {
           "type": "number",
           "default": 16,
           "minimum": 12,
           "maximum": 24,
-          "description": "기본 프리뷰 폰트 크기 (px)."
+          "description": "기본 프리뷰 폰트 크기 (12-24px). Default font size in pixels (12-24)."
         },
         "mdPrettyViewer.defaultMode": {
           "type": "string",
@@ -133,13 +166,18 @@
             "edit",
             "split"
           ],
+          "enumDescriptions": [
+            "렌더링된 마크다운 보기",
+            "원문 편집",
+            "좌우 분할 (편집 + 프리뷰)"
+          ],
           "default": "preview",
-          "description": "마크다운 파일을 열 때 기본 모드."
+          "description": "마크다운 파일을 열 때 표시되는 기본 모드. Default view mode when opening a markdown file."
         },
         "mdPrettyViewer.showOutline": {
           "type": "boolean",
           "default": false,
-          "description": "아웃라인 사이드바를 기본으로 표시합니다."
+          "description": "아웃라인 사이드바를 기본으로 표시합니다. Show the outline sidebar by default."
         }
       }
     }

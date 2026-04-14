@@ -22,19 +22,43 @@ let docBaseUri = '';
 function configureMarked() {
     var renderer = new marked.Renderer();
 
-    // Override image rendering to resolve relative paths (marked v15 token API)
+    // Override image rendering — block javascript: URLs, resolve relative paths
     renderer.image = function (token) {
-        var src = resolveUri(token.href);
+        var href = token.href || '';
+        if (/^\s*javascript:/i.test(href) || /^\s*vbscript:/i.test(href)) {
+            return escapeAttr(token.text || '');
+        }
+        var src = resolveUri(href);
         var html = '<img src="' + escapeAttr(src) + '" alt="' + escapeAttr(token.text || '') + '"';
         if (token.title) html += ' title="' + escapeAttr(token.title) + '"';
         html += '>';
         return html;
     };
 
+    // Override link rendering — block javascript:/data:/vbscript: URLs
+    renderer.link = function (token) {
+        var href = token.href || '';
+        if (/^\s*(javascript|vbscript|data):/i.test(href)) {
+            return escapeAttr(token.text || '');
+        }
+        var html = '<a href="' + escapeAttr(href) + '"';
+        if (token.title) html += ' title="' + escapeAttr(token.title) + '"';
+        html += ' rel="noopener noreferrer">' + (this.parser ? this.parser.parseInline(token.tokens) : escapeAttr(token.text || '')) + '</a>';
+        return html;
+    };
+
+    // Override html rendering — escape all raw HTML to prevent XSS
+    renderer.html = function (token) {
+        var raw = token.text || token.raw || '';
+        return escapeAttr(raw);
+    };
+
     marked.setOptions({
         gfm: true,
         breaks: true,
-        renderer: renderer
+        renderer: renderer,
+        // Note: VS Code webview CSP ('default-src none', nonce-based script-src)
+        // provides additional defense-in-depth against injection attacks.
     });
 }
 
