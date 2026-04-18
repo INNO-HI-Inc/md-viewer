@@ -31,13 +31,13 @@ font-src <webview-source> https:;
 
 마크다운 렌더링 단계에서 다단계 방어:
 
-1. **원시 HTML escape**: marked.js의 `html` 렌더러를 오버라이드하여 `<script>`, `<iframe>`, `<img onerror>` 등 모든 원시 HTML을 escape 처리
+1. **원시 HTML allowlist sanitization**: GitHub 스타일 `<p>`, `<img>`, `<a>`, `<details>`, `<kbd>` 등 안전한 태그만 허용하고 `<script>`, `<iframe>`, 이벤트 핸들러, inline style 등은 제거
 2. **URL 스키마 필터링**: 링크 및 이미지에서 다음 스키마 차단:
    - `javascript:`
    - `vbscript:`
    - `data:`
 3. **외부 링크 보호**: 모든 외부 링크에 `rel="noopener noreferrer"` 추가 (referrer 유출 및 tabnabbing 방지)
-4. **이미지 속성 escape**: `src`, `alt`, `title` 속성 HTML-encode
+4. **이미지 속성 제한**: `src`, `alt`, `title`, `width`, `height` 등 안전한 속성만 허용하고 URL 스키마를 검증
 5. **수식 렌더링 제한**: KaTeX `trust: false` 설정으로 신뢰되지 않은 LaTeX 명령의 HTML/URL 기능 제한
 
 ### 로컬 리소스 제한

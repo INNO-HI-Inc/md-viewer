@@ -164,7 +164,7 @@ Open Command Palette (`Ctrl/Cmd + Shift + P`) and search `MD Pretty Viewer`:
 ## 🔒 Security
 
 This extension uses strict VS Code webview CSP and defensively blocks:
-- Raw HTML in markdown (auto-escaped)
+- Unsafe raw HTML in markdown (allowlist-sanitized)
 - `javascript:`, `vbscript:`, `data:` URL schemes in links and images
 - Adds `rel="noopener noreferrer"` to all external links
 

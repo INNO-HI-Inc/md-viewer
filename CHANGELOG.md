@@ -13,6 +13,13 @@
   - 블록 `$$...$$`, `\[...\]` 수식 렌더링
   - 외부 네트워크 요청 없이 로컬 번들 사용
 
+### Fixed
+- README 상단 배지/정렬처럼 안전한 raw HTML이 프리뷰에서 렌더링되지 않던 문제 수정
+
+### Security
+- raw HTML 전체 escape 대신 allowlist 기반 sanitizer 적용
+  - unsafe tag, event handler, inline style, 위험 URL 스키마 제거
+
 ## [0.4.0] - 2026-04-14
 
 ### Added
