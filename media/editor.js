@@ -47,10 +47,9 @@ function configureMarked() {
         return html;
     };
 
-    // Override html rendering — escape all raw HTML to prevent XSS
+    // Allow raw HTML through marked, then sanitize the full rendered tree.
     renderer.html = function (token) {
-        var raw = token.text || token.raw || '';
-        return escapeAttr(raw);
+        return token.text || token.raw || '';
     };
 
     marked.setOptions({
@@ -67,6 +66,116 @@ function escapeAttr(str) {
         .replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+function sanitizeHtml(html) {
+    if (typeof document === 'undefined') return html;
+
+    var template = document.createElement('template');
+    template.innerHTML = html;
+    sanitizeNode(template.content);
+    return template.innerHTML;
+}
+
+function sanitizeNode(node) {
+    Array.from(node.childNodes).forEach(function (child) {
+        if (child.nodeType === Node.ELEMENT_NODE) {
+            sanitizeElement(child);
+        } else if (child.nodeType !== Node.TEXT_NODE) {
+            child.remove();
+        }
+    });
+}
+
+function sanitizeElement(el) {
+    var tag = el.tagName.toLowerCase();
+    var dropWithContent = {
+        script: true,
+        style: true,
+        iframe: true,
+        object: true,
+        embed: true,
+        link: true,
+        meta: true,
+        base: true
+    };
+    var allowedTags = {
+        a: true, abbr: true, blockquote: true, br: true, code: true, dd: true,
+        del: true, details: true, div: true, dl: true, dt: true, em: true,
+        h1: true, h2: true, h3: true, h4: true, h5: true, h6: true,
+        hr: true, img: true, input: true, kbd: true, li: true, ol: true,
+        p: true, pre: true, s: true, span: true, strong: true, sub: true,
+        summary: true, sup: true, table: true, tbody: true, td: true,
+        th: true, thead: true, tr: true, ul: true
+    };
+
+    if (!allowedTags[tag]) {
+        if (dropWithContent[tag]) {
+            el.remove();
+            return;
+        }
+        el.replaceWith(document.createTextNode(el.textContent || ''));
+        return;
+    }
+
+    if (tag === 'input') {
+        var inputType = (el.getAttribute('type') || '').toLowerCase();
+        if (inputType !== 'checkbox') {
+            el.remove();
+            return;
+        }
+        el.setAttribute('disabled', '');
+    }
+
+    Array.from(el.attributes).forEach(function (attr) {
+        if (!isAllowedAttribute(tag, attr.name, attr.value)) {
+            el.removeAttribute(attr.name);
+        }
+    });
+
+    if (tag === 'a') {
+        el.setAttribute('rel', 'noopener noreferrer');
+    } else if (tag === 'img') {
+        var src = el.getAttribute('src') || '';
+        if (!src) {
+            el.remove();
+            return;
+        }
+        el.setAttribute('src', resolveUri(src));
+    }
+
+    sanitizeNode(el);
+}
+
+function isAllowedAttribute(tag, name, value) {
+    var attr = name.toLowerCase();
+    if (attr.indexOf('on') === 0 || attr === 'style' || attr === 'srcdoc') return false;
+    if (attr.indexOf('aria-') === 0) return true;
+    if (attr === 'class' || attr === 'id' || attr === 'title' || attr === 'role') return true;
+    if (attr === 'align') return /^(p|div|h[1-6]|td|th)$/.test(tag);
+    if ((attr === 'colspan' || attr === 'rowspan') && (tag === 'td' || tag === 'th')) return /^\d+$/.test(value);
+    if (attr === 'start' && tag === 'ol') return /^\d+$/.test(value);
+    if (attr === 'open' && tag === 'details') return true;
+    if ((attr === 'checked' || attr === 'disabled') && tag === 'input') return true;
+    if (attr === 'type' && tag === 'input') return String(value).toLowerCase() === 'checkbox';
+    if (attr === 'name' && tag === 'a') return true;
+    if (attr === 'target' && tag === 'a') return /^_(blank|self|parent|top)$/.test(value);
+    if (attr === 'rel' && tag === 'a') return true;
+    if (attr === 'href' && tag === 'a') return isSafeUrl(value);
+    if (attr === 'src' && tag === 'img') return isSafeUrl(value);
+    if ((attr === 'alt' || attr === 'loading') && tag === 'img') return true;
+    if ((attr === 'width' || attr === 'height') && tag === 'img') return /^\d{1,4}%?$/.test(value);
+    return false;
+}
+
+function isSafeUrl(url) {
+    var trimmed = String(url || '').trim();
+    if (trimmed === '') return false;
+    if (/[\u0000-\u001f\u007f]/.test(trimmed)) return false;
+    if (/^\s*(javascript|vbscript|data|file):/i.test(trimmed)) return false;
+    if (/^(https?:|mailto:|#|\/|\.\/|\.\.\/)/i.test(trimmed)) return true;
+    if (/^vscode-webview/i.test(trimmed)) return true;
+    return !/^[a-z][a-z0-9+.-]*:/i.test(trimmed);
+}
+
 function resolveUri(href) {
     if (!href || !docBaseUri) return href || '';
     // Skip absolute URLs and data URIs
@@ -78,7 +187,7 @@ function resolveUri(href) {
 
 function renderMarkdown(text) {
     var html = marked.parse(text);
-    return html;
+    return sanitizeHtml(html);
 }
 
 function highlightCodeBlocks(container) {
