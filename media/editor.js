@@ -15,6 +15,7 @@ let statsRightEl = null;
 let fontSizeDisplayEl = null;
 let isSyncingScroll = false;
 let docBaseUri = '';
+let markedMathExtensionConfigured = false;
 
 /* ───────────────────────────────────────────
    marked.js configuration
@@ -53,6 +54,47 @@ function configureMarked() {
         return escapeAttr(raw);
     };
 
+    if (!markedMathExtensionConfigured) {
+        marked.use({
+            extensions: [
+                {
+                    name: 'mathBlock',
+                    level: 'block',
+                    start: function (src) {
+                        var dollarIndex = src.indexOf('$$');
+                        var bracketIndex = src.indexOf('\\[');
+                        if (dollarIndex === -1) return bracketIndex === -1 ? undefined : bracketIndex;
+                        if (bracketIndex === -1) return dollarIndex;
+                        return Math.min(dollarIndex, bracketIndex);
+                    },
+                    tokenizer: function (src) {
+                        var dollarMatch = /^\$\$[ \t]*(?:\r?\n)?([\s\S]+?)(?:\r?\n)?\$\$(?=\s*(?:\r?\n|$))/.exec(src);
+                        if (dollarMatch) {
+                            return {
+                                type: 'mathBlock',
+                                raw: dollarMatch[0],
+                                text: dollarMatch[1].trim()
+                            };
+                        }
+
+                        var bracketMatch = /^\\\[[ \t]*(?:\r?\n)?([\s\S]+?)(?:\r?\n)?\\\](?=\s*(?:\r?\n|$))/.exec(src);
+                        if (bracketMatch) {
+                            return {
+                                type: 'mathBlock',
+                                raw: bracketMatch[0],
+                                text: bracketMatch[1].trim()
+                            };
+                        }
+                    },
+                    renderer: function (token) {
+                        return '<div class="math-block" data-math="' + escapeAttr(token.text || '') + '"></div>\n';
+                    }
+                }
+            ]
+        });
+        markedMathExtensionConfigured = true;
+    }
+
     marked.setOptions({
         gfm: true,
         breaks: true,
@@ -87,6 +129,45 @@ function highlightCodeBlocks(container) {
             hljs.highlightElement(block);
         });
     }
+}
+
+function getKatexOptions(displayMode) {
+    return {
+        displayMode: !!displayMode,
+        throwOnError: false,
+        errorColor: '#cc3344',
+        strict: 'ignore',
+        trust: false
+    };
+}
+
+function renderMathBlocks(container) {
+    if (typeof katex === 'undefined') return;
+    container.querySelectorAll('.math-block[data-math]').forEach(function (block) {
+        var source = block.getAttribute('data-math') || '';
+        block.removeAttribute('data-math');
+        katex.render(source, block, getKatexOptions(true));
+    });
+}
+
+function renderMath(container) {
+    if (typeof renderMathInElement !== 'function') return;
+    var options = getKatexOptions(false);
+    options.delimiters = [
+        { left: '$$', right: '$$', display: true },
+        { left: '\\[', right: '\\]', display: true },
+        { left: '\\(', right: '\\)', display: false },
+        { left: '$', right: '$', display: false }
+    ];
+    options.ignoredTags = ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'option'];
+    options.ignoredClasses = ['math-block', 'katex'];
+
+    renderMathInElement(container, options);
+}
+
+function renderAllMath(container) {
+    renderMathBlocks(container);
+    renderMath(container);
 }
 
 /* ───────────────────────────────────────────
@@ -167,6 +248,7 @@ function renderPreview() {
     var html = renderMarkdown(currentContent);
     previewEl.innerHTML = html;
     highlightCodeBlocks(previewEl);
+    renderAllMath(previewEl);
     addHeadingIds();
     buildOutline(html);
 }

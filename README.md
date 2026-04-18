@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  Live preview · 7 color themes · Outline sidebar · Formatting toolbar · Syntax highlighting
+  Live preview · LaTeX math · 7 color themes · Outline sidebar · Formatting toolbar · Syntax highlighting
 </p>
 
 <p align="center">
@@ -64,6 +64,9 @@ Automatically extracts H1-H4 headings into a navigable tree. Click to smooth-scr
 
 ### 💻 Code Highlighting
 Based on [highlight.js](https://highlightjs.org/). Code block colors adapt to your selected theme.
+
+### 🧮 LaTeX Math Preview
+Inline `$E = mc^2$` and block `$$...$$` equations render with bundled [KaTeX](https://katex.org/), with no network requests.
 
 ### 📝 Full GitHub Flavored Markdown Support
 Tables · checkboxes · strikethrough · fenced code blocks · autolinks · emoji.
@@ -146,7 +149,7 @@ Open Command Palette (`Ctrl/Cmd + Shift + P`) and search `MD Pretty Viewer`:
 
 - **VS Code**: 1.74.0 or later
 - **Platforms**: Windows, macOS, Linux
-- **External dependencies**: None (marked.js and highlight.js are bundled)
+- **External dependencies**: None (marked.js, highlight.js, and KaTeX are bundled)
 
 ---
 
@@ -197,6 +200,7 @@ This extension bundles the following libraries:
 |---------|---------|---------|---------|
 | [marked](https://github.com/markedjs/marked) | 15.x | MIT | Markdown parser |
 | [highlight.js](https://github.com/highlightjs/highlight.js) | 11.x | BSD-3-Clause | Syntax highlighting |
+| [KaTeX](https://katex.org/) | 0.16.28 | MIT | LaTeX math rendering |
 | [AtoZ font](https://autoa2z.co.kr) | 1.001 | OFL-1.1 | Korean typography |
 
 Full license texts in [NOTICE.md](NOTICE.md).
@@ -220,6 +224,7 @@ Full license texts in [NOTICE.md](NOTICE.md).
 - **서식 도구** — 헤딩, 볼드, 이탤릭, 코드, 링크, 리스트, 인용, 수평선
 - **아웃라인 사이드바** — H1~H4 자동 추출, 클릭으로 이동
 - **코드 하이라이팅** — highlight.js 기반, 테마 색상 자동 적용
+- **LaTeX 수식 프리뷰** — 인라인 `$...$`, 블록 `$$...$$` 수식 렌더링
 - **한글 최적화** — 에이투지체(AtoZ font, OFL) 번들로 깔끔한 한글 표기
 - **폰트 크기** — 12px ~ 24px 자유 조절
 - **GFM 완벽 지원** — 테이블, 체크박스, 취소선

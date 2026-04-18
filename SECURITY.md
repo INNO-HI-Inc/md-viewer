@@ -25,7 +25,7 @@ font-src <webview-source> https:;
 
 - **default-src 'none'**: 기본적으로 모든 리소스 로드 차단
 - **nonce 기반 script-src**: 모든 스크립트는 nonce 토큰으로 검증
-- **외부 스크립트 차단**: CDN에서 스크립트를 로드하지 않음 (marked.js, highlight.js 모두 번들)
+- **외부 스크립트 차단**: CDN에서 스크립트를 로드하지 않음 (marked.js, highlight.js, KaTeX 모두 번들)
 
 ### XSS 방어 (XSS Prevention)
 
@@ -38,6 +38,7 @@ font-src <webview-source> https:;
    - `data:`
 3. **외부 링크 보호**: 모든 외부 링크에 `rel="noopener noreferrer"` 추가 (referrer 유출 및 tabnabbing 방지)
 4. **이미지 속성 escape**: `src`, `alt`, `title` 속성 HTML-encode
+5. **수식 렌더링 제한**: KaTeX `trust: false` 설정으로 신뢰되지 않은 LaTeX 명령의 HTML/URL 기능 제한
 
 ### 로컬 리소스 제한
 
@@ -66,6 +67,7 @@ font-src <webview-source> https:;
 |-----------|------|---------|
 | marked | 15.x | MIT |
 | highlight.js | 11.x | BSD-3-Clause |
+| KaTeX | 0.16.28 | MIT |
 
 각 라이브러리는 공식 저장소에서 정식 배포된 버전을 사용하며, 출처 검증 후 번들됩니다.
 

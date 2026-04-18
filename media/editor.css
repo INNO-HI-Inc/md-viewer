@@ -924,6 +924,32 @@ body.mode-split .editor-pane:hover::after {
     tab-size: 4;
 }
 
+/* ── LaTeX Math ── */
+.markdown-body .katex {
+    color: var(--md-text);
+    font-size: 1.04em;
+    letter-spacing: 0;
+}
+
+.markdown-body .katex-display {
+    margin: 1.4em 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.2em 0;
+}
+
+.markdown-body .katex-display > .katex {
+    display: inline-block;
+    max-width: 100%;
+}
+
+.markdown-body .katex-error {
+    color: var(--md-inline-code-text);
+    background: var(--md-inline-code-bg);
+    border-radius: 6px;
+    padding: 0.1em 0.35em;
+}
+
 /* ── Tables ── */
 .markdown-body table {
     width: 100%;

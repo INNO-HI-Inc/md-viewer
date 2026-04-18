@@ -5,6 +5,14 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [Unreleased]
+
+### Added
+- KaTeX 기반 LaTeX 수식 프리뷰 지원
+  - 인라인 `$...$`, `\(...\)` 수식 렌더링
+  - 블록 `$$...$$`, `\[...\]` 수식 렌더링
+  - 외부 네트워크 요청 없이 로컬 번들 사용
+
 ## [0.4.0] - 2026-04-14
 
 ### Added
