@@ -52,8 +52,9 @@
 
 Double-click on preview mode to switch to edit instantly.
 
-### 🎨 7 Color Themes
+### 🎨 10 Color Themes
 Blue · Green · Rose · Purple · Amber · Neutral · Mono
+**+ 2026 Pantone trend:** Peach · Aqua · Orchid
 Auto-optimized for VS Code's light / dark / high-contrast modes.
 
 ### 🛠 Formatting Toolbar
@@ -109,7 +110,7 @@ code --install-extension innohi.md-pretty-viewer
 ### Manual VSIX
 Download `.vsix` from [Releases](https://github.com/INNO-HI-Inc/md-viewer/releases/latest), then:
 ```bash
-code --install-extension md-pretty-viewer-0.5.0.vsix
+code --install-extension md-pretty-viewer-0.5.1.vsix
 ```
 
 ---
@@ -234,7 +235,7 @@ Full license texts in [NOTICE.md](NOTICE.md).
 ### 주요 기능
 
 - **3가지 뷰 모드** — Preview / Edit / Split. 더블클릭으로 즉시 편집
-- **7가지 컬러 테마** — Blue, Green, Rose, Purple, Amber, Neutral, Mono
+- **10가지 컬러 테마** — Blue, Green, Rose, Purple, Amber, Neutral, Mono, Peach, Aqua, Orchid (Pantone 2026 트렌드 포함)
 - **서식 도구** — 헤딩, 볼드, 이탤릭, 코드, 링크, 리스트, 인용, 수평선
 - **아웃라인 사이드바** — H1~H4 자동 추출, 클릭으로 이동
 - **코드 하이라이팅** — highlight.js 기반, 테마 색상 자동 적용

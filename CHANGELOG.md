@@ -5,6 +5,15 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.5.1] - 2026-04-21
+
+### Added
+- **2026 Pantone 트렌드 3가지 테마** 추가 (총 10가지)
+  - **Peach** 🍑 — Peach Dust 기반, 따뜻하고 포근한 톤
+  - **Aqua** 🌊 — Almost Aqua 기반, 상쾌한 민트/씨폼
+  - **Orchid** 💜 — Orchid Tint 기반, 우아한 라벤더
+- 홈페이지·데모 페이지 테마 피커에도 반영
+
 ## [0.5.0] - 2026-04-21
 
 ### Added

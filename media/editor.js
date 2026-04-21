@@ -524,7 +524,11 @@ var themes = [
     { id: 'purple',  label: 'Purple',  color: '#8B5CF6' },
     { id: 'amber',   label: 'Amber',   color: '#F59E0B' },
     { id: 'neutral', label: 'Neutral', color: '#64748B' },
-    { id: 'mono',    label: 'Mono',    color: '#171717', border: '#a3a3a3' }
+    { id: 'mono',    label: 'Mono',    color: '#171717', border: '#a3a3a3' },
+    // 2026 Pantone trend palette
+    { id: 'peach',   label: 'Peach',   color: '#E89A7A' },
+    { id: 'aqua',    label: 'Aqua',    color: '#5FB89F' },
+    { id: 'orchid',  label: 'Orchid',  color: '#B48AC7' }
 ];
 
 var currentTheme = 'blue';
