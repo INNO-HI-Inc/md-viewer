@@ -539,14 +539,17 @@ var currentTheme = 'blue';
 
 function applyTheme(themeId) {
     currentTheme = themeId;
+    // Clear any previous custom CSS overrides
+    clearCustomThemeVars();
+
     if (themeId === 'blue') {
         document.body.removeAttribute('data-theme');
     } else {
         document.body.setAttribute('data-theme', themeId);
     }
     localStorage.setItem('md-viewer-theme', themeId);
+    localStorage.removeItem('md-viewer-custom-color');
 
-    // Update picker dot + dropdown active states
     var currentDot = document.querySelector('.theme-dot-current');
     if (currentDot) {
         var theme = themes.find(function (t) { return t.id === themeId; });
@@ -555,6 +558,139 @@ function applyTheme(themeId) {
     document.querySelectorAll('.theme-dot').forEach(function (dot) {
         dot.classList.toggle('active', dot.dataset.theme === themeId);
     });
+}
+
+/* ───────────────────────────────────────────
+   Custom color (palette picker) theme
+   ─────────────────────────────────────────── */
+function hexToHsl(hex) {
+    hex = hex.replace(/^#/, '');
+    if (hex.length === 3) hex = hex.split('').map(function (c) { return c + c; }).join('');
+    var r = parseInt(hex.substring(0, 2), 16) / 255;
+    var g = parseInt(hex.substring(2, 4), 16) / 255;
+    var b = parseInt(hex.substring(4, 6), 16) / 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b);
+    var h, s, l = (max + min) / 2;
+    if (max === min) { h = s = 0; }
+    else {
+        var d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+    }
+    return [h * 360, s * 100, l * 100];
+}
+
+function hslToHex(h, s, l) {
+    h /= 360; s /= 100; l /= 100;
+    var r, g, b;
+    if (s === 0) { r = g = b = l; }
+    else {
+        var hue2rgb = function (p, q, t) {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1 / 6) return p + (q - p) * 6 * t;
+            if (t < 1 / 2) return q;
+            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+            return p;
+        };
+        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        var p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1 / 3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1 / 3);
+    }
+    var toHex = function (x) {
+        var h = Math.round(x * 255).toString(16);
+        return h.length === 1 ? '0' + h : h;
+    };
+    return '#' + toHex(r) + toHex(g) + toHex(b);
+}
+
+function hexToRgba(hex, alpha) {
+    hex = hex.replace(/^#/, '');
+    if (hex.length === 3) hex = hex.split('').map(function (c) { return c + c; }).join('');
+    var r = parseInt(hex.substring(0, 2), 16);
+    var g = parseInt(hex.substring(2, 4), 16);
+    var b = parseInt(hex.substring(4, 6), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+}
+
+var CUSTOM_VAR_NAMES = [
+    '--md-accent', '--md-link', '--md-link-hover', '--md-inline-code-text',
+    '--md-selection-bg', '--md-gradient', '--md-mark-bg', '--md-mark-text',
+    '--hljs-keyword', '--hljs-string', '--hljs-number', '--hljs-function',
+    '--hljs-variable', '--hljs-type', '--hljs-tag', '--hljs-attr',
+    '--hljs-selector', '--hljs-built-in', '--hljs-addition', '--hljs-addition-bg'
+];
+
+function clearCustomThemeVars() {
+    var root = document.body;
+    CUSTOM_VAR_NAMES.forEach(function (v) { root.style.removeProperty(v); });
+}
+
+function applyCustomColor(hex) {
+    currentTheme = 'custom';
+    document.body.removeAttribute('data-theme');
+    localStorage.setItem('md-viewer-theme', 'custom');
+    localStorage.setItem('md-viewer-custom-color', hex);
+
+    var isDark = document.body.classList.contains('vscode-dark') ||
+                 document.body.classList.contains('vscode-high-contrast');
+    var hsl = hexToHsl(hex);
+    var h = hsl[0], s = hsl[1];
+
+    var accent, link, linkHover, darker, lighter, lightest;
+    if (isDark) {
+        lightest = hslToHex(h, s, 85);
+        lighter  = hslToHex(h, s, 75);
+        accent   = hslToHex(h, s, 70);
+        link     = hslToHex(h, s, 72);
+        linkHover = hslToHex(h, s, 82);
+        darker   = hslToHex(h, s, 55);
+    } else {
+        accent   = hex;
+        link     = hslToHex(h, s, Math.max(30, hsl[2] - 8));
+        linkHover = hslToHex(h, s, Math.max(20, hsl[2] - 18));
+        darker   = hslToHex(h, s, Math.max(20, hsl[2] - 22));
+        lighter  = hslToHex(h, s, Math.min(80, hsl[2] + 15));
+        lightest = hslToHex(h, s, Math.min(92, hsl[2] + 28));
+    }
+
+    var root = document.body;
+    root.style.setProperty('--md-accent', accent);
+    root.style.setProperty('--md-link', link);
+    root.style.setProperty('--md-link-hover', linkHover);
+    root.style.setProperty('--md-inline-code-text', darker);
+    root.style.setProperty('--md-selection-bg', hexToRgba(accent, 0.18));
+    root.style.setProperty('--md-gradient',
+        'linear-gradient(135deg, ' + link + ' 0%, ' + accent + ' 50%, ' + lighter + ' 100%)');
+    root.style.setProperty('--md-mark-bg', isDark ? hexToRgba(accent, 0.22) : lightest);
+    root.style.setProperty('--md-mark-text', isDark ? lightest : darker);
+
+    root.style.setProperty('--hljs-keyword', link);
+    root.style.setProperty('--hljs-string', darker);
+    root.style.setProperty('--hljs-number', accent);
+    root.style.setProperty('--hljs-function', linkHover);
+    root.style.setProperty('--hljs-variable', accent);
+    root.style.setProperty('--hljs-type', link);
+    root.style.setProperty('--hljs-tag', accent);
+    root.style.setProperty('--hljs-attr', lighter);
+    root.style.setProperty('--hljs-selector', linkHover);
+    root.style.setProperty('--hljs-built-in', accent);
+    root.style.setProperty('--hljs-addition', link);
+    root.style.setProperty('--hljs-addition-bg', isDark ? hexToRgba(accent, 0.15) : lightest);
+
+    // UI picker states
+    var currentDot = document.querySelector('.theme-dot-current');
+    if (currentDot) currentDot.style.background = hex;
+    document.querySelectorAll('.theme-dot').forEach(function (d) { d.classList.remove('active'); });
+    var customDot = document.querySelector('.theme-dot-custom');
+    if (customDot) customDot.classList.add('active');
 }
 
 function buildThemePicker() {
@@ -574,7 +710,12 @@ function buildThemePicker() {
     var dropdown = document.createElement('div');
     dropdown.className = 'theme-dropdown';
 
-    themes.forEach(function (t) {
+    // Show only 6 primary theme dots
+    var visibleThemes = themes.filter(function (t) {
+        return ['blue', 'green', 'rose', 'purple', 'amber', 'neutral'].indexOf(t.id) !== -1;
+    });
+
+    visibleThemes.forEach(function (t) {
         var d = document.createElement('span');
         d.className = 'theme-dot' + (t.id === currentTheme ? ' active' : '');
         d.dataset.theme = t.id;
@@ -589,12 +730,28 @@ function buildThemePicker() {
         dropdown.appendChild(d);
     });
 
+    // Custom color (+) button — opens curated palette
+    var customBtn = document.createElement('button');
+    customBtn.type = 'button';
+    customBtn.className = 'theme-dot theme-dot-custom' +
+        (currentTheme === 'custom' ? ' active' : '');
+    customBtn.title = 'Pick custom color';
+    customBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>';
+
+    var palette = buildColorPalette();
+    customBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        palette.classList.toggle('open');
+    });
+
+    dropdown.appendChild(customBtn);
+    dropdown.appendChild(palette);
+
     btn.addEventListener('click', function (e) {
         e.stopPropagation();
         dropdown.classList.toggle('open');
     });
 
-    // Close dropdown when clicking outside
     document.addEventListener('click', function () {
         dropdown.classList.remove('open');
     });
@@ -602,6 +759,129 @@ function buildThemePicker() {
     picker.appendChild(btn);
     picker.appendChild(dropdown);
     return picker;
+}
+
+/* ───────────────────────────────────────────
+   Curated color palette
+   ─────────────────────────────────────────── */
+var colorPalette = {
+    'Warm': [
+        '#FF6B6B', '#F4A261', '#E89A7A', '#E76F51',
+        '#F4C96E', '#F59E0B', '#D4A373', '#A88568'
+    ],
+    'Cool': [
+        '#448CFF', '#3B82F6', '#0EA5E9', '#06B6D4',
+        '#14B8A6', '#10B981', '#5FB89F', '#8DA787'
+    ],
+    'Rich': [
+        '#8B5CF6', '#A855F7', '#D946EF', '#EC4899',
+        '#F43F5E', '#B48AC7', '#6366F1', '#7C3AED'
+    ],
+    'Muted': [
+        '#64748B', '#94A3B8', '#8BA3B0', '#78716C',
+        '#A8A29E', '#737373', '#171717', '#F5F5F5'
+    ]
+};
+
+function buildColorPalette() {
+    var wrap = document.createElement('div');
+    wrap.className = 'color-palette';
+
+    var title = document.createElement('div');
+    title.className = 'palette-title';
+    title.textContent = '컬러 선택 / Pick a color';
+    wrap.appendChild(title);
+
+    Object.keys(colorPalette).forEach(function (category) {
+        var row = document.createElement('div');
+        row.className = 'palette-row';
+
+        var label = document.createElement('span');
+        label.className = 'palette-label';
+        label.textContent = category;
+        row.appendChild(label);
+
+        var swatches = document.createElement('div');
+        swatches.className = 'palette-swatches';
+
+        colorPalette[category].forEach(function (color) {
+            var s = document.createElement('button');
+            s.type = 'button';
+            s.className = 'palette-swatch';
+            s.style.background = color;
+            s.title = color;
+            if (color === '#F5F5F5' || color === '#FFFFFF') {
+                s.style.border = '1px solid rgba(0,0,0,0.15)';
+            }
+            s.addEventListener('click', function (e) {
+                e.stopPropagation();
+                applyCustomColor(color);
+                wrap.classList.remove('open');
+                document.querySelector('.theme-dropdown').classList.remove('open');
+            });
+            swatches.appendChild(s);
+        });
+
+        row.appendChild(swatches);
+        wrap.appendChild(row);
+    });
+
+    // Custom hex input row
+    var hexRow = document.createElement('div');
+    hexRow.className = 'palette-hex-row';
+
+    var hexInput = document.createElement('input');
+    hexInput.type = 'text';
+    hexInput.className = 'palette-hex-input';
+    hexInput.placeholder = '#448CFF';
+    hexInput.maxLength = 7;
+    hexInput.value = localStorage.getItem('md-viewer-custom-color') || '';
+
+    var nativeColor = document.createElement('input');
+    nativeColor.type = 'color';
+    nativeColor.className = 'palette-native-color';
+    nativeColor.value = hexInput.value || '#448CFF';
+
+    // Sync native color picker with hex input
+    nativeColor.addEventListener('input', function (e) {
+        e.stopPropagation();
+        hexInput.value = e.target.value.toUpperCase();
+        applyCustomColor(e.target.value);
+    });
+    nativeColor.addEventListener('click', function (e) { e.stopPropagation(); });
+
+    var applyBtn = document.createElement('button');
+    applyBtn.type = 'button';
+    applyBtn.className = 'palette-apply-btn';
+    applyBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l3.5 3.5L13 5"/></svg>';
+    applyBtn.title = 'Apply';
+
+    var applyHex = function () {
+        var val = hexInput.value.trim();
+        if (!val.startsWith('#')) val = '#' + val;
+        if (/^#[0-9a-fA-F]{6}$/.test(val) || /^#[0-9a-fA-F]{3}$/.test(val)) {
+            applyCustomColor(val);
+            wrap.classList.remove('open');
+            document.querySelector('.theme-dropdown').classList.remove('open');
+        }
+    };
+
+    applyBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        applyHex();
+    });
+    hexInput.addEventListener('click', function (e) { e.stopPropagation(); });
+    hexInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') applyHex();
+    });
+
+    hexRow.appendChild(nativeColor);
+    hexRow.appendChild(hexInput);
+    hexRow.appendChild(applyBtn);
+    wrap.appendChild(hexRow);
+
+    wrap.addEventListener('click', function (e) { e.stopPropagation(); });
+    return wrap;
 }
 
 /* ───────────────────────────────────────────
@@ -915,7 +1195,13 @@ function initEditor(content, fileName, baseUri, initialSettings) {
     }
 
     buildUI(fileName);
-    applyTheme(currentTheme);
+    // Restore custom color if saved
+    var savedCustomColor = localStorage.getItem('md-viewer-custom-color');
+    if (currentTheme === 'custom' && savedCustomColor) {
+        applyCustomColor(savedCustomColor);
+    } else {
+        applyTheme(currentTheme);
+    }
     updateLineNumbers();
 
     // Apply initial mode if not preview

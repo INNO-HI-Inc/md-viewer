@@ -5,6 +5,20 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.5.3] - 2026-04-21
+
+### Added
+- **업데이트 알림** — 확장이 새 버전으로 업데이트되면 "🎉 v0.5.x 업데이트됨!" 알림과 함께 GitHub Releases 변경사항 바로가기 버튼 제공
+- **큐레이팅 컬러 팔레트** — "+" 버튼 클릭 시 Warm/Cool/Rich/Muted 4개 카테고리에 32개 예쁜 색상 제공
+- Hex 직접 입력 + 네이티브 컬러 피커도 팔레트 내에서 사용 가능
+
+### Changed
+- 테마 드롭다운을 기본 6개 원 + "+" 버튼으로 간소화 (나머지 테마는 settings.json에서 선택)
+- 취약점 보고를 GitHub Issues로 일원화 (Private Security Advisory 제거)
+
+### Documentation
+- SECURITY.md 바이링구얼 (English + 한국어)
+
 ## [0.5.2] - 2026-04-21
 
 ### Added

@@ -1794,7 +1794,8 @@ body.vscode-high-contrast[data-theme="mist"] {
     z-index: 100;
     box-shadow: 0 4px 16px rgba(0,0,0,0.12);
     flex-wrap: wrap;
-    width: 116px;
+    width: 152px;
+    overflow: visible;
     justify-content: center;
 }
 
@@ -1819,6 +1820,183 @@ body.vscode-high-contrast[data-theme="mist"] {
 .theme-dot.active {
     border-color: var(--md-text);
     box-shadow: 0 0 0 2px var(--md-bg), 0 0 0 4px var(--md-text);
+}
+
+/* ── Custom color picker (+) button ── */
+.theme-dot-custom {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1.5px dashed var(--md-text);
+    color: var(--md-text);
+    opacity: 0.55;
+    overflow: hidden;
+    padding: 0;
+    font-family: inherit;
+}
+.theme-dot-custom:hover {
+    opacity: 0.95;
+    border-style: solid;
+    border-color: var(--md-accent);
+    color: var(--md-accent);
+    transform: scale(1.15);
+}
+.theme-dot-custom.active {
+    opacity: 1;
+    border-style: solid;
+    border-color: var(--md-accent);
+    color: var(--md-accent);
+}
+.theme-dot-custom svg {
+    pointer-events: none;
+}
+
+/* ── Curated Color Palette ── */
+.color-palette {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 6px;
+    background: var(--md-bg);
+    border: 1px solid var(--md-border);
+    border-radius: 14px;
+    padding: 16px;
+    z-index: 200;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+    width: 280px;
+}
+
+.color-palette.open {
+    display: block;
+}
+
+.palette-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.55;
+    margin-bottom: 14px;
+    text-align: center;
+}
+
+.palette-row {
+    margin-bottom: 12px;
+}
+
+.palette-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    opacity: 0.4;
+    margin-bottom: 6px;
+}
+
+.palette-swatches {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 6px;
+}
+
+.palette-swatch {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+    padding: 0;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+.palette-swatch:hover {
+    transform: scale(1.2);
+    border-color: rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    z-index: 10;
+}
+
+body.vscode-dark .palette-swatch,
+body.vscode-high-contrast .palette-swatch {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+body.vscode-dark .palette-swatch:hover,
+body.vscode-high-contrast .palette-swatch:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+/* Hex input row */
+.palette-hex-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--md-border);
+}
+
+.palette-native-color {
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--md-border);
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 2px;
+    background: none;
+    flex-shrink: 0;
+}
+.palette-native-color::-webkit-color-swatch {
+    border: none;
+    border-radius: 6px;
+}
+.palette-native-color::-webkit-color-swatch-wrapper {
+    padding: 0;
+    border-radius: 6px;
+}
+
+.palette-hex-input {
+    flex: 1;
+    height: 30px;
+    padding: 0 10px;
+    border: 1px solid var(--md-border);
+    border-radius: 8px;
+    background: var(--md-bg);
+    color: var(--md-text);
+    font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+    font-size: 12px;
+    font-weight: 500;
+    outline: none;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    min-width: 0;
+}
+.palette-hex-input:focus {
+    border-color: var(--md-accent);
+    box-shadow: 0 0 0 2px var(--md-selection-bg);
+}
+
+.palette-apply-btn {
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 8px;
+    background: var(--md-accent);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: opacity 0.15s;
+    padding: 0;
+}
+.palette-apply-btn:hover {
+    opacity: 0.85;
 }
 
 /* ══════════════════════════════════════════════════════════════

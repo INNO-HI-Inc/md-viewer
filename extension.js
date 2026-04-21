@@ -165,7 +165,33 @@ function broadcast(type, payload) {
     activeWebviews.forEach(wv => wv.postMessage({ type, ...payload }));
 }
 
+function showUpdateNotification(context) {
+    const currentVersion = context.extension.packageJSON.version;
+    const previousVersion = context.globalState.get('mdPrettyViewer.lastVersion');
+
+    if (previousVersion && previousVersion !== currentVersion) {
+        // Extension was updated — show notification
+        const message = `🎉 MD Pretty Viewer ${currentVersion} 업데이트됨!`;
+        vscode.window.showInformationMessage(
+            message,
+            '변경 사항 보기',
+            '닫기'
+        ).then(selection => {
+            if (selection === '변경 사항 보기') {
+                vscode.env.openExternal(
+                    vscode.Uri.parse(`https://github.com/INNO-HI-Inc/md-viewer/releases/tag/v${currentVersion}`)
+                );
+            }
+        });
+    }
+
+    context.globalState.update('mdPrettyViewer.lastVersion', currentVersion);
+}
+
 function activate(context) {
+    // Show update notification if version changed since last run
+    showUpdateNotification(context);
+
     // Auto-convert text editor tabs for .md files into our pretty viewer
     const handleOpenedDocument = async (document) => {
         if (!isMarkdownFile(document.uri)) return;
