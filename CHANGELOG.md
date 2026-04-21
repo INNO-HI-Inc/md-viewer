@@ -5,6 +5,16 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.5.2] - 2026-04-21
+
+### Added
+- **눈 피로도 낮은 테마 3가지** 추가 (총 13가지)
+  - **Sage** 🌿 — 은은한 세이지 그린, 자연의 차분함
+  - **Sepia** 📜 — 세피아/종이 톤, 장시간 독서 최적화
+  - **Mist** 🌫 — 부드러운 슬레이트 블루그레이, 저채도
+
+모든 새 테마는 저채도(Low saturation) 설계로 장시간 작업 시 눈의 피로를 줄입니다.
+
 ## [0.5.1] - 2026-04-21
 
 ### Added

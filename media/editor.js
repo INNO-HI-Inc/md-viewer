@@ -528,7 +528,11 @@ var themes = [
     // 2026 Pantone trend palette
     { id: 'peach',   label: 'Peach',   color: '#E89A7A' },
     { id: 'aqua',    label: 'Aqua',    color: '#5FB89F' },
-    { id: 'orchid',  label: 'Orchid',  color: '#B48AC7' }
+    { id: 'orchid',  label: 'Orchid',  color: '#B48AC7' },
+    // Eye-comfort palette (low saturation, easy on eyes)
+    { id: 'sage',    label: 'Sage',    color: '#8DA787' },
+    { id: 'sepia',   label: 'Sepia',   color: '#A88568' },
+    { id: 'mist',    label: 'Mist',    color: '#8BA3B0' }
 ];
 
 var currentTheme = 'blue';

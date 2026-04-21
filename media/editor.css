@@ -1634,6 +1634,120 @@ body.vscode-high-contrast[data-theme="orchid"] {
     --hljs-built-in: #D0AEDB; --hljs-addition: #E0C6E8; --hljs-addition-bg: rgba(180, 138, 199, 0.2);
 }
 
+/* ── Sage (Eye-friendly soft green) ── */
+body.vscode-light[data-theme="sage"] {
+    --md-accent: #8DA787;
+    --md-link: #6F8B69; --md-link-hover: #577053;
+    --md-inline-code-text: #42563F;
+    --md-selection-bg: rgba(141, 167, 135, 0.18);
+    --md-gradient: linear-gradient(135deg, #6F8B69 0%, #8DA787 50%, #B4C4AE 100%);
+    --md-mark-bg: #dfe7db; --md-mark-text: #2d3a2a;
+    --hljs-keyword: #6F8B69; --hljs-string: #42563F; --hljs-number: #8DA787;
+    --hljs-function: #577053; --hljs-variable: #7A9774; --hljs-type: #6F8B69;
+    --hljs-tag: #8DA787; --hljs-attr: #B4C4AE; --hljs-selector: #577053;
+    --hljs-built-in: #8DA787; --hljs-addition: #6F8B69; --hljs-addition-bg: #f0f5ee;
+}
+body.vscode-dark[data-theme="sage"] {
+    --md-accent: #B4C4AE;
+    --md-link: #B4C4AE; --md-link-hover: #CDD9C8;
+    --md-inline-code-text: #CDD9C8;
+    --md-selection-bg: rgba(180, 196, 174, 0.2);
+    --md-gradient: linear-gradient(135deg, #6F8B69 0%, #8DA787 50%, #B4C4AE 100%);
+    --md-mark-bg: rgba(141, 167, 135, 0.22); --md-mark-text: #dfe7db;
+    --hljs-keyword: #B4C4AE; --hljs-string: #cdd9c8; --hljs-number: #CDD9C8;
+    --hljs-function: #CDD9C8; --hljs-variable: #B4C4AE; --hljs-type: #B4C4AE;
+    --hljs-tag: #CDD9C8; --hljs-attr: #dfe7db; --hljs-selector: #CDD9C8;
+    --hljs-built-in: #B4C4AE; --hljs-addition: #CDD9C8; --hljs-addition-bg: rgba(141, 167, 135, 0.15);
+}
+body.vscode-high-contrast[data-theme="sage"] {
+    --md-accent: #B4C4AE;
+    --md-link: #B4C4AE; --md-link-hover: #CDD9C8;
+    --md-inline-code-text: #CDD9C8;
+    --md-selection-bg: rgba(180, 196, 174, 0.3);
+    --md-gradient: linear-gradient(135deg, #6F8B69 0%, #8DA787 50%, #B4C4AE 100%);
+    --md-mark-bg: rgba(141, 167, 135, 0.3); --md-mark-text: #ffffff;
+    --hljs-keyword: #B4C4AE; --hljs-string: #cdd9c8; --hljs-number: #CDD9C8;
+    --hljs-function: #CDD9C8; --hljs-variable: #B4C4AE; --hljs-type: #B4C4AE;
+    --hljs-tag: #CDD9C8; --hljs-attr: #dfe7db; --hljs-selector: #CDD9C8;
+    --hljs-built-in: #B4C4AE; --hljs-addition: #CDD9C8; --hljs-addition-bg: rgba(141, 167, 135, 0.2);
+}
+
+/* ── Sepia (Eye-friendly paper/book tone) ── */
+body.vscode-light[data-theme="sepia"] {
+    --md-accent: #A88568;
+    --md-link: #8A6B50; --md-link-hover: #6E5440;
+    --md-inline-code-text: #594230;
+    --md-selection-bg: rgba(168, 133, 104, 0.18);
+    --md-gradient: linear-gradient(135deg, #8A6B50 0%, #A88568 50%, #C4A585 100%);
+    --md-mark-bg: #ebe0d1; --md-mark-text: #3e2e1f;
+    --hljs-keyword: #8A6B50; --hljs-string: #594230; --hljs-number: #A88568;
+    --hljs-function: #6E5440; --hljs-variable: #957359; --hljs-type: #8A6B50;
+    --hljs-tag: #A88568; --hljs-attr: #C4A585; --hljs-selector: #6E5440;
+    --hljs-built-in: #A88568; --hljs-addition: #8A6B50; --hljs-addition-bg: #f6efe4;
+}
+body.vscode-dark[data-theme="sepia"] {
+    --md-accent: #C4A585;
+    --md-link: #C4A585; --md-link-hover: #D5BC9F;
+    --md-inline-code-text: #D5BC9F;
+    --md-selection-bg: rgba(196, 165, 133, 0.2);
+    --md-gradient: linear-gradient(135deg, #8A6B50 0%, #A88568 50%, #C4A585 100%);
+    --md-mark-bg: rgba(168, 133, 104, 0.22); --md-mark-text: #ebe0d1;
+    --hljs-keyword: #C4A585; --hljs-string: #d5bc9f; --hljs-number: #D5BC9F;
+    --hljs-function: #D5BC9F; --hljs-variable: #C4A585; --hljs-type: #C4A585;
+    --hljs-tag: #D5BC9F; --hljs-attr: #ebe0d1; --hljs-selector: #D5BC9F;
+    --hljs-built-in: #C4A585; --hljs-addition: #D5BC9F; --hljs-addition-bg: rgba(168, 133, 104, 0.15);
+}
+body.vscode-high-contrast[data-theme="sepia"] {
+    --md-accent: #C4A585;
+    --md-link: #C4A585; --md-link-hover: #D5BC9F;
+    --md-inline-code-text: #D5BC9F;
+    --md-selection-bg: rgba(196, 165, 133, 0.3);
+    --md-gradient: linear-gradient(135deg, #8A6B50 0%, #A88568 50%, #C4A585 100%);
+    --md-mark-bg: rgba(168, 133, 104, 0.3); --md-mark-text: #ffffff;
+    --hljs-keyword: #C4A585; --hljs-string: #d5bc9f; --hljs-number: #D5BC9F;
+    --hljs-function: #D5BC9F; --hljs-variable: #C4A585; --hljs-type: #C4A585;
+    --hljs-tag: #D5BC9F; --hljs-attr: #ebe0d1; --hljs-selector: #D5BC9F;
+    --hljs-built-in: #C4A585; --hljs-addition: #D5BC9F; --hljs-addition-bg: rgba(168, 133, 104, 0.2);
+}
+
+/* ── Mist (Eye-friendly soft slate) ── */
+body.vscode-light[data-theme="mist"] {
+    --md-accent: #8BA3B0;
+    --md-link: #6E8794; --md-link-hover: #556B77;
+    --md-inline-code-text: #405260;
+    --md-selection-bg: rgba(139, 163, 176, 0.18);
+    --md-gradient: linear-gradient(135deg, #6E8794 0%, #8BA3B0 50%, #B0C2CC 100%);
+    --md-mark-bg: #dde5e9; --md-mark-text: #2a3840;
+    --hljs-keyword: #6E8794; --hljs-string: #405260; --hljs-number: #8BA3B0;
+    --hljs-function: #556B77; --hljs-variable: #78929F; --hljs-type: #6E8794;
+    --hljs-tag: #8BA3B0; --hljs-attr: #B0C2CC; --hljs-selector: #556B77;
+    --hljs-built-in: #8BA3B0; --hljs-addition: #6E8794; --hljs-addition-bg: #eff3f5;
+}
+body.vscode-dark[data-theme="mist"] {
+    --md-accent: #B0C2CC;
+    --md-link: #B0C2CC; --md-link-hover: #C8D5DB;
+    --md-inline-code-text: #C8D5DB;
+    --md-selection-bg: rgba(176, 194, 204, 0.2);
+    --md-gradient: linear-gradient(135deg, #6E8794 0%, #8BA3B0 50%, #B0C2CC 100%);
+    --md-mark-bg: rgba(139, 163, 176, 0.22); --md-mark-text: #dde5e9;
+    --hljs-keyword: #B0C2CC; --hljs-string: #c8d5db; --hljs-number: #C8D5DB;
+    --hljs-function: #C8D5DB; --hljs-variable: #B0C2CC; --hljs-type: #B0C2CC;
+    --hljs-tag: #C8D5DB; --hljs-attr: #dde5e9; --hljs-selector: #C8D5DB;
+    --hljs-built-in: #B0C2CC; --hljs-addition: #C8D5DB; --hljs-addition-bg: rgba(139, 163, 176, 0.15);
+}
+body.vscode-high-contrast[data-theme="mist"] {
+    --md-accent: #B0C2CC;
+    --md-link: #B0C2CC; --md-link-hover: #C8D5DB;
+    --md-inline-code-text: #C8D5DB;
+    --md-selection-bg: rgba(176, 194, 204, 0.3);
+    --md-gradient: linear-gradient(135deg, #6E8794 0%, #8BA3B0 50%, #B0C2CC 100%);
+    --md-mark-bg: rgba(139, 163, 176, 0.3); --md-mark-text: #ffffff;
+    --hljs-keyword: #B0C2CC; --hljs-string: #c8d5db; --hljs-number: #C8D5DB;
+    --hljs-function: #C8D5DB; --hljs-variable: #B0C2CC; --hljs-type: #B0C2CC;
+    --hljs-tag: #C8D5DB; --hljs-attr: #dde5e9; --hljs-selector: #C8D5DB;
+    --hljs-built-in: #B0C2CC; --hljs-addition: #C8D5DB; --hljs-addition-bg: rgba(139, 163, 176, 0.2);
+}
+
 /* ── Theme picker UI ── */
 .theme-picker {
     position: relative;

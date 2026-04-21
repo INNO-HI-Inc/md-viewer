@@ -2,7 +2,7 @@
   "name": "md-pretty-viewer",
   "displayName": "MD Pretty Viewer",
   "description": "마크다운을 Notion처럼 예쁘게. 실시간 프리뷰, 7가지 컬러 테마, 아웃라인 사이드바, 서식 도구를 제공하는 VS Code 마크다운 뷰어. A beautiful markdown viewer & editor with live preview, 7 color themes, outline, and formatting toolbar.",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "publisher": "innohi",
   "author": {
     "name": "INNO-HI Inc.",
@@ -151,7 +151,10 @@
             "mono",
             "peach",
             "aqua",
-            "orchid"
+            "orchid",
+            "sage",
+            "sepia",
+            "mist"
           ],
           "enumDescriptions": [
             "차분한 파란색 (기본)",
@@ -163,7 +166,10 @@
             "흑백",
             "피치 (2026 Pantone)",
             "아쿠아 민트 (2026 Pantone)",
-            "오키드 라벤더 (2026 Pantone)"
+            "오키드 라벤더 (2026 Pantone)",
+            "세이지 그린 (눈 피로 적음)",
+            "세피아 (종이톤, 장시간 독서)",
+            "미스트 (소프트 슬레이트)"
           ],
           "default": "blue",
           "description": "마크다운 프리뷰의 기본 컬러 테마. Default color theme for the markdown preview."
