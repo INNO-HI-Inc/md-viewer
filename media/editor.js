@@ -6,6 +6,7 @@ let currentContent = '';
 let currentMode = 'preview';
 let outlineVisible = false;
 let editorEl = null;
+let lineNumbersEl = null;
 let previewEl = null;
 let outlineEl = null;
 let outlineListEl = null;
@@ -169,6 +170,40 @@ function renderPreview() {
     highlightCodeBlocks(previewEl);
     addHeadingIds();
     buildOutline(html);
+    makeCheckboxesClickable();
+}
+
+function makeCheckboxesClickable() {
+    if (!previewEl) return;
+    var idx = 0;
+    previewEl.querySelectorAll('input[type="checkbox"]').forEach(function (box, i) {
+        box.disabled = false;
+        box.style.cursor = 'pointer';
+        box.addEventListener('change', function () {
+            toggleCheckboxInSource(i, box.checked);
+        });
+    });
+}
+
+function toggleCheckboxInSource(index, checked) {
+    // Find the Nth checkbox in the source markdown and toggle it
+    var lines = currentContent.split('\n');
+    var found = 0;
+    for (var i = 0; i < lines.length; i++) {
+        var m = lines[i].match(/^(\s*[-*+]\s+)\[([ xX])\](\s)/);
+        if (m) {
+            if (found === index) {
+                var replacement = m[1] + '[' + (checked ? 'x' : ' ') + ']' + m[3];
+                lines[i] = lines[i].replace(/^(\s*[-*+]\s+)\[([ xX])\](\s)/, replacement);
+                break;
+            }
+            found++;
+        }
+    }
+    currentContent = lines.join('\n');
+    if (editorEl) editorEl.value = currentContent;
+    saveToDocument(currentContent);
+    updateLineNumbers();
 }
 
 function addHeadingIds() {
@@ -200,6 +235,7 @@ function setMode(mode) {
     // Update editor content when switching to edit or split
     if ((mode === 'edit' || mode === 'split') && editorEl) {
         editorEl.value = currentContent;
+        updateLineNumbers();
         if (mode === 'edit') {
             setTimeout(function () { editorEl.focus(); }, 50);
         }
@@ -294,8 +330,31 @@ function toolbarAction(action) {
         case 'font-size-down': changeFontSize(-1); break;
         case 'copy':
             navigator.clipboard.writeText(currentContent).catch(function () {});
+            showToast('마크다운 복사됨 / Copied markdown');
+            break;
+        case 'copy-html':
+            var html = renderMarkdown(currentContent);
+            navigator.clipboard.writeText(html).catch(function () {});
+            showToast('HTML 복사됨 / Copied HTML');
+            break;
+        case 'focus':
+            toggleFocusMode();
             break;
     }
+}
+
+function showToast(message) {
+    var existing = document.querySelector('.md-toast');
+    if (existing) existing.remove();
+    var toast = document.createElement('div');
+    toast.className = 'md-toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(function () { toast.classList.add('show'); }, 10);
+    setTimeout(function () {
+        toast.classList.remove('show');
+        setTimeout(function () { toast.remove(); }, 200);
+    }, 1500);
 }
 
 /* ───────────────────────────────────────────
@@ -309,6 +368,16 @@ function onEditorInput() {
         renderPreview();
     }
     saveToDocument(currentContent);
+}
+
+function updateLineNumbers() {
+    if (!lineNumbersEl || !editorEl) return;
+    var lines = editorEl.value.split('\n').length;
+    var html = '';
+    for (var i = 1; i <= lines; i++) {
+        html += '<span>' + i + '</span>';
+    }
+    lineNumbersEl.innerHTML = html;
 }
 
 /* ───────────────────────────────────────────
@@ -368,17 +437,81 @@ function setupKeyboardShortcuts() {
             e.preventDefault();
             toolbarAction('code');
         }
-        // Tab for indentation in editor
+        // Smart Tab — list indent or 4-space indent
         if (e.key === 'Tab' && document.activeElement === editorEl) {
             e.preventDefault();
             var start = editorEl.selectionStart;
             var end = editorEl.selectionEnd;
             var val = editorEl.value;
-            editorEl.value = val.substring(0, start) + '    ' + val.substring(end);
-            editorEl.selectionStart = editorEl.selectionEnd = start + 4;
+            var lineStart = val.lastIndexOf('\n', start - 1) + 1;
+            var lineText = val.substring(lineStart, val.indexOf('\n', start) === -1 ? val.length : val.indexOf('\n', start));
+
+            // If on a list item, indent the whole line
+            var listMatch = lineText.match(/^(\s*)([-*+]|\d+\.)\s/);
+            if (listMatch && !e.shiftKey) {
+                editorEl.value = val.substring(0, lineStart) + '    ' + val.substring(lineStart);
+                editorEl.selectionStart = editorEl.selectionEnd = start + 4;
+            } else if (listMatch && e.shiftKey) {
+                // Shift+Tab: outdent
+                if (val.substring(lineStart, lineStart + 4) === '    ') {
+                    editorEl.value = val.substring(0, lineStart) + val.substring(lineStart + 4);
+                    editorEl.selectionStart = editorEl.selectionEnd = Math.max(lineStart, start - 4);
+                }
+            } else {
+                editorEl.value = val.substring(0, start) + '    ' + val.substring(end);
+                editorEl.selectionStart = editorEl.selectionEnd = start + 4;
+            }
             onEditorInput();
+            updateLineNumbers();
+        }
+
+        // Auto-continue list on Enter
+        if (e.key === 'Enter' && !e.shiftKey && document.activeElement === editorEl) {
+            var start = editorEl.selectionStart;
+            var val = editorEl.value;
+            var lineStart = val.lastIndexOf('\n', start - 1) + 1;
+            var lineText = val.substring(lineStart, start);
+
+            // Match list prefixes: - item, * item, + item, 1. item, > quote
+            var match = lineText.match(/^(\s*)([-*+]|\d+\.|>)\s(.*)$/);
+            if (match) {
+                e.preventDefault();
+                var indent = match[1];
+                var marker = match[2];
+                var content = match[3];
+
+                // Empty list item → exit list
+                if (content.trim() === '') {
+                    editorEl.value = val.substring(0, lineStart) + val.substring(start);
+                    editorEl.selectionStart = editorEl.selectionEnd = lineStart;
+                } else {
+                    // Increment numbered list marker
+                    var newMarker = marker;
+                    var numMatch = marker.match(/^(\d+)\.$/);
+                    if (numMatch) {
+                        newMarker = (parseInt(numMatch[1], 10) + 1) + '.';
+                    }
+                    var insertion = '\n' + indent + newMarker + ' ';
+                    editorEl.value = val.substring(0, start) + insertion + val.substring(start);
+                    editorEl.selectionStart = editorEl.selectionEnd = start + insertion.length;
+                }
+                onEditorInput();
+                updateLineNumbers();
+            }
+        }
+
+        // Focus mode toggle: Cmd+K Z (like VS Code Zen Mode)
+        if (mod && (e.key === '.' || e.key === '/')) {
+            if (e.shiftKey && e.key === '/') {  // Cmd+?
+                e.preventDefault();
+                toggleFocusMode();
+            }
         }
     });
+}
+
+function toggleFocusMode() {
+    document.body.classList.toggle('focus-mode');
 }
 
 /* ───────────────────────────────────────────
@@ -576,7 +709,10 @@ function buildUI(fileName) {
         { action: 'quote', label: '', title: 'Blockquote', icon: 'quote' },
         { action: 'divider' },
         { action: 'hr', label: '', title: 'Horizontal Rule', icon: 'hr' },
-        { action: 'copy', label: '', title: 'Copy All', icon: 'copy' }
+        { action: 'divider' },
+        { action: 'copy', label: '', title: 'Copy Markdown', icon: 'copy' },
+        { action: 'copy-html', label: '', title: 'Copy as HTML', icon: 'html' },
+        { action: 'focus', label: '', title: 'Focus Mode', icon: 'focus' }
     ];
 
     toolbarItems.forEach(function (item) {
@@ -606,16 +742,32 @@ function buildUI(fileName) {
     var mainContent = document.createElement('div');
     mainContent.className = 'main-content';
 
-    // Editor pane
+    // Editor pane with line numbers
     var editorPane = document.createElement('div');
     editorPane.className = 'editor-pane';
+
+    var editorWrap = document.createElement('div');
+    editorWrap.className = 'editor-wrap';
+
+    lineNumbersEl = document.createElement('div');
+    lineNumbersEl.className = 'line-numbers';
+
     editorEl = document.createElement('textarea');
     editorEl.className = 'editor-textarea';
     editorEl.spellcheck = false;
     editorEl.placeholder = 'Start writing markdown...';
     editorEl.value = currentContent;
-    editorEl.addEventListener('input', onEditorInput);
-    editorPane.appendChild(editorEl);
+    editorEl.addEventListener('input', function() {
+        onEditorInput();
+        updateLineNumbers();
+    });
+    editorEl.addEventListener('scroll', function() {
+        if (lineNumbersEl) lineNumbersEl.scrollTop = editorEl.scrollTop;
+    });
+
+    editorWrap.appendChild(lineNumbersEl);
+    editorWrap.appendChild(editorEl);
+    editorPane.appendChild(editorWrap);
 
     // Preview pane
     var previewPane = document.createElement('div');
@@ -679,7 +831,9 @@ function getToolbarIcon(name) {
         number: '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><text x="1.5" y="5.5" font-size="5" font-weight="700" font-family="sans-serif">1.</text><rect x="6" y="3.3" width="8" height="1.4" rx="0.7"/><text x="1.5" y="9.5" font-size="5" font-weight="700" font-family="sans-serif">2.</text><rect x="6" y="7.3" width="8" height="1.4" rx="0.7"/><text x="1.5" y="13.5" font-size="5" font-weight="700" font-family="sans-serif">3.</text><rect x="6" y="11.3" width="8" height="1.4" rx="0.7"/></svg>',
         quote: '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" opacity="0.8"><path d="M3 3h2.5c.8 0 1.5.7 1.5 1.5v2c0 .8-.7 1.5-1.5 1.5H4v1.5c0 1-1 2-2 2.5v-1c.5-.3 1-.8 1-1.5V8h-.5C1.7 8 1 7.3 1 6.5v-2C1 3.7 1.7 3 2.5 3H3zM10 3h2.5c.8 0 1.5.7 1.5 1.5v2c0 .8-.7 1.5-1.5 1.5H11v1.5c0 1-1 2-2 2.5v-1c.5-.3 1-.8 1-1.5V8h-.5C8.7 8 8 7.3 8 6.5v-2C8 3.7 8.7 3 9.5 3H10z"/></svg>',
         hr: '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="7" width="14" height="2" rx="1"/></svg>',
-        copy: '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="8" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M6 4V2.5C6 2.2 6.2 2 6.5 2h5c.3 0 .5.2.5.5v7c0 .3-.2.5-.5.5H10" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>'
+        copy: '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="8" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M6 4V2.5C6 2.2 6.2 2 6.5 2h5c.3 0 .5.2.5.5v7c0 .3-.2.5-.5.5H10" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>',
+        html: '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 5L3 8l2.5 3M10.5 5L13 8l-2.5 3M9 4l-2 8" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        focus: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M2 5V2h3M14 5V2h-3M2 11v3h3M14 11v3h-3"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg>'
     };
     return icons[name] || '';
 }
@@ -754,6 +908,7 @@ function initEditor(content, fileName, baseUri, initialSettings) {
 
     buildUI(fileName);
     applyTheme(currentTheme);
+    updateLineNumbers();
 
     // Apply initial mode if not preview
     if (currentMode !== 'preview') {

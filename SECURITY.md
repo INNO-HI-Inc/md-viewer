@@ -73,9 +73,11 @@ font-src <webview-source> https:;
 
 보안 취약점을 발견하셨다면 **공개 GitHub Issues에 게시하지 마시고** 아래 절차를 따라주세요:
 
-### 연락처
+### 보고 방법
 
-📧 **security@innohi.ai.kr**
+GitHub에서 Private Security Advisory를 생성해주세요:
+
+**[Report a vulnerability](https://github.com/INNO-HI-Inc/md-viewer/security/advisories/new)**
 
 ### 보고 시 포함할 정보
 

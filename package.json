@@ -2,7 +2,7 @@
   "name": "md-pretty-viewer",
   "displayName": "MD Pretty Viewer",
   "description": "마크다운을 Notion처럼 예쁘게. 실시간 프리뷰, 7가지 컬러 테마, 아웃라인 사이드바, 서식 도구를 제공하는 VS Code 마크다운 뷰어. A beautiful markdown viewer & editor with live preview, 7 color themes, outline, and formatting toolbar.",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publisher": "innohi",
   "author": {
     "name": "INNO-HI Inc.",
@@ -55,30 +55,18 @@
     "ui",
     "workspace"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onLanguage:markdown",
+    "onCommand:mdPrettyViewer.open"
+  ],
   "contributes": {
-    "customEditors": [
-      {
-        "viewType": "mdPrettyViewer.editor",
-        "displayName": "MD Pretty Viewer",
-        "selector": [
-          {
-            "filenamePattern": "*.md"
-          },
-          {
-            "filenamePattern": "*.markdown"
-          },
-          {
-            "filenamePattern": "*.mdown"
-          },
-          {
-            "filenamePattern": "*.mkd"
-          }
-        ],
-        "priority": "default"
-      }
-    ],
     "commands": [
+      {
+        "command": "mdPrettyViewer.open",
+        "title": "Open Pretty View",
+        "category": "MD Pretty Viewer",
+        "icon": "$(preview)"
+      },
       {
         "command": "mdPrettyViewer.toggleMode",
         "title": "Toggle Preview/Edit Mode",
@@ -105,27 +93,49 @@
         "command": "mdPrettyViewer.toggleMode",
         "key": "ctrl+e",
         "mac": "cmd+e",
-        "when": "activeCustomEditorId == 'mdPrettyViewer.editor'"
+        "when": "activeWebviewPanelId == 'mdPrettyViewer.editor'"
       },
       {
         "command": "mdPrettyViewer.bold",
         "key": "ctrl+b",
         "mac": "cmd+b",
-        "when": "activeCustomEditorId == 'mdPrettyViewer.editor'"
+        "when": "activeWebviewPanelId == 'mdPrettyViewer.editor'"
       },
       {
         "command": "mdPrettyViewer.italic",
         "key": "ctrl+i",
         "mac": "cmd+i",
-        "when": "activeCustomEditorId == 'mdPrettyViewer.editor'"
+        "when": "activeWebviewPanelId == 'mdPrettyViewer.editor'"
       },
       {
         "command": "mdPrettyViewer.code",
         "key": "ctrl+shift+c",
         "mac": "cmd+shift+c",
-        "when": "activeCustomEditorId == 'mdPrettyViewer.editor'"
+        "when": "activeWebviewPanelId == 'mdPrettyViewer.editor'"
+      },
+      {
+        "command": "mdPrettyViewer.open",
+        "key": "ctrl+shift+m",
+        "mac": "cmd+shift+m",
+        "when": "resourceExtname == '.md' || resourceExtname == '.markdown' || resourceExtname == '.mdown' || resourceExtname == '.mkd'"
       }
     ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "mdPrettyViewer.open",
+          "when": "resourceExtname == '.md' || resourceExtname == '.markdown'",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "mdPrettyViewer.open",
+          "when": "resourceExtname == '.md' || resourceExtname == '.markdown'",
+          "group": "navigation"
+        }
+      ]
+    },
     "configuration": {
       "title": "MD Pretty Viewer",
       "properties": {

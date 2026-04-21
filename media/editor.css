@@ -506,9 +506,38 @@ body {
     min-width: 0;
 }
 
+.editor-wrap {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.line-numbers {
+    flex-shrink: 0;
+    width: 48px;
+    padding: 2rem 0.5rem 2rem 0;
+    text-align: right;
+    font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.75;
+    color: var(--md-text);
+    opacity: 0.28;
+    background: var(--md-bg);
+    user-select: none;
+    overflow: hidden;
+    letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.line-numbers span {
+    display: block;
+    padding-right: 8px;
+}
+
 .editor-textarea {
     flex: 1;
-    width: 100%;
+    min-width: 0;
     border: none;
     outline: none;
     resize: none;
@@ -517,14 +546,13 @@ body {
     font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'SF Mono', Consolas, monospace;
     font-size: 14px;
     line-height: 1.75;
-    padding: 2rem 3rem;
+    padding: 2rem 3rem 2rem 1rem;
     tab-size: 4;
-    max-width: 860px;
-    margin: 0 auto;
     display: block;
     word-break: keep-all;
     overflow-wrap: break-word;
     letter-spacing: 0;
+    min-height: 0;
 }
 
 .editor-textarea::placeholder {
@@ -1207,6 +1235,57 @@ body.mode-split .editor-pane:hover::after {
 .hljs-section {
     color: var(--hljs-function) !important;
     font-weight: 700;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FOCUS MODE
+   ══════════════════════════════════════════════════════════════ */
+
+body.focus-mode .topbar,
+body.focus-mode .toolbar,
+body.focus-mode .statusbar,
+body.focus-mode .outline-pane,
+body.focus-mode .line-numbers {
+    display: none !important;
+}
+
+body.focus-mode .editor-textarea,
+body.focus-mode .markdown-body {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 4rem 3rem;
+}
+
+body.focus-mode .editor-wrap {
+    justify-content: center;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TOAST
+   ══════════════════════════════════════════════════════════════ */
+
+.md-toast {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--md-text);
+    color: var(--md-bg);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 9999;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+    letter-spacing: -0.01em;
+}
+
+.md-toast.show {
+    opacity: 0.92;
+    transform: translateX(-50%) translateY(0);
 }
 
 /* ══════════════════════════════════════════════════════════════

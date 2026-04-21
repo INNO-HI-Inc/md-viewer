@@ -74,6 +74,24 @@ Tables · checkboxes · strikethrough · fenced code blocks · autolinks · emoj
 ### 🇰🇷 Korean Typography
 Bundles [에이투지체 (AtoZ font)](https://autoa2z.co.kr) for exceptional Korean text rendering (OFL licensed).
 
+### # Line Numbers
+Minimal, unobtrusive line numbers in Edit/Split mode — "barely there" by design.
+
+### ↵ Smart List Continuation
+Press Enter in a list item to auto-insert the next marker. Numbered lists auto-increment. Empty list item exits the list.
+
+### ● Focus Mode
+Hide toolbars, status bar, and outline to focus purely on writing. One click into Zen mode.
+
+### 🔍 Find (Cmd+F)
+Native VS Code find widget to search within the preview.
+
+### ☐ Clickable Checkboxes
+Click checkboxes directly in Preview — source markdown updates automatically.
+
+### </> Copy as HTML
+Copy the rendered HTML output to clipboard with one click.
+
 ---
 
 ## 📦 Installation
@@ -91,7 +109,7 @@ code --install-extension innohi.md-pretty-viewer
 ### Manual VSIX
 Download `.vsix` from [Releases](https://github.com/INNO-HI-Inc/md-viewer/releases/latest), then:
 ```bash
-code --install-extension md-pretty-viewer-0.4.0.vsix
+code --install-extension md-pretty-viewer-0.5.0.vsix
 ```
 
 ---
@@ -169,7 +187,7 @@ No data is collected or sent over the network.
 
 See [SECURITY.md](SECURITY.md) for full security design and vulnerability reporting.
 
-To report a vulnerability: 📧 `security@innohi.ai.kr`
+To report a vulnerability, please [open a private GitHub Security Advisory](https://github.com/INNO-HI-Inc/md-viewer/security/advisories/new).
 
 ---
 
@@ -222,7 +240,12 @@ Full license texts in [NOTICE.md](NOTICE.md).
 - **코드 하이라이팅** — highlight.js 기반, 테마 색상 자동 적용
 - **한글 최적화** — 에이투지체(AtoZ font, OFL) 번들로 깔끔한 한글 표기
 - **폰트 크기** — 12px ~ 24px 자유 조절
-- **GFM 완벽 지원** — 테이블, 체크박스, 취소선
+- **GFM 완벽 지원** — 테이블, 클릭 가능한 체크박스, 취소선
+- **줄 번호 표시** — Edit/Split 모드에서 미니멀한 줄 번호
+- **리스트 자동 이어쓰기** — 리스트에서 Enter 치면 다음 마커 자동 생성
+- **포커스 모드** — 한 번 클릭으로 글쓰기에 집중하는 Zen 모드
+- **찾기 기능** — Cmd+F로 프리뷰 내 텍스트 검색
+- **HTML 복사** — 렌더링된 HTML을 클립보드에 복사
 
 ### 설치
 
