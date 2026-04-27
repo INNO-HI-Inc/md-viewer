@@ -193,44 +193,71 @@ function activate(context) {
     showUpdateNotification(context);
 
     // Auto-convert text editor tabs for .md files into our pretty viewer
-    const handleOpenedDocument = async (document) => {
-        if (!isMarkdownFile(document.uri)) return;
-        if (document.uri.scheme !== 'file') return;
+    // Set of URIs we've already started converting (to avoid loops/double-handling)
+    const inProgress = new Set();
 
-        // Wait a tick so VS Code finishes showing the text editor
-        await new Promise(r => setTimeout(r, 20));
+    const convertToPrettyView = async (uri, column) => {
+        const key = uri.toString();
+        if (!isMarkdownFile(uri)) return;
+        if (uri.scheme !== 'file') return;
+        if (openPanels.has(key)) {
+            // Already open as pretty view → just reveal it
+            openPanels.get(key).reveal(column || vscode.ViewColumn.Active);
+            return;
+        }
+        if (inProgress.has(key)) return;
+        inProgress.add(key);
 
-        // Find the text editor for this document
-        const editor = vscode.window.visibleTextEditors.find(
-            e => e.document.uri.toString() === document.uri.toString()
-        );
-        if (!editor) return;
-
-        const column = editor.viewColumn || vscode.ViewColumn.Active;
-
-        // Close the text editor tab (in its group)
         try {
+            // Close any text editor tabs for this file
             for (const group of vscode.window.tabGroups.all) {
                 for (const tab of group.tabs) {
                     if (tab.input instanceof vscode.TabInputText &&
-                        tab.input.uri.toString() === document.uri.toString()) {
+                        tab.input.uri.toString() === key) {
                         await vscode.window.tabGroups.close(tab);
                     }
                 }
             }
+            await openPrettyView(context, uri, column || vscode.ViewColumn.Active);
         } catch (_) {}
+        inProgress.delete(key);
+    };
 
-        // Open our webview panel in the SAME column
-        await openPrettyView(context, document.uri, column);
+    const handleEditor = async (editor) => {
+        if (!editor || !editor.document) return;
+        const uri = editor.document.uri;
+        const column = editor.viewColumn || vscode.ViewColumn.Active;
+        await convertToPrettyView(uri, column);
     };
 
     context.subscriptions.push(
-        vscode.workspace.onDidOpenTextDocument(handleOpenedDocument)
+        // When a document is freshly opened
+        vscode.workspace.onDidOpenTextDocument(async (document) => {
+            // Wait briefly so VS Code attaches it to an editor with a column
+            await new Promise(r => setTimeout(r, 30));
+            const editor = vscode.window.visibleTextEditors.find(
+                e => e.document.uri.toString() === document.uri.toString()
+            );
+            const column = (editor && editor.viewColumn) || vscode.ViewColumn.Active;
+            await convertToPrettyView(document.uri, column);
+        }),
+        // When the active editor changes (e.g. clicking a tab, link from Claude, etc.)
+        vscode.window.onDidChangeActiveTextEditor(handleEditor),
+        // When the visible editors change (e.g. opening files programmatically)
+        vscode.window.onDidChangeVisibleTextEditors(async (editors) => {
+            for (const e of editors) {
+                if (isMarkdownFile(e.document.uri)) {
+                    await convertToPrettyView(e.document.uri, e.viewColumn || vscode.ViewColumn.Active);
+                }
+            }
+        })
     );
 
-    // Also handle files that are already open when the extension activates
-    for (const doc of vscode.workspace.textDocuments) {
-        handleOpenedDocument(doc);
+    // Handle any markdown text editors already visible
+    for (const e of vscode.window.visibleTextEditors) {
+        if (isMarkdownFile(e.document.uri)) {
+            convertToPrettyView(e.document.uri, e.viewColumn || vscode.ViewColumn.Active);
+        }
     }
 
     // Commands

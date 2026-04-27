@@ -5,6 +5,15 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.5.4] - 2026-04-21
+
+### Fixed
+- **Claude Code/외부 링크 클릭 시 변환 안 되던 문제 수정**
+  - `onDidOpenTextDocument`만 듣던 것을 `onDidChangeActiveTextEditor` + `onDidChangeVisibleTextEditors`도 함께 감지하도록 확장
+  - 이미 열려있던 마크다운 파일이 활성화될 때도 자동 변환
+  - 중복 변환 방지를 위한 in-progress 가드 추가
+  - `onStartupFinished` 활성화 이벤트 추가로 시작 시 즉시 동작
+
 ## [0.5.3] - 2026-04-21
 
 ### Added

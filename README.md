@@ -111,7 +111,7 @@ code --install-extension innohi.md-pretty-viewer
 ### Manual VSIX
 Download `.vsix` from [Releases](https://github.com/INNO-HI-Inc/md-viewer/releases/latest), then:
 ```bash
-code --install-extension md-pretty-viewer-0.5.3.vsix
+code --install-extension md-pretty-viewer-0.5.4.vsix
 ```
 
 ---
