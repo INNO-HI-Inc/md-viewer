@@ -5,6 +5,16 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.6.0] - 2026-04-27
+
+### Added
+- **PDF로 내보내기** — 툴바에 PDF 버튼 추가
+  - 클릭하면 시스템 인쇄 다이얼로그 → "PDF로 저장" 선택
+  - A4 페이지 기준 최적화된 인쇄 스타일
+  - 헤딩/코드블록/이미지 페이지 분할 방지
+  - 외부 링크 URL 자동 표시 (인쇄 시)
+  - 모든 UI(툴바·아웃라인·줄번호) 자동 숨김
+
 ## [0.5.4] - 2026-04-21
 
 ### Fixed

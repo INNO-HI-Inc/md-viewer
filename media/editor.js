@@ -340,7 +340,29 @@ function toolbarAction(action) {
         case 'focus':
             toggleFocusMode();
             break;
+        case 'pdf':
+            exportToPdf();
+            break;
     }
+}
+
+function exportToPdf() {
+    // Switch to preview mode if not already there (so print captures rendered output)
+    var previousMode = currentMode;
+    if (currentMode !== 'preview') {
+        setMode('preview');
+    }
+    // Brief delay to let render settle, then trigger print dialog
+    showToast('PDF로 저장 / Save as PDF');
+    setTimeout(function () {
+        document.body.classList.add('printing');
+        window.print();
+        document.body.classList.remove('printing');
+        // Restore previous mode
+        if (previousMode !== 'preview') {
+            setMode(previousMode);
+        }
+    }, 200);
 }
 
 function showToast(message) {
@@ -1000,6 +1022,7 @@ function buildUI(fileName) {
         { action: 'divider' },
         { action: 'copy', label: '', title: 'Copy Markdown', icon: 'copy' },
         { action: 'copy-html', label: '', title: 'Copy as HTML', icon: 'html' },
+        { action: 'pdf', label: '', title: 'Export as PDF / PDF로 저장', icon: 'pdf' },
         { action: 'focus', label: '', title: 'Focus Mode', icon: 'focus' }
     ];
 
@@ -1121,6 +1144,7 @@ function getToolbarIcon(name) {
         hr: '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="7" width="14" height="2" rx="1"/></svg>',
         copy: '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="8" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M6 4V2.5C6 2.2 6.2 2 6.5 2h5c.3 0 .5.2.5.5v7c0 .3-.2.5-.5.5H10" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>',
         html: '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 5L3 8l2.5 3M10.5 5L13 8l-2.5 3M9 4l-2 8" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        pdf: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2h7l3 3v9H3V2z"/><path d="M10 2v3h3"/><text x="4" y="12" font-size="3.4" font-weight="700" fill="currentColor" stroke="none" font-family="sans-serif">PDF</text></svg>',
         focus: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M2 5V2h3M14 5V2h-3M2 11v3h3M14 11v3h-3"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg>'
     };
     return icons[name] || '';

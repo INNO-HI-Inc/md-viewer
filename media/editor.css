@@ -2003,7 +2003,18 @@ body.vscode-high-contrast .palette-swatch:hover {
    PRINT STYLES
    ══════════════════════════════════════════════════════════════ */
 
+@page {
+    size: A4;
+    margin: 18mm 15mm;
+}
+
 @media print {
+    html, body {
+        height: auto !important;
+        overflow: visible !important;
+        background: #fff !important;
+    }
+
     body::before { display: none; }
 
     .topbar,
@@ -2011,7 +2022,11 @@ body.vscode-high-contrast .palette-swatch:hover {
     .statusbar,
     .outline-pane,
     .editor-pane,
-    .dblclick-hint {
+    .line-numbers,
+    .dblclick-hint,
+    .md-toast,
+    .color-palette,
+    .theme-dropdown {
         display: none !important;
     }
 

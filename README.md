@@ -94,6 +94,9 @@ Click checkboxes directly in Preview — source markdown updates automatically.
 ### </> Copy as HTML
 Copy the rendered HTML output to clipboard with one click.
 
+### 📄 Export as PDF
+Save the rendered preview as a PDF via the system print dialog. A4-optimized layout with smart page breaks.
+
 ---
 
 ## 📦 Installation
@@ -111,7 +114,7 @@ code --install-extension innohi.md-pretty-viewer
 ### Manual VSIX
 Download `.vsix` from [Releases](https://github.com/INNO-HI-Inc/md-viewer/releases/latest), then:
 ```bash
-code --install-extension md-pretty-viewer-0.5.4.vsix
+code --install-extension md-pretty-viewer-0.6.0.vsix
 ```
 
 ---
@@ -248,6 +251,7 @@ Full license texts in [NOTICE.md](NOTICE.md).
 - **포커스 모드** — 한 번 클릭으로 글쓰기에 집중하는 Zen 모드
 - **찾기 기능** — Cmd+F로 프리뷰 내 텍스트 검색
 - **HTML 복사** — 렌더링된 HTML을 클립보드에 복사
+- **PDF로 저장** — 툴바 PDF 버튼 → 시스템 인쇄 다이얼로그에서 "PDF로 저장" (A4 최적화)
 
 ### 설치
 
