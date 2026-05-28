@@ -40,6 +40,7 @@ function getHtml(webview, nonce, context, document, docBaseUri, settings) {
 <body class="mode-${initialMode}">
     <div id="app"></div>
     <script nonce="${nonce}" src="${mediaUri('marked.min.js')}"></script>
+    <script nonce="${nonce}" src="${mediaUri('html2pdf.bundle.min.js')}"></script>
     <script nonce="${nonce}" src="${mediaUri('highlight.min.js')}"></script>
     <script nonce="${nonce}" src="${mediaUri('editor.js')}"></script>
     <script nonce="${nonce}">

@@ -340,29 +340,189 @@ function toolbarAction(action) {
         case 'focus':
             toggleFocusMode();
             break;
-        case 'pdf':
-            exportToPdf();
-            break;
     }
 }
 
 function exportToPdf() {
-    // Switch to preview mode if not already there (so print captures rendered output)
+    if (typeof html2pdf === 'undefined') {
+        showToast('PDF 라이브러리 로드 실패 / PDF library failed to load');
+        return;
+    }
+
     var previousMode = currentMode;
     if (currentMode !== 'preview') {
         setMode('preview');
     }
-    // Brief delay to let render settle, then trigger print dialog
-    showToast('PDF로 저장 / Save as PDF');
-    setTimeout(function () {
-        document.body.classList.add('printing');
-        window.print();
-        document.body.classList.remove('printing');
-        // Restore previous mode
-        if (previousMode !== 'preview') {
-            setMode(previousMode);
+
+    showToast('PDF 생성 중... / Generating PDF...');
+
+    // Filename from first H1
+    var titleFromContent = '';
+    var h1Match = currentContent.match(/^#\s+(.+?)\s*$/m);
+    if (h1Match) {
+        titleFromContent = h1Match[1]
+            .replace(/[\\/:*?"<>|]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+    var fileName = (titleFromContent || (document.title || 'document').replace(/\.md$/, '')) + '.pdf';
+
+    var element = previewEl;
+    if (!element) {
+        showToast('프리뷰를 찾을 수 없습니다');
+        return;
+    }
+
+    var restore = function () { /* no-op — onclone touches only the cloned doc */ };
+
+    // Get document title from first H1, but only use ASCII parts for jsPDF (no CJK)
+    var docTitle = '';
+    var titleH1 = element.querySelector('h1');
+    if (titleH1) {
+        var raw = titleH1.textContent.trim();
+        // jsPDF default font cannot render CJK — keep header only if title is ASCII-safe
+        var asciiOnly = raw.replace(/[^\x20-\x7E]/g, '').trim();
+        if (asciiOnly.length >= 3 && asciiOnly.length === raw.length) {
+            docTitle = raw.substring(0, 80);
         }
-    }, 200);
+    }
+
+    setTimeout(function () {
+        var opt = {
+            margin: [18, 18, 22, 18],   // top, left, bottom, right (mm)
+            filename: fileName,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff',
+                height: element.scrollHeight,
+                windowHeight: element.scrollHeight,
+                onclone: function (clonedDoc) {
+                    // Force light theme on cloned body so CSS variables resolve to light values
+                    var b = clonedDoc.body;
+                    if (b) {
+                        b.classList.remove('vscode-dark', 'vscode-high-contrast');
+                        b.classList.add('vscode-light');
+                        b.removeAttribute('data-theme');
+                        ['--md-accent', '--md-link', '--md-link-hover', '--md-inline-code-text',
+                         '--md-selection-bg', '--md-gradient', '--md-mark-bg', '--md-mark-text',
+                         '--hljs-keyword', '--hljs-string', '--hljs-number', '--hljs-function',
+                         '--hljs-variable', '--hljs-type', '--hljs-tag', '--hljs-attr',
+                         '--hljs-selector', '--hljs-built-in', '--hljs-addition', '--hljs-addition-bg']
+                         .forEach(function (v) { b.style.removeProperty(v); });
+                    }
+
+                    // Inject extra print-quality overrides into the cloned doc
+                    var s = clonedDoc.createElement('style');
+                    s.textContent = [
+                        // Strip trailing padding so content ends exactly at last element (no blank trailing page)
+                        '#preview { background:#fff !important; color:#1a1a1a !important; animation:none !important; padding-bottom:0 !important; }',
+                        '#preview > *:last-child { margin-bottom:0 !important; padding-bottom:0 !important; }',
+
+                        // Headings
+                        '#preview h1, #preview h2, #preview h3, #preview h4, #preview h5, #preview h6 { color:#000 !important; border-image:none !important; }',
+                        '#preview h1 { border-bottom:2px solid #000 !important; }',
+                        '#preview h2 { border-bottom:1px solid #c0c0c0 !important; }',
+
+                        // Code blocks
+                        '#preview pre { background:#fff !important; border:1px solid #c0c0c0 !important; border-radius:4px !important; box-shadow:none !important; }',
+                        '#preview pre code, #preview pre code.hljs, #preview pre .hljs { background:transparent !important; color:#000 !important; }',
+                        '#preview pre code *, #preview pre .hljs * { color:#000 !important; background:transparent !important; }',
+                        '#preview pre .hljs-comment, #preview pre .hljs-quote { color:#6a737d !important; font-style:italic !important; }',
+
+                        // Inline code (not inside pre)
+                        '#preview :not(pre) > code { background:#f5f5f5 !important; color:#1a1a1a !important; border:1px solid #d0d7de !important; padding:1px 5px !important; border-radius:3px !important; font-size:0.88em !important; }',
+
+                        // Blockquote — gray panel, but keep strong/headings dark for emphasis
+                        '#preview blockquote { background:#f8f9fa !important; border-left:3px solid #999 !important; color:#4a4a4a !important; padding:0.6em 1em !important; border-radius:0 4px 4px 0 !important; }',
+                        '#preview blockquote * { color:#4a4a4a !important; background:transparent !important; }',
+                        '#preview blockquote strong, #preview blockquote b { color:#1a1a1a !important; font-weight:700 !important; }',
+                        '#preview blockquote code { background:#eef0f3 !important; color:#1a1a1a !important; }',
+
+                        // ── TABLES ── full borders, header bg, zebra rows, cell padding
+                        // thead/tbody as proper row groups so header repeats on page break
+                        '#preview table { width:100% !important; border-collapse:collapse !important; border:1px solid #c0c0c0 !important; margin:1em 0 !important; font-size:0.95em !important; }',
+                        '#preview thead { display:table-header-group !important; }',
+                        '#preview tbody { display:table-row-group !important; }',
+                        '#preview tfoot { display:table-footer-group !important; }',
+                        '#preview thead tr, #preview thead th { page-break-inside:avoid !important; break-inside:avoid !important; page-break-after:avoid !important; break-after:avoid !important; }',
+                        '#preview thead th { background:#f1f3f5 !important; color:#000 !important; font-weight:700 !important; border:1px solid #c0c0c0 !important; padding:8px 12px !important; text-align:left !important; }',
+                        '#preview tbody td { color:#1a1a1a !important; border:1px solid #d0d7de !important; padding:8px 12px !important; background:#fff !important; vertical-align:top !important; }',
+                        '#preview tbody tr:nth-child(even) td { background:#fafbfc !important; }',
+                        '#preview tbody tr:hover td { background:#fff !important; }',
+                        '#preview table strong, #preview table b { color:#000 !important; }',
+
+                        // Strong / emphasis
+                        '#preview strong, #preview b { color:#000 !important; font-weight:700 !important; }',
+
+                        // Links
+                        '#preview a { color:#0366d6 !important; text-decoration:underline !important; word-break:break-all !important; }',
+
+                        // HR
+                        '#preview hr { background:#c0c0c0 !important; height:1px !important; border:none !important; opacity:1 !important; margin:1.5em 0 !important; }',
+
+                        // Mark — yellow highlight
+                        '#preview mark { background:#fff8c5 !important; color:#000 !important; padding:0 2px !important; }',
+
+                        // Images
+                        '#preview img { max-width:100% !important; height:auto !important; box-shadow:none !important; }',
+
+                        // Page break behavior
+                        '#preview pre, #preview img { page-break-inside:avoid !important; break-inside:avoid !important; }',
+                        '#preview tr { page-break-inside:avoid !important; break-inside:avoid !important; }',
+                        '#preview blockquote { page-break-inside:avoid !important; break-inside:avoid !important; }',
+                        '#preview h1, #preview h2, #preview h3 { page-break-after:avoid !important; break-after:avoid !important; }',
+                        // Keep code-block + caption blockquote together (e.g. diagram + 실증 근거)
+                        '#preview pre + blockquote, #preview img + blockquote { page-break-before:avoid !important; break-before:avoid !important; }',
+                        // Keep an element that follows a heading on the same page as the heading
+                        '#preview h1 + *, #preview h2 + *, #preview h3 + *, #preview h4 + * { page-break-before:avoid !important; break-before:avoid !important; }'
+                    ].join('\n');
+                    clonedDoc.head.appendChild(s);
+                }
+            },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['css', 'legacy'] }
+        };
+
+        html2pdf().set(opt).from(element).toPdf().get('pdf').then(function (pdf) {
+            var pageCount = pdf.internal.getNumberOfPages();
+            var pageWidth = pdf.internal.pageSize.getWidth();
+            var pageHeight = pdf.internal.pageSize.getHeight();
+
+            for (var i = 1; i <= pageCount; i++) {
+                pdf.setPage(i);
+
+                // Running header (skip first page — already has title in body)
+                if (docTitle && i > 1) {
+                    pdf.setFontSize(9);
+                    pdf.setTextColor(140, 140, 140);
+                    pdf.text(docTitle, 18, 12, { align: 'left' });
+                    // Header underline
+                    pdf.setDrawColor(220, 220, 220);
+                    pdf.setLineWidth(0.2);
+                    pdf.line(18, 14, pageWidth - 18, 14);
+                }
+
+                // Footer page number
+                pdf.setFontSize(9);
+                pdf.setTextColor(140, 140, 140);
+                pdf.text(i + ' / ' + pageCount, pageWidth / 2, pageHeight - 10, { align: 'center' });
+            }
+
+            pdf.save(fileName);
+            restore();
+            showToast('PDF 저장 완료');
+            if (previousMode !== 'preview') {
+                setMode(previousMode);
+            }
+        }).catch(function (err) {
+            restore();
+            console.error(err);
+            showToast('PDF 저장 실패');
+        });
+    }, 150);
 }
 
 function showToast(message) {
@@ -983,6 +1143,14 @@ function buildUI(fileName) {
     fontSizeGroup.appendChild(fontUpBtn);
     topRight.appendChild(fontSizeGroup);
 
+    // PDF export button (always visible in topbar)
+    var pdfBtn = document.createElement('button');
+    pdfBtn.className = 'topbar-btn pdf-btn';
+    pdfBtn.title = 'Export as PDF / PDF로 저장';
+    pdfBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 2h6l3 3v9h-9V2z"/><path d="M9.5 2v3h3"/><text x="4.5" y="11.5" font-size="3.2" font-weight="700" fill="currentColor" stroke="none" font-family="sans-serif">PDF</text></svg>';
+    pdfBtn.addEventListener('click', function () { exportToPdf(); });
+    topRight.appendChild(pdfBtn);
+
     var outlineBtn = document.createElement('button');
     outlineBtn.className = 'topbar-btn outline-toggle';
     outlineBtn.title = 'Toggle Outline';
@@ -1004,14 +1172,18 @@ function buildUI(fileName) {
     toolbarEl = document.createElement('div');
     toolbarEl.className = 'toolbar';
 
+    // OS-aware modifier label for tooltips
+    var isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform || '');
+    var modKey = isMac ? 'Cmd' : 'Ctrl';
+
     var toolbarItems = [
         { action: 'h1', label: 'H1', title: 'Heading 1' },
         { action: 'h2', label: 'H2', title: 'Heading 2' },
         { action: 'h3', label: 'H3', title: 'Heading 3' },
         { action: 'divider' },
-        { action: 'bold', label: 'B', title: 'Bold (Cmd+B)', cls: 'bold-btn' },
-        { action: 'italic', label: 'I', title: 'Italic (Cmd+I)', cls: 'italic-btn' },
-        { action: 'code', label: '<>', title: 'Code (Cmd+Shift+C)', cls: 'code-btn' },
+        { action: 'bold', label: 'B', title: 'Bold (' + modKey + '+B)', cls: 'bold-btn' },
+        { action: 'italic', label: 'I', title: 'Italic (' + modKey + '+I)', cls: 'italic-btn' },
+        { action: 'code', label: '<>', title: 'Code (' + modKey + '+Shift+C)', cls: 'code-btn' },
         { action: 'divider' },
         { action: 'link', label: '', title: 'Link', icon: 'link' },
         { action: 'bullet', label: '', title: 'Bullet List', icon: 'bullet' },
@@ -1022,7 +1194,6 @@ function buildUI(fileName) {
         { action: 'divider' },
         { action: 'copy', label: '', title: 'Copy Markdown', icon: 'copy' },
         { action: 'copy-html', label: '', title: 'Copy as HTML', icon: 'html' },
-        { action: 'pdf', label: '', title: 'Export as PDF / PDF로 저장', icon: 'pdf' },
         { action: 'focus', label: '', title: 'Focus Mode', icon: 'focus' }
     ];
 
@@ -1144,7 +1315,6 @@ function getToolbarIcon(name) {
         hr: '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="7" width="14" height="2" rx="1"/></svg>',
         copy: '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="8" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M6 4V2.5C6 2.2 6.2 2 6.5 2h5c.3 0 .5.2.5.5v7c0 .3-.2.5-.5.5H10" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>',
         html: '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 5L3 8l2.5 3M10.5 5L13 8l-2.5 3M9 4l-2 8" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-        pdf: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2h7l3 3v9H3V2z"/><path d="M10 2v3h3"/><text x="4" y="12" font-size="3.4" font-weight="700" fill="currentColor" stroke="none" font-family="sans-serif">PDF</text></svg>',
         focus: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M2 5V2h3M14 5V2h-3M2 11v3h3M14 11v3h-3"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg>'
     };
     return icons[name] || '';

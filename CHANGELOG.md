@@ -5,6 +5,18 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.6.1] - 2026-05-06
+
+### Changed
+- **Windows 호환성 개선**
+  - 툴바 툴팁이 OS 감지로 `Cmd`/`Ctrl` 동적 표시 (Windows 사용자 혼란 해소)
+  - `Ctrl+Shift+M` → `Ctrl+Alt+M` (Windows VS Code 기본 "Problems 패널" 단축키 충돌 회피)
+  - Mac은 `Cmd+Alt+M`으로 동일 변경
+
+### Removed (Cleanup)
+- Dead CSS: `body.exporting-pdf` 룰셋 177줄 제거 (PDF는 onclone 방식 사용)
+- Dead code: `case 'pdf':` toolbar action, `pdf:` icon SVG 제거 (PDF 버튼은 topbar로 이동됨)
+
 ## [0.6.0] - 2026-04-27
 
 ### Added

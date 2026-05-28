@@ -127,6 +127,7 @@ code --install-extension md-pretty-viewer-0.6.0.vsix
 | `Ctrl/Cmd + B` | Bold |
 | `Ctrl/Cmd + I` | Italic |
 | `Ctrl/Cmd + Shift + C` | Code |
+| `Ctrl/Cmd + Alt + M` | Open Pretty View (when on .md file) |
 | `Tab` | Indent (4 spaces) |
 | Double-click | Preview → Edit |
 
