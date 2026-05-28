@@ -5,6 +5,11 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.7.1] - 2026-05-28
+
+### Removed
+- **Sticky H1/H2 헤딩 제거** — 스크롤 시 헤딩이 상단에 고정되던 동작이 어색하다는 피드백 반영. 자연스럽게 위로 스크롤되도록 변경.
+
 ## [0.7.0] - 2026-05-28
 
 ### Added — Major productivity features

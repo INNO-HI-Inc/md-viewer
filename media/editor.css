@@ -1379,37 +1379,6 @@ body.focus-mode .editor-wrap {
 .save-state-dirty   { color: #e0a82e; opacity: 0.9; }
 
 /* ══════════════════════════════════════════════════════════════
-   STICKY HEADINGS — keep current section header visible while scrolling
-   ══════════════════════════════════════════════════════════════ */
-
-.markdown-body h1,
-.markdown-body h2 {
-    position: sticky;
-    top: 0;
-    background: var(--md-bg);
-    z-index: 5;
-    padding-top: 0.5em;
-    margin-top: 0;
-}
-
-.markdown-body h2 {
-    top: 2.6em; /* sits below the h1 */
-    z-index: 4;
-}
-
-/* Disable sticky inside split mode editor pane (cluttered) */
-body.mode-split .markdown-body h1,
-body.mode-split .markdown-body h2 {
-    position: static;
-}
-
-/* Disable sticky during PDF export so headings don't overlap content */
-body.exporting-pdf .markdown-body h1,
-body.exporting-pdf .markdown-body h2 {
-    position: static !important;
-}
-
-/* ══════════════════════════════════════════════════════════════
    COLOR THEMES
    ══════════════════════════════════════════════════════════════ */
 
