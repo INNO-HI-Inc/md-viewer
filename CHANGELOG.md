@@ -5,6 +5,28 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.7.0] - 2026-05-28
+
+### Added — Major productivity features
+
+- **LaTeX 수식 렌더링 (KaTeX)** — `$E=mc^2$` (인라인), `$$\int x\,dx$$` (블록) 지원
+  - KaTeX 14개 폰트 번들 (오프라인 작동)
+  - throwOnError: false, 오류 시 빨간 텍스트로 표시
+- **이미지 클립보드 붙여넣기** — 스크린샷 캡처 후 Edit 모드에서 `Cmd/Ctrl+V`
+  - base64 인라인 이미지로 자동 변환·삽입
+  - 토스트 알림 표시
+- **TOC 자동 생성** — 마크다운에 `[[TOC]]` 또는 `[[목차]]` 마커 사용
+  - H1~H4 자동 추출
+  - 클릭 가능한 앵커 링크
+  - 들여쓰기 레벨별 시각 구분
+- **Sticky 헤딩** — 긴 문서 스크롤 시 H1/H2가 상단에 고정
+  - Preview 모드에서만 적용 (Split 모드는 제외)
+  - PDF 출력 시 자동 비활성화
+- **저장 상태 인디케이터** — 상태바 중앙에 `● 수정됨` / `◐ 저장 중` / `✓ 저장됨` 실시간 표시
+
+### Changed
+- README 헤더 재디자인 (rating 배지 추가, 더 정돈된 레이아웃)
+
 ## [0.6.1] - 2026-05-06
 
 ### Changed

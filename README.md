@@ -1,43 +1,50 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/icon.png" width="100" alt="MD Pretty Viewer">
+<div align="center">
+
+<a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer">
+  <img src="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/icon.png" width="96" height="96" alt="MD Pretty Viewer">
+</a>
+
+<h1>
+  MD Pretty Viewer
+</h1>
+
+<p>
+  <b>Beautiful markdown editor for VS Code.</b><br/>
+  <sub>마크다운을 가장 예쁘게, 가장 빠르게.</sub>
 </p>
 
-<h1 align="center">MD Pretty Viewer</h1>
-
-<p align="center">
-  <strong>Beautiful markdown, in VS Code.</strong><br>
-  <sub>마크다운을 예쁘게. VS Code에서.</sub>
+<p>
+  <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer"><img src="https://img.shields.io/visual-studio-marketplace/v/innohi.md-pretty-viewer?style=flat-square&color=448CFF&labelColor=24292e&logo=visualstudiocode&logoColor=white&label=VS%20Code" alt="VS Code Marketplace"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer"><img src="https://img.shields.io/visual-studio-marketplace/d/innohi.md-pretty-viewer?style=flat-square&color=448CFF&labelColor=24292e&label=installs" alt="Installs"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer&ssr=false#review-details"><img src="https://img.shields.io/visual-studio-marketplace/r/innohi.md-pretty-viewer?style=flat-square&color=448CFF&labelColor=24292e&label=rating" alt="Rating"></a>
+  <a href="https://github.com/INNO-HI-Inc/md-viewer/blob/main/LICENSE"><img src="https://img.shields.io/github/license/INNO-HI-Inc/md-viewer?style=flat-square&color=448CFF&labelColor=24292e" alt="License"></a>
 </p>
 
-<p align="center">
-  Live preview · 7 color themes · Outline sidebar · Formatting toolbar · Syntax highlighting
+<p>
+  Live preview &nbsp;·&nbsp; 13 themes &nbsp;·&nbsp; Outline &nbsp;·&nbsp; PDF export &nbsp;·&nbsp; Korean-first typography
 </p>
 
-<p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer">
-    <img src="https://img.shields.io/visual-studio-marketplace/v/innohi.md-pretty-viewer?color=448CFF&label=Marketplace" alt="Marketplace">
-  </a>
-  <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer">
-    <img src="https://img.shields.io/visual-studio-marketplace/d/innohi.md-pretty-viewer?color=448CFF&label=installs" alt="Installs">
-  </a>
-  <a href="https://github.com/INNO-HI-Inc/md-viewer/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/INNO-HI-Inc/md-viewer?color=448CFF" alt="License">
-  </a>
+<p>
+  <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer"><b>Install →</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://inno-hi-inc.github.io/md-viewer/">Homepage</a>
+  &nbsp;·&nbsp;
+  <a href="https://inno-hi-inc.github.io/md-viewer/demo.html">Live Demo</a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/INNO-HI-Inc/md-viewer/issues">Report Bug</a>
 </p>
 
-<p align="center">
-  <a href="https://inno-hi-inc.github.io/md-viewer/">🏠 Homepage</a> ·
-  <a href="https://inno-hi-inc.github.io/md-viewer/demo.html">▶ Live Demo</a> ·
-  <a href="https://github.com/INNO-HI-Inc/md-viewer/issues">🐛 Report Issue</a>
+<p>
+  <sub><a href="#english">English</a> &nbsp;·&nbsp; <a href="#한국어">한국어</a></sub>
 </p>
 
-<p align="center">
-  <a href="#english">English</a> · <a href="#한국어">한국어</a>
-</p>
+<br/>
 
----
+<a href="https://inno-hi-inc.github.io/md-viewer/demo.html">
+  <img src="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/screenshot.png" alt="MD Pretty Viewer screenshot" width="100%">
+</a>
 
-![MD Pretty Viewer Screenshot](https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/screenshot.png)
+</div>
 
 ---
 
@@ -97,6 +104,21 @@ Copy the rendered HTML output to clipboard with one click.
 ### 📄 Export as PDF
 Save the rendered preview as a PDF via the system print dialog. A4-optimized layout with smart page breaks.
 
+### 🧮 LaTeX Math (KaTeX)
+Render math: `$E = mc^2$` inline, `$$\int_0^\infty e^{-x^2}dx$$` block. KaTeX fonts bundled — works offline.
+
+### 🖼 Clipboard Image Paste
+Capture a screenshot, switch to Edit mode, press `Cmd/Ctrl+V` → image auto-inserted as base64 markdown.
+
+### 📑 Auto Table of Contents
+Insert `[[TOC]]` or `[[목차]]` anywhere in your markdown → auto-generated, clickable TOC with proper indentation.
+
+### 📌 Sticky Headings
+Current H1/H2 stays pinned at the top while scrolling long documents.
+
+### 💾 Save Status Indicator
+Status bar shows `● Modified` / `◐ Saving` / `✓ Saved` in real time.
+
 ---
 
 ## 📦 Installation
@@ -114,7 +136,7 @@ code --install-extension innohi.md-pretty-viewer
 ### Manual VSIX
 Download `.vsix` from [Releases](https://github.com/INNO-HI-Inc/md-viewer/releases/latest), then:
 ```bash
-code --install-extension md-pretty-viewer-0.6.0.vsix
+code --install-extension md-pretty-viewer-0.7.0.vsix
 ```
 
 ---

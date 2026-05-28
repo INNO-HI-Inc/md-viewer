@@ -165,12 +165,58 @@ function scrollToHeading(text) {
    ─────────────────────────────────────────── */
 function renderPreview() {
     if (!previewEl) return;
-    var html = renderMarkdown(currentContent);
+    var contentWithToc = injectTOC(currentContent);
+    var html = renderMarkdown(contentWithToc);
     previewEl.innerHTML = html;
     highlightCodeBlocks(previewEl);
     addHeadingIds();
     buildOutline(html);
     makeCheckboxesClickable();
+    renderMath(previewEl);
+}
+
+function renderMath(container) {
+    if (typeof renderMathInElement === 'undefined') return;
+    try {
+        renderMathInElement(container, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false },
+                { left: '\\[', right: '\\]', display: true }
+            ],
+            throwOnError: false,
+            errorColor: '#cc0000'
+        });
+    } catch (e) { /* katex unavailable */ }
+}
+
+function injectTOC(md) {
+    // Replace [[TOC]] or [[목차]] markers with a generated table of contents
+    if (!/\[\[(TOC|목차)\]\]/i.test(md)) return md;
+    var lines = md.split('\n');
+    var inCode = false;
+    var headings = [];
+    lines.forEach(function (line) {
+        if (/^```/.test(line)) inCode = !inCode;
+        if (inCode) return;
+        var m = line.match(/^(#{1,4})\s+(.+?)\s*$/);
+        if (m) {
+            // Skip headings on TOC marker line itself
+            if (/\[\[(TOC|목차)\]\]/i.test(m[2])) return;
+            var level = m[1].length;
+            var text = m[2].replace(/[`*_~]/g, '').trim();
+            var slug = 'heading-' + text.toLowerCase().replace(/[^\w\s-가-힣]/g, '').replace(/\s+/g, '-').substring(0, 60);
+            headings.push({ level: level, text: text, slug: slug });
+        }
+    });
+    if (headings.length === 0) return md.replace(/\[\[(TOC|목차)\]\]/gi, '');
+    var toc = ['<div class="md-toc"><div class="md-toc-title">목차 / Table of Contents</div><ul>'];
+    headings.forEach(function (h) {
+        toc.push('<li class="md-toc-level-' + h.level + '"><a href="#' + h.slug + '">' + h.text + '</a></li>');
+    });
+    toc.push('</ul></div>');
+    return md.replace(/\[\[(TOC|목차)\]\]/gi, toc.join(''));
 }
 
 function makeCheckboxesClickable() {
@@ -546,10 +592,21 @@ function onEditorInput() {
     if (!editorEl) return;
     currentContent = editorEl.value;
     updateStats();
+    setSaveState('dirty');
     if (currentMode === 'split') {
         renderPreview();
     }
     saveToDocument(currentContent);
+}
+
+// Save state indicator: 'saved' | 'dirty' | 'saving'
+var saveStateEl = null;
+function setSaveState(state) {
+    if (!saveStateEl) return;
+    saveStateEl.className = 'save-state save-state-' + state;
+    if (state === 'dirty') saveStateEl.textContent = '● 수정됨';
+    else if (state === 'saving') saveStateEl.textContent = '◐ 저장 중';
+    else saveStateEl.textContent = '✓ 저장됨';
 }
 
 function updateLineNumbers() {
@@ -567,8 +624,10 @@ function updateLineNumbers() {
    ─────────────────────────────────────────── */
 function saveToDocument(content) {
     clearTimeout(window._saveTimer);
+    setSaveState('saving');
     window._saveTimer = setTimeout(function () {
         vscodeApi.postMessage({ type: 'edit', content: content });
+        setSaveState('saved');
     }, 300);
 }
 
@@ -1247,6 +1306,34 @@ function buildUI(fileName) {
         if (lineNumbersEl) lineNumbersEl.scrollTop = editorEl.scrollTop;
     });
 
+    // Paste handler — convert clipboard images to base64 markdown
+    editorEl.addEventListener('paste', function (e) {
+        if (!e.clipboardData || !e.clipboardData.items) return;
+        for (var i = 0; i < e.clipboardData.items.length; i++) {
+            var item = e.clipboardData.items[i];
+            if (item.type && item.type.indexOf('image/') === 0) {
+                e.preventDefault();
+                var file = item.getAsFile();
+                if (!file) continue;
+                var reader = new FileReader();
+                reader.onload = function (ev) {
+                    var dataUrl = ev.target.result;
+                    var altText = 'image-' + Date.now();
+                    var insertion = '![' + altText + '](' + dataUrl + ')';
+                    var start = editorEl.selectionStart;
+                    var end = editorEl.selectionEnd;
+                    editorEl.value = editorEl.value.substring(0, start) + insertion + editorEl.value.substring(end);
+                    editorEl.selectionStart = editorEl.selectionEnd = start + insertion.length;
+                    onEditorInput();
+                    updateLineNumbers();
+                    showToast('이미지 붙여넣음 / Image pasted');
+                };
+                reader.readAsDataURL(file);
+                return;
+            }
+        }
+    });
+
     editorWrap.appendChild(lineNumbersEl);
     editorWrap.appendChild(editorEl);
     editorPane.appendChild(editorWrap);
@@ -1298,10 +1385,18 @@ function buildUI(fileName) {
     statsLeftEl = document.createElement('span');
     statsLeftEl.className = 'stats-left';
 
+    var statsCenter = document.createElement('span');
+    statsCenter.className = 'stats-center';
+    saveStateEl = document.createElement('span');
+    saveStateEl.className = 'save-state save-state-saved';
+    saveStateEl.textContent = '✓ 저장됨';
+    statsCenter.appendChild(saveStateEl);
+
     statsRightEl = document.createElement('span');
     statsRightEl.className = 'stats-right';
 
     statusbar.appendChild(statsLeftEl);
+    statusbar.appendChild(statsCenter);
     statusbar.appendChild(statsRightEl);
     app.appendChild(statusbar);
 }
