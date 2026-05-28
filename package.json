@@ -1,7 +1,7 @@
 {
   "name": "md-pretty-viewer",
   "displayName": "MD Pretty Viewer",
-  "description": "마크다운을 Notion처럼 예쁘게. 실시간 프리뷰, 7가지 컬러 테마, 아웃라인 사이드바, 서식 도구를 제공하는 VS Code 마크다운 뷰어. A beautiful markdown viewer & editor with live preview, 7 color themes, outline, and formatting toolbar.",
+  "description": "내가 쓴 마크다운이 작품이 되는 순간. LaTeX 수식, 13가지 컬러 테마, 한 클릭 PDF 출력, 한글 폰트 번들, 클립보드 이미지 붙여넣기, TOC 자동 생성. — Where your markdown becomes a masterpiece. LaTeX math, 13 themes, one-click PDF, Korean fonts bundled, image paste, auto TOC. The most beautiful markdown editor for VS Code.",
   "version": "0.7.0",
   "publisher": "innohi",
   "author": {

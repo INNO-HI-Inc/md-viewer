@@ -9,8 +9,15 @@
 </h1>
 
 <p>
-  <b>Beautiful markdown editor for VS Code.</b><br/>
-  <sub>마크다운을 가장 예쁘게, 가장 빠르게.</sub>
+  <b>Where your markdown becomes a masterpiece.</b><br/>
+  <sub>내가 쓴 마크다운이 작품이 되는 순간.</sub>
+</p>
+
+<p>
+  <sub>
+    Live preview that doesn't suck. 13 themes for every mood. PDF export that actually looks good.<br/>
+    LaTeX math, clipboard image paste, auto TOC, Korean-first typography — all bundled, all offline.
+  </sub>
 </p>
 
 <p>
