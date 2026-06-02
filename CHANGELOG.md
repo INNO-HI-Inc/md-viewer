@@ -5,6 +5,17 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.7.2] - 2026-05-28
+
+### Added
+- **안전한 HTML 렌더링** — README 상단의 `<p align="center">`, 배지, 이미지, 앵커 등 GitHub 스타일 raw HTML이 프리뷰에서 정상 렌더링됨 (allowlist 기반 sanitizer)
+  - 허용 태그: `<p>`, `<div>`, `<a>`, `<img>`, `<details>`, `<summary>`, `<kbd>`, 표 태그 등
+  - 차단: `<script>`, `<iframe>`, `<style>`, on* 이벤트 핸들러, inline style, `javascript:` / `vbscript:` / `data:` / `file:` URL
+  - Credit: PR #4 by [@FIN443](https://github.com/FIN443) (jihoon)
+
+### Security
+- raw HTML 전체 escape → allowlist 기반 sanitization으로 변경 (안전성 유지하면서 GitHub-flavored HTML 지원)
+
 ## [0.7.1] - 2026-05-28
 
 ### Removed
