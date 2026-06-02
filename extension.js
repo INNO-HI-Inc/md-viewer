@@ -41,12 +41,17 @@ function getHtml(webview, nonce, context, document, docBaseUri, settings) {
 <body class="mode-${initialMode}">
     <div id="app"></div>
     <script nonce="${nonce}" src="${mediaUri('marked.min.js')}"></script>
-    <script nonce="${nonce}" src="${mediaUri('html2pdf.bundle.min.js')}"></script>
     <script nonce="${nonce}" src="${mediaUri('katex.min.js')}"></script>
     <script nonce="${nonce}" src="${mediaUri('katex-auto-render.min.js')}"></script>
     <script nonce="${nonce}" src="${mediaUri('highlight.min.js')}"></script>
     <script nonce="${nonce}" src="${mediaUri('editor.js')}"></script>
     <script nonce="${nonce}">
+        // Lazy-loaded heavy libraries: paths passed in for on-demand <script> injection
+        window.__lazyAssets = {
+            mermaid: ${JSON.stringify(mediaUri('mermaid.min.js').toString())},
+            html2pdf: ${JSON.stringify(mediaUri('html2pdf.bundle.min.js').toString())},
+            nonce: ${JSON.stringify(nonce)}
+        };
         initEditor(${JSON.stringify(content)}, ${JSON.stringify(fileName)}, ${JSON.stringify(docBaseUri.toString())}, ${JSON.stringify(settings)});
     </script>
 </body>

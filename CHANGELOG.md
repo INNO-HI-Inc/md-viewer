@@ -5,6 +5,23 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.8.0] - 2026-06-02
+
+### Added
+- **Mermaid 다이어그램 지원** — \`\`\`mermaid 코드 블록을 자동으로 다이어그램으로 렌더링
+  - 시퀀스, 플로우차트, 클래스, ER, 간트 등 모든 mermaid 타입 지원
+  - **Lazy load** — `\`\`\`mermaid` 블록이 있을 때만 라이브러리 로드 (초기 시작 속도 영향 없음)
+  - 다크/라이트 테마 자동 감지
+  - `securityLevel: strict`로 안전한 렌더링
+- **html2pdf 라이브러리 lazy load** — PDF 버튼 첫 클릭 시에만 로드 (초기 시작 빨라짐)
+- **CI/CD 자동 배포** — `.github/workflows/release.yml`
+  - 태그 push 시 자동 VSIX 빌드 + GitHub Release 생성
+  - `VSCE_PAT` secret 설정 시 자동 Marketplace publish
+
+### Changed
+- **번들 사이즈 최적화** — esbuild로 editor.js/css minify (35% 축소, 49KB 절감)
+- AtoZ 폰트 subset (한글 일반 + ASCII만) — 879KB → 856KB
+
 ## [0.7.2] - 2026-05-28
 
 ### Added

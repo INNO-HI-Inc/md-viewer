@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install vsce
+        run: npm install -g @vscode/vsce
+
+      - name: Package VSIX
+        run: vsce package
+
+      - name: Get version
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release with VSIX
+        uses: softprops/action-gh-release@v1
+        with:
+          files: "*.vsix"
+          name: "MD Pretty Viewer v${{ steps.version.outputs.version }}"
+          body: |
+            See [CHANGELOG.md](https://github.com/INNO-HI-Inc/md-viewer/blob/main/CHANGELOG.md) for changes.
+
+            ## Install
+            ```bash
+            code --install-extension innohi.md-pretty-viewer
+            ```
+
+      - name: Publish to VS Code Marketplace
+        if: env.VSCE_PAT != ''
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: vsce publish --no-git-tag-version -p $VSCE_PAT
