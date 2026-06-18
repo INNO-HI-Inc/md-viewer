@@ -108,56 +108,71 @@ async function openPrettyView(context, uri, viewColumn) {
 
     panel.webview.html = getHtml(panel.webview, nonce, context, document, docBaseUri, initialSettings);
 
-    let isWebviewEdit = false;
+    // Track if panel has been disposed to avoid postMessage after dispose
+    let isDisposed = false;
+    // safePost: never reject after dispose, always swallow errors
+    const safePost = (msg) => {
+        if (isDisposed) return;
+        try {
+            const p = panel.webview.postMessage(msg);
+            if (p && typeof p.then === 'function') p.then(undefined, () => {});
+        } catch (_) { /* panel disposed mid-call */ }
+    };
 
     // Sync document changes → webview
+    // Use content comparison instead of boolean flag to avoid race when
+    // multiple edits land between webview→doc and doc→webview cycles.
     const changeDocSub = vscode.workspace.onDidChangeTextDocument(e => {
-        if (e.document.uri.toString() === uri.toString()) {
-            if (isWebviewEdit) {
-                isWebviewEdit = false;
-                return;
-            }
-            panel.webview.postMessage({
-                type: 'update',
-                content: e.document.getText()
-            });
-        }
+        if (e.document.uri.toString() !== uri.toString()) return;
+        const text = e.document.getText();
+        // Skip if we just applied this exact content from the webview
+        if (text === lastAppliedContent) return;
+        safePost({ type: 'update', content: text });
     });
+
+    // Tracks the most recent content the webview applied to the doc
+    let lastAppliedContent = null;
 
     // Sync settings changes → webview
     const configSub = vscode.workspace.onDidChangeConfiguration(e => {
-        if (e.affectsConfiguration('mdPrettyViewer')) {
-            const cfg = vscode.workspace.getConfiguration('mdPrettyViewer');
-            panel.webview.postMessage({
-                type: 'configChange',
-                settings: {
-                    defaultTheme: cfg.get('defaultTheme'),
-                    defaultFontSize: cfg.get('defaultFontSize'),
-                    defaultMode: cfg.get('defaultMode'),
-                    showOutline: cfg.get('showOutline')
-                }
-            });
-        }
+        if (!e.affectsConfiguration('mdPrettyViewer')) return;
+        const cfg = vscode.workspace.getConfiguration('mdPrettyViewer');
+        safePost({
+            type: 'configChange',
+            settings: {
+                defaultTheme: cfg.get('defaultTheme'),
+                defaultFontSize: cfg.get('defaultFontSize'),
+                defaultMode: cfg.get('defaultMode'),
+                showOutline: cfg.get('showOutline')
+            }
+        });
     });
 
     // Handle webview → document edits
     panel.webview.onDidReceiveMessage(async msg => {
         if (msg.type === 'edit') {
-            const doc = await vscode.workspace.openTextDocument(uri);
-            const fullRange = new vscode.Range(
-                new vscode.Position(0, 0),
-                new vscode.Position(doc.lineCount, 0)
-            );
-            const edit = new vscode.WorkspaceEdit();
-            edit.replace(uri, fullRange, msg.content);
-            isWebviewEdit = true;
-            await vscode.workspace.applyEdit(edit);
-            await doc.save();
+            if (isDisposed) return;
+            try {
+                const doc = await vscode.workspace.openTextDocument(uri);
+                if (doc.getText() === msg.content) return; // no-op
+                lastAppliedContent = msg.content;
+                const fullRange = new vscode.Range(
+                    new vscode.Position(0, 0),
+                    new vscode.Position(doc.lineCount, 0)
+                );
+                const edit = new vscode.WorkspaceEdit();
+                edit.replace(uri, fullRange, msg.content);
+                await vscode.workspace.applyEdit(edit);
+                await doc.save();
+            } catch (err) {
+                console.error('MD Pretty Viewer: edit apply failed', err);
+            }
         }
     });
 
     panel.onDidDispose(() => {
         openPanels.delete(uriKey);
+        isDisposed = true;
         activeWebviews.delete(panel.webview);
         changeDocSub.dispose();
         configSub.dispose();
@@ -171,7 +186,12 @@ function isMarkdownFile(uri) {
 }
 
 function broadcast(type, payload) {
-    activeWebviews.forEach(wv => wv.postMessage({ type, ...payload }));
+    activeWebviews.forEach(wv => {
+        try {
+            const p = wv.postMessage({ type, ...payload });
+            if (p && typeof p.then === 'function') p.then(undefined, () => {});
+        } catch (_) { /* disposed webview */ }
+    });
 }
 
 function showUpdateNotification(context) {

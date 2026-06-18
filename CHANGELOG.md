@@ -5,6 +5,21 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.9.5] - 2026-06-18 — Stability hardening
+
+### Fixed
+- **🔴 체크박스 토글 데이터 손상 방지** — 펜스 코드 블록 안에 있는 예제 `[ ]` 가 체크박스 인덱스에 잘못 카운트되어 엉뚱한 줄을 수정하던 silent corruption 버그
+- **🔴 PDF 내보내기 도중 race 해결** — 빠른 더블 클릭, 진행 중 모드 전환, 실패 시 모드 미복원 문제 모두 해결
+- **🟠 dispose된 webview에 postMessage 호출 시 unhandled rejection** 발생하던 문제 — safePost 헬퍼로 일괄 안전화
+- **🟠 외부 편집 vs webview 편집 race** — 단순 boolean flag → content 비교 방식으로 변경, 빠른 양방향 동기화 시 변경사항 유실 방지
+- **🟠 lazy load 실패 시 영구 캐시** — Mermaid/html2pdf 로드 실패 후 재시도 가능하도록 캐시 무효화
+- **🟠 TOC 링크 깨짐** — `injectTOC`/`addHeadingIds` slug 함수 통합, 한글 헤딩 보존 + 중복 헤딩 자동 deduplication
+- **🟠 Sanitizer foreign content** — `<svg>`, `<math>`, `<form>`, `<button>`, `<audio>`, `<video>` 등 dropWithContent에 명시적으로 추가 (defense-in-depth)
+- **🟡 Mermaid 재초기화 + race** — `mermaid.initialize`는 1회만 호출, render 완료 시 wrapper가 detach됐는지 검증
+- **🟡 renderPreview 재진입 방지** — `_isRendering` 가드로 중첩 호출 차단
+- **🟡 localStorage 예외 처리** — `lsGet`/`lsSet`/`lsRemove` 헬퍼로 일괄 감싸 quota/private mode 안전
+- **🟡 Code copy 버튼 closure 누수** — `currentTarget.closest()` 기반 lookup으로 변경
+
 ## [0.9.4] - 2026-06-18
 
 ### Added

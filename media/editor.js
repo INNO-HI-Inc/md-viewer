@@ -1,5 +1,16 @@
 /* MD Pretty Viewer — Webview Editor Logic */
 
+/* Safe localStorage helpers (v0.9.5) — webview env may block storage */
+function lsGet(key) {
+    try { return lsGet(key); } catch (_) { return null; }
+}
+function lsSet(key, value) {
+    try { lsSet(key, value); } catch (_) { /* quota / private mode */ }
+}
+function lsRemove(key) {
+    try { lsRemove(key); } catch (_) {}
+}
+
 const vscodeApi = acquireVsCodeApi();
 
 let currentContent = '';
@@ -91,9 +102,14 @@ function sanitizeNode(node) {
 
 function sanitizeElement(el) {
     var tag = el.tagName.toLowerCase();
+    // Drop foreign content & interactive tags wholesale (defense-in-depth)
     var dropWithContent = {
         script: true, style: true, iframe: true, object: true,
-        embed: true, link: true, meta: true, base: true
+        embed: true, link: true, meta: true, base: true,
+        svg: true, math: true, template: true, noscript: true,
+        form: true, button: true, textarea: true, select: true,
+        option: true, datalist: true, output: true, progress: true,
+        portal: true, audio: true, video: true, source: true, track: true
     };
     var allowedTags = {
         a: true, abbr: true, blockquote: true, br: true, code: true, dd: true,
@@ -217,14 +233,19 @@ function enhanceCodeBlocks(container) {
         copyBtn.type = 'button';
         copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="4.5" y="4.5" width="8" height="9" rx="1.2"/><path d="M3.5 11V3a.5.5 0 0 1 .5-.5h7"/></svg><span>Copy</span>';
         copyBtn.title = 'Copy code';
-        copyBtn.addEventListener('click', function () {
-            var text = code.textContent || '';
+        // Look up code via DOM (avoid closure capture of `code` that prevents GC)
+        copyBtn.addEventListener('click', function (e) {
+            var btn = e.currentTarget;
+            var wrapEl = btn.closest('.code-block-wrap');
+            var codeEl = wrapEl && wrapEl.querySelector('pre code');
+            var text = codeEl ? (codeEl.textContent || '') : '';
             (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () {
-                copyBtn.classList.add('copied');
-                copyBtn.querySelector('span').textContent = 'Copied!';
+                btn.classList.add('copied');
+                var span = btn.querySelector('span');
+                if (span) span.textContent = 'Copied!';
                 setTimeout(function () {
-                    copyBtn.classList.remove('copied');
-                    copyBtn.querySelector('span').textContent = 'Copy';
+                    btn.classList.remove('copied');
+                    if (span) span.textContent = 'Copy';
                 }, 1500);
             }).catch(function () { showToast('복사 실패'); });
         });
@@ -309,20 +330,30 @@ function scrollToHeading(text) {
 /* ───────────────────────────────────────────
    Preview rendering
    ─────────────────────────────────────────── */
+var _isRendering = false;
 function renderPreview() {
     if (!previewEl) return;
-    var processed = currentContent;
-    processed = injectTOC(processed);
-    processed = preprocessAdmonitions(processed);
-    processed = preprocessFootnotes(processed);
-    var html = renderMarkdown(processed);
-    previewEl.innerHTML = html;
-    highlightCodeBlocks(previewEl);
-    addHeadingIds();
-    buildOutline(html);
-    makeCheckboxesClickable();
-    renderMath(previewEl);
-    renderMermaid(previewEl);
+    if (_isRendering) return;       // re-entrancy guard
+    if (_isExporting) return;       // don't re-render mid-PDF capture
+    _isRendering = true;
+    try {
+        var processed = currentContent;
+        processed = injectTOC(processed);
+        processed = preprocessAdmonitions(processed);
+        processed = preprocessFootnotes(processed);
+        var html = renderMarkdown(processed);
+        previewEl.innerHTML = html;
+        highlightCodeBlocks(previewEl);
+        addHeadingIds();
+        buildOutline(html);
+        makeCheckboxesClickable();
+        renderMath(previewEl);
+        renderMermaid(previewEl);
+    } catch (err) {
+        console.error('MD Pretty Viewer: render failed', err);
+    } finally {
+        _isRendering = false;
+    }
 }
 
 /* Lazy script loader (v0.8.0) */
@@ -330,16 +361,22 @@ var _lazyLoaded = {};
 function lazyLoadScript(key, url) {
     if (_lazyLoaded[key]) return _lazyLoaded[key];
     if (!url) return Promise.reject(new Error('missing url for ' + key));
+    var s = document.createElement('script');
     _lazyLoaded[key] = new Promise(function (resolve, reject) {
-        var s = document.createElement('script');
         s.src = url;
         if (window.__lazyAssets && window.__lazyAssets.nonce) s.setAttribute('nonce', window.__lazyAssets.nonce);
         s.onload = function () { resolve(); };
-        s.onerror = function (e) { reject(e); };
+        s.onerror = function (e) {
+            // Clear cache + remove failed <script> so user can retry
+            delete _lazyLoaded[key];
+            if (s.parentNode) s.parentNode.removeChild(s);
+            reject(e);
+        };
         document.head.appendChild(s);
     });
     return _lazyLoaded[key];
 }
+var _mermaidInited = false;
 function renderMermaid(container) {
     if (!container) return;
     var blocks = container.querySelectorAll('pre code.language-mermaid, pre code.lang-mermaid');
@@ -347,7 +384,17 @@ function renderMermaid(container) {
     var assets = window.__lazyAssets || {};
     lazyLoadScript('mermaid', assets.mermaid).then(function () {
         if (typeof mermaid === 'undefined') return;
-        try { mermaid.initialize({ startOnLoad: false, theme: document.body.classList.contains('vscode-dark') ? 'dark' : 'default', securityLevel: 'strict', fontFamily: 'inherit' }); } catch (e) {}
+        if (!_mermaidInited) {
+            try {
+                mermaid.initialize({
+                    startOnLoad: false,
+                    theme: document.body.classList.contains('vscode-dark') ? 'dark' : 'default',
+                    securityLevel: 'strict',
+                    fontFamily: 'inherit'
+                });
+                _mermaidInited = true;
+            } catch (e) {}
+        }
         blocks.forEach(function (codeEl, idx) {
             var pre = codeEl.parentElement;
             if (!pre || pre.dataset.mermaidRendered) return;
@@ -356,7 +403,23 @@ function renderMermaid(container) {
             wrapper.className = 'mermaid-diagram';
             wrapper.id = 'mermaid-' + Date.now() + '-' + idx;
             pre.replaceWith(wrapper);
-            try { mermaid.render(wrapper.id + '-svg', source).then(function (r) { wrapper.innerHTML = r.svg; }).catch(function () { wrapper.outerHTML = '<pre><code class="language-mermaid">' + source.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</code></pre>'; }); } catch (e) { wrapper.outerHTML = '<pre><code class="language-mermaid">' + source.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</code></pre>'; }
+
+            var fallbackHtml = '<pre><code class="language-mermaid">' +
+                source.replace(/&/g, '&amp;').replace(/</g, '&lt;') +
+                '</code></pre>';
+
+            try {
+                mermaid.render(wrapper.id + '-svg', source).then(function (r) {
+                    // Guard: wrapper might be replaced by a newer render cycle
+                    if (!wrapper.isConnected) return;
+                    wrapper.innerHTML = r.svg;
+                }).catch(function () {
+                    if (!wrapper.isConnected) return;
+                    wrapper.outerHTML = fallbackHtml;
+                });
+            } catch (e) {
+                if (wrapper.isConnected) wrapper.outerHTML = fallbackHtml;
+            }
         });
     }).catch(function () {});
 }
@@ -419,22 +482,38 @@ function renderMath(container) {
     } catch (e) { /* katex unavailable */ }
 }
 
+// Unified slugify (preserves Hangul). Used by both injectTOC and addHeadingIds.
+function slugify(text) {
+    return 'heading-' + String(text || '').toLowerCase()
+        .replace(/[`*_~]/g, '')
+        .replace(/[^\w\s\-가-힣ㄱ-ㅎㅏ-ㅣ]/g, '')
+        .replace(/\s+/g, '-')
+        .substring(0, 60);
+}
+
 function injectTOC(md) {
     // Replace [[TOC]] or [[목차]] markers with a generated table of contents
     if (!/\[\[(TOC|목차)\]\]/i.test(md)) return md;
     var lines = md.split('\n');
     var inCode = false;
     var headings = [];
+    var seen = {};
     lines.forEach(function (line) {
-        if (/^```/.test(line)) inCode = !inCode;
+        if (/^```/.test(line)) { inCode = !inCode; return; }
         if (inCode) return;
         var m = line.match(/^(#{1,4})\s+(.+?)\s*$/);
         if (m) {
-            // Skip headings on TOC marker line itself
             if (/\[\[(TOC|목차)\]\]/i.test(m[2])) return;
             var level = m[1].length;
             var text = m[2].replace(/[`*_~]/g, '').trim();
-            var slug = 'heading-' + text.toLowerCase().replace(/[^\w\s-가-힣]/g, '').replace(/\s+/g, '-').substring(0, 60);
+            var slug = slugify(text);
+            // Deduplicate: append -2, -3, ... if collision
+            if (seen[slug] != null) {
+                seen[slug]++;
+                slug = slug + '-' + seen[slug];
+            } else {
+                seen[slug] = 1;
+            }
             headings.push({ level: level, text: text, slug: slug });
         }
     });
@@ -460,10 +539,15 @@ function makeCheckboxesClickable() {
 }
 
 function toggleCheckboxInSource(index, checked) {
-    // Find the Nth checkbox in the source markdown and toggle it
+    // Find the Nth checkbox in the source markdown and toggle it.
+    // CRITICAL: skip lines inside fenced code blocks so we don't corrupt code examples.
     var lines = currentContent.split('\n');
     var found = 0;
+    var inFence = false;
     for (var i = 0; i < lines.length; i++) {
+        // Track fenced code blocks (```)
+        if (/^\s*```/.test(lines[i])) { inFence = !inFence; continue; }
+        if (inFence) continue;
         var m = lines[i].match(/^(\s*[-*+]\s+)\[([ xX])\](\s)/);
         if (m) {
             if (found === index) {
@@ -482,13 +566,17 @@ function toggleCheckboxInSource(index, checked) {
 
 function addHeadingIds() {
     if (!previewEl) return;
+    var seen = {};
     previewEl.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(function (el) {
-        if (!el.id) {
-            el.id = 'heading-' + el.textContent.trim().toLowerCase()
-                .replace(/[^\w\s-]/g, '')
-                .replace(/\s+/g, '-')
-                .substring(0, 60);
+        if (el.id) return;
+        var slug = slugify(el.textContent.trim());
+        if (seen[slug] != null) {
+            seen[slug]++;
+            slug = slug + '-' + seen[slug];
+        } else {
+            seen[slug] = 1;
         }
+        el.id = slug;
     });
 }
 
@@ -571,7 +659,7 @@ function changeFontSize(delta) {
     var newSize = Math.max(12, Math.min(24, currentSize + delta));
     document.documentElement.style.setProperty('--md-font-size', newSize + 'px');
     if (fontSizeDisplayEl) fontSizeDisplayEl.textContent = Math.round(newSize);
-    localStorage.setItem('md-viewer-font-size', newSize + 'px');
+    lsSet('md-viewer-font-size', newSize + 'px');
 }
 
 function toolbarAction(action) {
@@ -617,7 +705,11 @@ function toolbarAction(action) {
     }
 }
 
+var _isExporting = false;
 function exportToPdf() {
+    // Guard against double-trigger (rapid clicks, keyboard repeat)
+    if (_isExporting) { showToast('PDF 생성 중입니다'); return; }
+
     if (typeof html2pdf === 'undefined') {
         var assets = window.__lazyAssets || {};
         if (!assets.html2pdf) { showToast('PDF 라이브러리 로드 실패'); return; }
@@ -626,6 +718,7 @@ function exportToPdf() {
         return;
     }
 
+    _isExporting = true;
     var previousMode = currentMode;
     if (currentMode !== 'preview') {
         setMode('preview');
@@ -799,12 +892,16 @@ function exportToPdf() {
 
             pdf.save(fileName);
             restore();
+            _isExporting = false;
             showToast('PDF 저장 완료');
             if (previousMode !== 'preview') {
                 setMode(previousMode);
             }
         }).catch(function (err) {
             restore();
+            _isExporting = false;
+            // Restore mode even on failure so user isn't stuck in preview
+            if (previousMode !== 'preview') setMode(previousMode);
             console.error(err);
             showToast('PDF 저장 실패');
         });
@@ -1039,8 +1136,8 @@ function applyTheme(themeId) {
     } else {
         document.body.setAttribute('data-theme', themeId);
     }
-    localStorage.setItem('md-viewer-theme', themeId);
-    localStorage.removeItem('md-viewer-custom-color');
+    lsSet('md-viewer-theme', themeId);
+    lsRemove('md-viewer-custom-color');
 
     var currentDot = document.querySelector('.theme-dot-current');
     if (currentDot) {
@@ -1128,8 +1225,8 @@ function clearCustomThemeVars() {
 function applyCustomColor(hex) {
     currentTheme = 'custom';
     document.body.removeAttribute('data-theme');
-    localStorage.setItem('md-viewer-theme', 'custom');
-    localStorage.setItem('md-viewer-custom-color', hex);
+    lsSet('md-viewer-theme', 'custom');
+    lsSet('md-viewer-custom-color', hex);
 
     var isDark = document.body.classList.contains('vscode-dark') ||
                  document.body.classList.contains('vscode-high-contrast');
@@ -1327,7 +1424,7 @@ function buildColorPalette() {
     hexInput.className = 'palette-hex-input';
     hexInput.placeholder = '#448CFF';
     hexInput.maxLength = 7;
-    hexInput.value = localStorage.getItem('md-viewer-custom-color') || '';
+    hexInput.value = lsGet('md-viewer-custom-color') || '';
 
     var nativeColor = document.createElement('input');
     nativeColor.type = 'color';
@@ -1435,7 +1532,7 @@ function buildUI(fileName) {
     fontDownBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M3.5 8.5h9a.75.75 0 000-1.5h-9a.75.75 0 000 1.5z"/></svg>';
     fontDownBtn.addEventListener('click', function () { changeFontSize(-1); });
 
-    var savedSize = localStorage.getItem('md-viewer-font-size');
+    var savedSize = lsGet('md-viewer-font-size');
     var initialSize = savedSize ? parseFloat(savedSize) : 16;
 
     fontSizeDisplayEl = document.createElement('span');
@@ -1726,14 +1823,14 @@ function initEditor(content, fileName, baseUri, initialSettings) {
     var settings = initialSettings || {};
 
     // Font size: saved > settings > default
-    var savedFontSize = localStorage.getItem('md-viewer-font-size');
+    var savedFontSize = lsGet('md-viewer-font-size');
     var fontSize = savedFontSize || (settings.defaultFontSize ? settings.defaultFontSize + 'px' : null);
     if (fontSize) {
         document.documentElement.style.setProperty('--md-font-size', fontSize);
     }
 
     // Theme: saved > settings > default
-    var savedTheme = localStorage.getItem('md-viewer-theme');
+    var savedTheme = lsGet('md-viewer-theme');
     currentTheme = savedTheme || settings.defaultTheme || 'blue';
 
     // Default mode
@@ -1748,7 +1845,7 @@ function initEditor(content, fileName, baseUri, initialSettings) {
 
     buildUI(fileName);
     // Restore custom color if saved
-    var savedCustomColor = localStorage.getItem('md-viewer-custom-color');
+    var savedCustomColor = lsGet('md-viewer-custom-color');
     if (currentTheme === 'custom' && savedCustomColor) {
         applyCustomColor(savedCustomColor);
     } else {
