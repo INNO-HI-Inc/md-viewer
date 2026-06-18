@@ -5,6 +5,12 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.8.1] - 2026-06-02
+
+### Added
+- **Edit 모드에서 더블클릭으로 Preview 돌아가기** — Preview에서 더블클릭으로 Edit 전환에 대응하는 대칭 동작
+  - 텍스트 영역의 단어 선택은 유지 (마진/줄번호 영역 더블클릭으로만 모드 전환)
+
 ## [0.8.0] - 2026-06-02
 
 ### Added
