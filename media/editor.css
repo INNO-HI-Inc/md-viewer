@@ -968,32 +968,67 @@ body.mode-split .editor-pane:hover::after {
     tab-size: 4;
 }
 
-/* ── Tables ── */
+/* ── Tables (v0.9.3 — theme-aware, modern) ── */
 .markdown-body table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    margin: 1.5em 0;
+    margin: 1.75em 0;
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: 10px;
     border: 1px solid var(--md-table-border);
-    font-size: 0.95em;
+    font-size: 0.94em;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
+/* Header — accent-tinted background + accent top stripe */
+.markdown-body thead {
+    position: relative;
+}
 .markdown-body thead th {
     background: var(--md-table-header-bg);
-    font-weight: 600;
+    color: var(--md-heading);
+    font-weight: 650;
     text-align: left;
-    padding: 10px 14px;
-    border-bottom: 2px solid var(--md-table-border);
-    font-size: 0.9em;
-    letter-spacing: 0.01em;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--md-table-border);
+    font-size: 0.88em;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    position: relative;
+}
+.markdown-body thead th:first-child {
+    border-top-left-radius: 9px;
+}
+.markdown-body thead th:last-child {
+    border-top-right-radius: 9px;
+}
+/* Subtle accent line under header — uses theme accent */
+.markdown-body thead th::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--md-accent) 0%, var(--md-accent) 60%, transparent 100%);
+    opacity: 0.55;
+}
+.markdown-body thead th:not(:first-child)::after {
+    background: linear-gradient(90deg, transparent 0%, var(--md-accent) 40%, var(--md-accent) 60%, transparent 100%);
+}
+.markdown-body thead th:not(:last-child) {
+    border-right: 1px solid var(--md-table-border);
 }
 
 .markdown-body tbody td {
-    padding: 9px 14px;
+    padding: 11px 16px;
     border-bottom: 1px solid var(--md-table-border);
     transition: background 0.15s ease;
+    vertical-align: top;
+}
+.markdown-body tbody td:not(:last-child) {
+    border-right: 1px solid var(--md-table-border);
 }
 
 .markdown-body tbody tr:nth-child(even) {
@@ -1006,6 +1041,20 @@ body.mode-split .editor-pane:hover::after {
 
 .markdown-body tbody tr:last-child td {
     border-bottom: none;
+}
+.markdown-body tbody tr:last-child td:first-child { border-bottom-left-radius: 9px; }
+.markdown-body tbody tr:last-child td:last-child  { border-bottom-right-radius: 9px; }
+
+/* Inline code inside table cells — softer */
+.markdown-body table code {
+    font-size: 0.86em;
+    padding: 1px 6px;
+}
+
+/* First column emphasis when content looks like a label */
+.markdown-body tbody td:first-child {
+    color: var(--md-heading);
+    font-weight: 550;
 }
 
 /* ── Images ── */
