@@ -2,7 +2,7 @@
   "name": "md-pretty-viewer",
   "displayName": "MD Pretty Viewer",
   "description": "내가 쓴 마크다운이 작품이 되는 순간. LaTeX 수식, 13가지 컬러 테마, 한 클릭 PDF 출력, 한글 폰트 번들, 클립보드 이미지 붙여넣기, TOC 자동 생성. — Where your markdown becomes a masterpiece. LaTeX math, 13 themes, one-click PDF, Korean fonts bundled, image paste, auto TOC. The most beautiful markdown editor for VS Code.",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "publisher": "innohi",
   "author": {
     "name": "INNO-HI Inc.",

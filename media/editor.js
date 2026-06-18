@@ -1530,7 +1530,11 @@ function buildUI(fileName) {
     editorWrap.appendChild(editorEl);
     editorPane.appendChild(editorWrap);
 
-    // Edit mode dblclick on margin → preview (skip when target is textarea so word-select works)
+    // Edit-mode double-click → Preview (symmetric counterpart to Preview→Edit)
+    // Listen on textarea directly so it works regardless of where user clicks.
+    editorEl.addEventListener('dblclick', function () {
+        if (currentMode === 'edit') setMode('preview');
+    });
     editorPane.addEventListener('dblclick', function (e) {
         if (currentMode === 'edit' && e.target !== editorEl) setMode('preview');
     });

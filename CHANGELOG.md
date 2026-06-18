@@ -5,6 +5,11 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.9.2] - 2026-06-18
+
+### Fixed
+- **Edit 모드 더블클릭 → Preview 전환이 안 되던 문제** — textarea 위에서 더블클릭해도 모드 전환되도록 수정. 이전엔 마진/줄번호 영역에서만 동작했음 (대부분 영역이 textarea라 사실상 안 됨). 대칭 UX 회복.
+
 ## [0.9.1] - 2026-06-18
 
 ### Fixed
