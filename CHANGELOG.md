@@ -5,6 +5,27 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.0] - 2026-06-18 — Stable 🎉
+
+3개월간의 반복적 개선 끝에 **stable 릴리스**로 진입합니다.
+
+### 안정성 검증
+v0.9.5의 코드 리뷰 감사 발견사항 11개 패치 전수 검증 완료:
+- ✅ Critical 3건 / High 4건 / Medium 4건 — 모두 정확히 적용 확인
+- ✅ Syntax / build / CSP / 구조 무결성 통과
+- ✅ 데드코드·잔재 호출 0건
+
+### 누적 기능 정리
+- **렌더링**: 마크다운(GFM) · LaTeX (KaTeX) · Mermaid · 코드 하이라이트 · TOC · Admonitions · Footnotes
+- **편집**: Preview/Edit/Split + 더블클릭 토글 · Slash 명령어 · Find&Replace · 리스트 자동 이어쓰기 · 스마트 Tab · 클립보드 이미지 paste · 줄 번호 · 저장 상태
+- **테마**: 13가지 컬러 테마 + 커스텀 컬러 팔레트
+- **출력**: A4 PDF (lazy load · 페이지 분할 최적화) · HTML 복사
+- **보안**: CSP + allowlist HTML sanitization (PR #4 외부 기여)
+- **국제화**: 에이투지체 한글 폰트 번들 · 한/영 바이링구얼 문서
+
+### v1.0 의의
+신규 사용자에게 stable 신호. 이후 변경은 SemVer 엄격 준수 (breaking change → major).
+
 ## [0.9.5] - 2026-06-18 — Stability hardening
 
 ### Fixed
