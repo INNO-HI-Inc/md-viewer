@@ -180,6 +180,60 @@ function highlightCodeBlocks(container) {
             hljs.highlightElement(block);
         });
     }
+    enhanceCodeBlocks(container);
+}
+
+/* Code block enhancement (v0.9.4) — language label + copy button */
+function enhanceCodeBlocks(container) {
+    container.querySelectorAll('pre').forEach(function (pre) {
+        if (pre.dataset.enhanced) return;
+        if (pre.parentElement && pre.parentElement.classList.contains('code-block-wrap')) return;
+        var code = pre.querySelector('code');
+        if (!code) return;
+        // Skip mermaid (it'll be replaced by diagram)
+        if (code.classList.contains('language-mermaid') || code.classList.contains('lang-mermaid')) return;
+
+        // Detect language from class
+        var lang = '';
+        Array.from(code.classList).forEach(function (cls) {
+            var m = cls.match(/^(?:language|lang)-(.+)$/);
+            if (m) lang = m[1];
+        });
+
+        var wrap = document.createElement('div');
+        wrap.className = 'code-block-wrap';
+        pre.parentElement.insertBefore(wrap, pre);
+
+        var header = document.createElement('div');
+        header.className = 'code-block-header';
+
+        var label = document.createElement('span');
+        label.className = 'code-block-lang';
+        label.textContent = lang || 'text';
+        header.appendChild(label);
+
+        var copyBtn = document.createElement('button');
+        copyBtn.className = 'code-block-copy';
+        copyBtn.type = 'button';
+        copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="4.5" y="4.5" width="8" height="9" rx="1.2"/><path d="M3.5 11V3a.5.5 0 0 1 .5-.5h7"/></svg><span>Copy</span>';
+        copyBtn.title = 'Copy code';
+        copyBtn.addEventListener('click', function () {
+            var text = code.textContent || '';
+            (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () {
+                copyBtn.classList.add('copied');
+                copyBtn.querySelector('span').textContent = 'Copied!';
+                setTimeout(function () {
+                    copyBtn.classList.remove('copied');
+                    copyBtn.querySelector('span').textContent = 'Copy';
+                }, 1500);
+            }).catch(function () { showToast('복사 실패'); });
+        });
+        header.appendChild(copyBtn);
+
+        wrap.appendChild(header);
+        wrap.appendChild(pre);
+        pre.dataset.enhanced = '1';
+    });
 }
 
 /* ───────────────────────────────────────────
@@ -700,7 +754,12 @@ function exportToPdf() {
                         // Keep code-block + caption blockquote together (e.g. diagram + 실증 근거)
                         '#preview pre + blockquote, #preview img + blockquote { page-break-before:avoid !important; break-before:avoid !important; }',
                         // Keep an element that follows a heading on the same page as the heading
-                        '#preview h1 + *, #preview h2 + *, #preview h3 + *, #preview h4 + * { page-break-before:avoid !important; break-before:avoid !important; }'
+                        '#preview h1 + *, #preview h2 + *, #preview h3 + *, #preview h4 + * { page-break-before:avoid !important; break-before:avoid !important; }',
+                        // Code block wrap: hide header in PDF, keep code block together
+                        '#preview .code-block-header { display:none !important; }',
+                        '#preview .code-block-wrap { page-break-inside:avoid !important; break-inside:avoid !important; border-radius:4px !important; }',
+                        // External link arrow — drop in print, URL is appended already
+                        '#preview a[href^="http"]::after, #preview a[href^="//"]::after { content: none !important; }'
                     ].join('\n');
                     clonedDoc.head.appendChild(s);
                 }
