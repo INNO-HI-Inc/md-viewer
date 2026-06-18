@@ -5,6 +5,18 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.9.0] - 2026-06-02
+
+### Added — 4 major productivity features
+- **Find & Replace 패널** (`Cmd/Ctrl + H`) — 찾기·바꾸기·전체 바꾸기 + 매치 카운트 + 이전/다음 네비게이션
+- **Slash 명령어 메뉴** — 줄 시작에서 `/` 입력 시 17개 명령어 팝업 (h1/h2/h3, code, table, link, quote, list, hr, check, admonition note/warning, math, mermaid, toc 등). 화살표·Enter 키보드 탐색
+- **각주 (Footnotes)** — `[^1]` 참조 + `[^1]: 정의` 형식 자동 처리, 하단 자동 섹션 생성, 양방향 백링크
+- **Admonitions / 알림 박스** — `:::note`, `:::warning`, `:::tip`, `:::danger` 등 8가지 타입. 아이콘 + 컬러 강조 + 다크모드 대응
+
+### Notes
+- 모든 신기능은 기존 마크다운 표준과 호환 (사용 안 하면 영향 없음)
+- 다크/라이트 테마 자동 대응
+
 ## [0.8.1] - 2026-06-02
 
 ### Added
