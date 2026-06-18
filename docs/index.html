@@ -630,12 +630,36 @@
         body[data-lang="ko"] .en { display: none; }
 
         /* ── Responsive ── */
+        @media (max-width: 900px) {
+            .feature-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+            .section { padding: 60px 20px; }
+            nav { padding: 12px 18px; }
+            .hero { padding: 90px 20px 50px; }
+            .hero-tag { font-size: 11px; padding: 4px 12px 4px 8px; max-width: 100%; white-space: normal; line-height: 1.4; }
+        }
         @media (max-width: 700px) {
             .feature-grid { grid-template-columns: 1fr; }
             .shortcut-grid { grid-template-columns: 1fr; }
+            .theme-picker { gap: 12px; }
             .nav-right a:not(.nav-btn):not(.lang-toggle) { display: none; }
-            .hero-btns { flex-direction: column; align-items: center; }
+            .nav-right .nav-btn { padding: 5px 10px; font-size: 12px; }
+            .hero-btns { flex-direction: column; align-items: stretch; }
+            .hero-btns .btn { justify-content: center; }
             .shot-wrap { padding: 0 12px 60px; }
+            .install-box code { font-size: 11px; overflow-x: auto; }
+            .demo-wrap { margin: 0 -8px; border-radius: 0; }
+            .theme-dots { gap: 10px; }
+            .t-dot { width: 36px; height: 36px; }
+        }
+        @media (max-width: 480px) {
+            .nav-left span { display: none; }
+            .nav-right { gap: 8px; }
+            .lang-toggle { padding: 1px; }
+            .lang-toggle button { padding: 3px 7px; font-size: 10px; }
+            h1, .hero h1 { font-size: 32px !important; }
+            .hero-desc { font-size: 14px; }
+            .section h2 { font-size: 22px; }
+            .feature-card { padding: 16px; }
         }
     </style>
 </head>
@@ -664,7 +688,7 @@
 <!-- Hero -->
 <section class="hero">
     <div class="hero-glow"></div>
-    <div class="hero-tag"><span class="dot"></span> v0.7.0 — LaTeX · Image Paste · TOC</div>
+    <div class="hero-tag"><span class="dot"></span> v0.9.0 — Slash · Footnotes · Admonitions · Find/Replace</div>
     <h1>
         <span class="ko">내가 쓴 마크다운이<br><span class="accent">작품이 되는</span> 순간</span>
         <span class="en">Where your markdown<br>becomes a <span class="accent">masterpiece</span></span>
@@ -761,6 +785,36 @@
             <span class="icon">&#128196;</span>
             <h3><span class="ko">PDF로 저장</span><span class="en">Export as PDF</span></h3>
             <p><span class="ko">툴바 PDF 버튼 한 번으로 깔끔한 A4 레이아웃 PDF 출력.</span><span class="en">One-click PDF export via system print dialog. A4-optimized layout.</span></p>
+        </div>
+        <div class="feature-card">
+            <span class="icon">&#931;</span>
+            <h3><span class="ko">LaTeX 수식</span><span class="en">LaTeX math</span></h3>
+            <p><span class="ko">$E=mc^2$ 인라인, $$\int x\,dx$$ 블록 수식. KaTeX 번들로 오프라인 동작.</span><span class="en">Inline $E=mc^2$ and block $$...$$ equations with bundled KaTeX. Works offline.</span></p>
+        </div>
+        <div class="feature-card">
+            <span class="icon">&#9676;</span>
+            <h3><span class="ko">Mermaid 다이어그램</span><span class="en">Mermaid diagrams</span></h3>
+            <p><span class="ko">```mermaid 코드 블록을 자동으로 시퀀스·플로우차트·간트 차트로 렌더링.</span><span class="en">```mermaid blocks auto-render as sequence, flowchart, Gantt diagrams. Lazy-loaded.</span></p>
+        </div>
+        <div class="feature-card">
+            <span class="icon">/</span>
+            <h3><span class="ko">Slash 명령어</span><span class="en">Slash commands</span></h3>
+            <p><span class="ko">줄 시작에서 / 입력 → 17개 명령어 메뉴 (h1, code, table, note, mermaid 등). Notion 스타일 UX.</span><span class="en">Type / at line start → 17-command menu (h1, code, table, note, mermaid…). Notion-style UX.</span></p>
+        </div>
+        <div class="feature-card">
+            <span class="icon">&#128270;</span>
+            <h3><span class="ko">찾기·바꾸기 (Cmd+H)</span><span class="en">Find &amp; Replace</span></h3>
+            <p><span class="ko">매치 카운트, 이전·다음, 전체 바꾸기. 모든 모드에서 동작.</span><span class="en">Match count, prev/next, replace all. Works in any mode.</span></p>
+        </div>
+        <div class="feature-card">
+            <span class="icon">&#9888;</span>
+            <h3><span class="ko">알림 박스 (Admonitions)</span><span class="en">Admonitions</span></h3>
+            <p><span class="ko">:::note, :::warning, :::tip 등 8가지 강조 박스. 색상·아이콘 자동.</span><span class="en">:::note, :::warning, :::tip, etc. 8 styled callout boxes with color &amp; icons.</span></p>
+        </div>
+        <div class="feature-card">
+            <span class="icon">[^1]</span>
+            <h3><span class="ko">각주</span><span class="en">Footnotes</span></h3>
+            <p><span class="ko">[^1] 참조 + [^1]: 정의 → 하단 자동 섹션 생성. 양방향 백링크.</span><span class="en">[^1] references with [^1]: defs auto-build a footnotes section with bidirectional backlinks.</span></p>
         </div>
     </div>
 </section>
@@ -874,7 +928,7 @@
     </p>
     <a class="btn btn-primary" href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer" target="_blank">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-        <span class="ko">다운로드 v0.7.0</span><span class="en">Install v0.7.0</span>
+        <span class="ko">다운로드 v0.9.0</span><span class="en">Install v0.9.0</span>
     </a>
 </section>
 

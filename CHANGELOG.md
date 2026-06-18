@@ -5,6 +5,16 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [0.9.1] - 2026-06-18
+
+### Fixed
+- **Split 모드 버벅임 해결** — 키 입력마다 무거운 렌더링이 즉시 실행되던 문제. 120ms debounce + requestAnimationFrame 적용
+- **PDF 표 페이지 분할 개선** — 표·코드·인용·이미지·다이어그램이 페이지 경계에서 어색하게 잘리던 문제. `pagebreak.avoid` 셀렉터 명시
+- **홈페이지 반응형 보강** — 480px / 700px / 900px 단계별 breakpoint, 모바일에서 카드·버튼·네비 짤림 방지
+
+### Changed
+- 빌드 minify 제거 — 디버깅·유지보수성 우선 (총 사이즈 영향 미미)
+
 ## [0.9.0] - 2026-06-02
 
 ### Added — 4 major productivity features
