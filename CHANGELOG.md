@@ -5,6 +5,13 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.1] - 2026-06-18
+
+### Fixed
+- **🔴 PDF 내보내기 안 되던 버그** — v0.9.5의 `_isExporting` 가드가 renderPreview의 첫 호출까지 막아 PDF가 빈 컨텐츠로 생성되던 회귀
+  - 가드를 `debouncedRenderPreview`로 이동 (편집 중 실시간 재렌더만 차단)
+  - PDF 시작 직전 명시적 `renderPreview()` 호출로 캡처 직전 컨텐츠 갱신
+
 ## [1.0.0] - 2026-06-18 — Stable 🎉
 
 3개월간의 반복적 개선 끝에 **stable 릴리스**로 진입합니다.

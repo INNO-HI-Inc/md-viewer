@@ -334,7 +334,6 @@ var _isRendering = false;
 function renderPreview() {
     if (!previewEl) return;
     if (_isRendering) return;       // re-entrancy guard
-    if (_isExporting) return;       // don't re-render mid-PDF capture
     _isRendering = true;
     try {
         var processed = currentContent;
@@ -718,11 +717,14 @@ function exportToPdf() {
         return;
     }
 
-    _isExporting = true;
     var previousMode = currentMode;
     if (currentMode !== 'preview') {
         setMode('preview');
     }
+    // Force a fresh render BEFORE setting the export guard,
+    // so html2canvas captures up-to-date content
+    renderPreview();
+    _isExporting = true;
 
     showToast('PDF 생성 중... / Generating PDF...');
 
@@ -927,10 +929,12 @@ function showToast(message) {
    ─────────────────────────────────────────── */
 var _renderTimer = null;
 function debouncedRenderPreview() {
+    if (_isExporting) return;   // skip live edit re-renders mid-PDF capture
     if (_renderTimer) cancelAnimationFrame(_renderTimer);
     if (window._renderTimeoutId) clearTimeout(window._renderTimeoutId);
     // Debounce 120ms — feels responsive but avoids reflow on every keystroke
     window._renderTimeoutId = setTimeout(function () {
+        if (_isExporting) return;
         _renderTimer = requestAnimationFrame(renderPreview);
     }, 120);
 }
