@@ -2488,3 +2488,323 @@ body.vscode-dark .md-admonition-danger, body.vscode-dark .md-admonition-error { 
 body.exporting-pdf .code-block-header { display: none; }
 body.exporting-pdf .code-block-wrap { border-radius: 4px; }
 body.focus-mode .code-block-copy { display: none; }
+
+/* ══════════════════════════════════════════════════════════════
+   TABLE HORIZONTAL SCROLL (v1.0.2)
+   ══════════════════════════════════════════════════════════════ */
+.markdown-body .table-scroll {
+    overflow-x: auto;
+    margin: 1.75em 0;
+    border-radius: 10px;
+    -webkit-overflow-scrolling: touch;
+    /* shadow hint that content scrolls — fades when scrolled to edge */
+    background:
+        linear-gradient(to right, var(--md-bg) 30%, rgba(255,255,255,0)),
+        linear-gradient(to right, rgba(0,0,0,0.08), rgba(0,0,0,0) 30%) 0 0,
+        linear-gradient(to left, rgba(0,0,0,0.08), rgba(0,0,0,0) 30%) 100% 0;
+    background-size: 40px 100%, 14px 100%, 14px 100%;
+    background-repeat: no-repeat;
+    background-attachment: local, scroll, scroll;
+}
+.markdown-body .table-scroll > table {
+    margin: 0 !important;          /* table already has the rounded corners */
+    min-width: 100%;
+    width: auto;                    /* allow natural width when content overflows */
+}
+
+/* Slim, theme-aware scrollbar on the wrapper */
+.markdown-body .table-scroll::-webkit-scrollbar { height: 8px; }
+.markdown-body .table-scroll::-webkit-scrollbar-thumb {
+    background: var(--md-border);
+    border-radius: 4px;
+}
+.markdown-body .table-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--md-accent);
+    opacity: 0.6;
+}
+
+/* In PDF, no scrollbar/shadow — let the print layout handle width */
+body.exporting-pdf .markdown-body .table-scroll {
+    overflow: visible !important;
+    background: none !important;
+}
+body.exporting-pdf .markdown-body .table-scroll > table {
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   IMAGE LIGHTBOX (v1.0.2)
+   ══════════════════════════════════════════════════════════════ */
+.image-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(10, 12, 20, 0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    opacity: 0;
+    transition: opacity 180ms ease;
+    cursor: zoom-out;
+    user-select: none;
+    -webkit-user-select: none;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+.image-lightbox.show { opacity: 1; }
+.image-lightbox img {
+    max-width: 92vw;
+    max-height: 86vh;
+    object-fit: contain;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    border-radius: 6px;
+    cursor: grab;
+    transition: transform 80ms ease;
+    transform-origin: center center;
+    background: #fff;
+}
+.image-lightbox .lightbox-caption {
+    color: rgba(255,255,255,0.9);
+    font-size: 13px;
+    margin-top: 16px;
+    max-width: 80vw;
+    text-align: center;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    padding: 4px 12px;
+}
+.image-lightbox .lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 120ms;
+}
+.image-lightbox .lightbox-close:hover { background: rgba(255,255,255,0.28); }
+.image-lightbox .lightbox-hint {
+    position: absolute;
+    bottom: 20px;
+    color: rgba(255,255,255,0.55);
+    font-size: 12px;
+    letter-spacing: 0.02em;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PREVIEW SEARCH PANEL (v1.0.2)
+   ══════════════════════════════════════════════════════════════ */
+.preview-search-panel {
+    position: fixed;
+    top: 70px;
+    right: 24px;
+    z-index: 9000;
+    background: var(--md-bg-elevated, #fff);
+    color: var(--md-text, #1a1a1a);
+    border: 1px solid var(--md-border, #d0d7de);
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 340px;
+    font-size: 13px;
+}
+.preview-search-panel .ps-input {
+    flex: 1;
+    border: 1px solid var(--md-border, #d0d7de);
+    background: var(--md-bg, #fff);
+    color: inherit;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    outline: none;
+}
+.preview-search-panel .ps-input:focus { border-color: var(--md-accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--md-accent) 20%, transparent); }
+.preview-search-panel .ps-count {
+    min-width: 50px;
+    text-align: center;
+    color: var(--md-text-muted, #6b7280);
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+}
+.preview-search-panel button {
+    border: none;
+    background: transparent;
+    color: var(--md-text, #1a1a1a);
+    width: 28px;
+    height: 28px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.preview-search-panel button:hover { background: color-mix(in srgb, var(--md-accent) 10%, transparent); }
+.preview-search-panel .ps-close { font-size: 18px; }
+
+mark.preview-search-hit {
+    background: rgba(255, 215, 0, 0.45);
+    color: inherit;
+    padding: 0 1px;
+    border-radius: 2px;
+}
+mark.preview-search-active {
+    background: var(--md-accent, #ff8800);
+    color: #fff;
+    padding: 0 1px;
+    border-radius: 2px;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--md-accent) 30%, transparent);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   OUTLINE ACTIVE HIGHLIGHT (v1.0.2)
+   ══════════════════════════════════════════════════════════════ */
+.outline-item.active {
+    background: color-mix(in srgb, var(--md-accent) 14%, transparent);
+    color: var(--md-accent);
+    font-weight: 600;
+    border-left: 3px solid var(--md-accent);
+    padding-left: calc(var(--outline-item-padding-left, 12px) - 3px);
+    transition: background 120ms, color 120ms;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PDF OPTIONS DIALOG (v1.0.2)
+   ══════════════════════════════════════════════════════════════ */
+.pdf-options-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 9500;
+    background: rgba(10, 12, 20, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 160ms ease;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+.pdf-options-dialog.show { opacity: 1; }
+.pdf-options-dialog .pdf-dialog-panel {
+    background: var(--md-bg-elevated, #fff);
+    color: var(--md-text, #1a1a1a);
+    border: 1px solid var(--md-border, #d0d7de);
+    border-radius: 14px;
+    padding: 24px 28px 20px;
+    min-width: 380px;
+    max-width: 460px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.32);
+    transform: scale(0.96);
+    transition: transform 160ms ease;
+}
+.pdf-options-dialog.show .pdf-dialog-panel { transform: scale(1); }
+.pdf-options-dialog h3 {
+    margin: 0 0 18px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--md-text);
+}
+.pdf-options-dialog .pdf-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    gap: 14px;
+}
+.pdf-options-dialog .pdf-row > label {
+    font-size: 13px;
+    color: var(--md-text-muted, #6b7280);
+    min-width: 70px;
+}
+.pdf-options-dialog .pdf-segmented {
+    display: inline-flex;
+    background: var(--md-bg, #f6f8fa);
+    border: 1px solid var(--md-border, #d0d7de);
+    border-radius: 8px;
+    padding: 2px;
+    gap: 2px;
+}
+.pdf-options-dialog .pdf-segmented button {
+    border: none;
+    background: transparent;
+    color: var(--md-text);
+    padding: 5px 14px;
+    font-size: 12.5px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 120ms, color 120ms;
+}
+.pdf-options-dialog .pdf-segmented button:hover {
+    background: color-mix(in srgb, var(--md-accent) 8%, transparent);
+}
+.pdf-options-dialog .pdf-segmented button.active {
+    background: var(--md-accent);
+    color: #fff;
+    font-weight: 600;
+}
+.pdf-options-dialog .pdf-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--md-text);
+    min-width: 100%;
+    user-select: none;
+}
+.pdf-options-dialog .pdf-check input { margin: 0; cursor: pointer; }
+.pdf-options-dialog .pdf-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+}
+.pdf-options-dialog .pdf-actions button {
+    border: 1px solid var(--md-border);
+    background: var(--md-bg, #fff);
+    color: var(--md-text);
+    padding: 8px 16px;
+    border-radius: 7px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 120ms;
+}
+.pdf-options-dialog .pdf-actions .pdf-cancel:hover {
+    background: color-mix(in srgb, var(--md-text) 6%, transparent);
+}
+.pdf-options-dialog .pdf-actions .pdf-confirm {
+    background: var(--md-accent);
+    border-color: var(--md-accent);
+    color: #fff;
+    font-weight: 600;
+}
+.pdf-options-dialog .pdf-actions .pdf-confirm:hover {
+    filter: brightness(1.05);
+}
+
+/* Dark theme adjustments — use VS Code variables when running in dark */
+body.vscode-dark .preview-search-panel,
+body.vscode-dark .pdf-options-dialog .pdf-dialog-panel {
+    background: #252830;
+    border-color: #3a3f4a;
+    color: #e8e8e8;
+}
+body.vscode-dark .preview-search-panel .ps-input,
+body.vscode-dark .pdf-options-dialog .pdf-segmented {
+    background: #1a1c22;
+    border-color: #3a3f4a;
+    color: #e8e8e8;
+}

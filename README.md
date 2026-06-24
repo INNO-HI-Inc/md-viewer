@@ -1,12 +1,10 @@
 <div align="center">
 
 <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer">
-  <img src="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/icon.png" width="96" height="96" alt="MD Pretty Viewer">
+  <img src="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/icon.png" width="112" height="112" alt="MD Pretty Viewer">
 </a>
 
-<h1>
-  MD Pretty Viewer
-</h1>
+<h1>MD Pretty Viewer</h1>
 
 <p>
   <b>Where your markdown becomes a masterpiece.</b><br/>
@@ -14,21 +12,17 @@
 </p>
 
 <p>
+  <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer"><img src="https://img.shields.io/visual-studio-marketplace/v/innohi.md-pretty-viewer?style=for-the-badge&color=448CFF&labelColor=0E1128&logo=visualstudiocode&logoColor=white&label=VS%20Code" alt="VS Code Marketplace"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer"><img src="https://img.shields.io/visual-studio-marketplace/d/innohi.md-pretty-viewer?style=for-the-badge&color=448CFF&labelColor=0E1128&label=installs" alt="Installs"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer&ssr=false#review-details"><img src="https://img.shields.io/visual-studio-marketplace/r/innohi.md-pretty-viewer?style=for-the-badge&color=448CFF&labelColor=0E1128&label=rating" alt="Rating"></a>
+  <a href="https://github.com/INNO-HI-Inc/md-viewer/blob/main/LICENSE"><img src="https://img.shields.io/github/license/INNO-HI-Inc/md-viewer?style=for-the-badge&color=448CFF&labelColor=0E1128" alt="License"></a>
+</p>
+
+<p>
   <sub>
     Live preview that doesn't suck. 13 themes for every mood. PDF export that actually looks good.<br/>
-    LaTeX math, clipboard image paste, auto TOC, Korean-first typography — all bundled, all offline.
+    LaTeX math · Mermaid · clipboard image paste · auto TOC · Korean-first typography — all bundled, all offline.
   </sub>
-</p>
-
-<p>
-  <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer"><img src="https://img.shields.io/visual-studio-marketplace/v/innohi.md-pretty-viewer?style=flat-square&color=448CFF&labelColor=24292e&logo=visualstudiocode&logoColor=white&label=VS%20Code" alt="VS Code Marketplace"></a>
-  <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer"><img src="https://img.shields.io/visual-studio-marketplace/d/innohi.md-pretty-viewer?style=flat-square&color=448CFF&labelColor=24292e&label=installs" alt="Installs"></a>
-  <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer&ssr=false#review-details"><img src="https://img.shields.io/visual-studio-marketplace/r/innohi.md-pretty-viewer?style=flat-square&color=448CFF&labelColor=24292e&label=rating" alt="Rating"></a>
-  <a href="https://github.com/INNO-HI-Inc/md-viewer/blob/main/LICENSE"><img src="https://img.shields.io/github/license/INNO-HI-Inc/md-viewer?style=flat-square&color=448CFF&labelColor=24292e" alt="License"></a>
-</p>
-
-<p>
-  Live preview &nbsp;·&nbsp; 13 themes &nbsp;·&nbsp; Outline &nbsp;·&nbsp; PDF export &nbsp;·&nbsp; Korean-first typography
 </p>
 
 <p>
@@ -42,7 +36,7 @@
 </p>
 
 <p>
-  <sub><a href="#english">English</a> &nbsp;·&nbsp; <a href="#한국어">한국어</a></sub>
+  <sub><a href="#-english"><b>English</b></a> &nbsp;·&nbsp; <a href="#-한국어"><b>한국어</b></a></sub>
 </p>
 
 <br/>
@@ -53,208 +47,264 @@
 
 </div>
 
+<br/>
+
 ---
 
-<a name="english"></a>
+<a name="-english"></a>
 
 ## ✨ Features
 
-### 🎯 Three View Modes
-- **Preview** — Read the rendered markdown beautifully
-- **Edit** — Edit raw markdown in a clean monospace editor
-- **Split** — Side-by-side editor and preview with scroll sync
+<table>
+<tr>
+  <td width="33%" valign="top">
 
-Double-click on preview mode to switch to edit instantly.
+### 🎨 Beautiful by default
+- 13 hand-tuned color themes
+- Custom color palette
+- Theme-aware tables, code, quotes
+- Korean-first typography (AtoZ font)
+- Auto light/dark/high-contrast
 
-### 🎨 13 Color Themes
-**Classic:** Blue · Green · Rose · Purple · Amber · Neutral · Mono
-**2026 Pantone trend:** Peach · Aqua · Orchid
-**Eye-friendly:** Sage · Sepia · Mist
-Auto-optimized for VS Code's light / dark / high-contrast modes.
+  </td>
+  <td width="33%" valign="top">
 
-### 🛠 Formatting Toolbar
-Headings (H1-H3), bold, italic, code, links, lists (bullet/numbered), blockquote, horizontal rule — apply with a single click after selecting text.
+### ✍️ Write fluently
+- Preview · Edit · Split modes
+- Double-click to toggle
+- Smart list continuation
+- Slash commands (`/h1`, `/quote`, …)
+- Find & Replace · In-preview search
+- Smart URL paste → markdown link
+- Clipboard image → base64 paste
 
-### 📑 Outline Sidebar
-Automatically extracts H1-H4 headings into a navigable tree. Click to smooth-scroll to any section.
+  </td>
+  <td width="33%" valign="top">
 
-### 💻 Code Highlighting
-Based on [highlight.js](https://highlightjs.org/). Code block colors adapt to your selected theme.
+### 📤 Ship anywhere
+- **PDF export** with options dialog
+- Paper · margin · header · page number
+- Copy as HTML
+- Lazy-loaded, offline-first
+- Bundled KaTeX + Mermaid
+- No telemetry, no network calls
 
-### 📝 Full GitHub Flavored Markdown Support
-Tables · checkboxes · strikethrough · fenced code blocks · autolinks · emoji.
+  </td>
+</tr>
+</table>
 
-### 🔤 Font Size Control
-12px to 24px, adjustable from the toolbar. Settings persist automatically.
+<br/>
 
-### 🇰🇷 Korean Typography
-Bundles [에이투지체 (AtoZ font)](https://autoa2z.co.kr) for exceptional Korean text rendering (OFL licensed).
+## 🎨 Themes
 
-### # Line Numbers
-Minimal, unobtrusive line numbers in Edit/Split mode — "barely there" by design.
+<table>
+<tr><td><b>Classic</b></td><td>Blue · Green · Rose · Purple · Amber · Neutral · Mono</td></tr>
+<tr><td><b>Pantone 2026</b></td><td>Peach 🍑 · Aqua 🌊 · Orchid 💜</td></tr>
+<tr><td><b>Eye-friendly</b></td><td>Sage 🌿 · Sepia 📜 · Mist 🌫</td></tr>
+<tr><td><b>Custom</b></td><td>Pick any HEX color from the theme palette</td></tr>
+</table>
 
-### ↵ Smart List Continuation
-Press Enter in a list item to auto-insert the next marker. Numbered lists auto-increment. Empty list item exits the list.
+<br/>
 
-### ● Focus Mode
-Hide toolbars, status bar, and outline to focus purely on writing. One click into Zen mode.
+## 🚀 Highlights
 
-### 🔍 Find (Cmd+F)
-Native VS Code find widget to search within the preview.
+<details open>
+<summary><b>👀 View modes — Preview / Edit / Split</b></summary>
 
-### ☐ Clickable Checkboxes
-Click checkboxes directly in Preview — source markdown updates automatically.
+- **Preview** renders your markdown like a reading view
+- **Edit** is a clean monospace editor with line numbers
+- **Split** shows both side-by-side with anchor-based scroll sync
+- **Double-click anywhere** to toggle Preview ↔ Edit instantly
 
-### </> Copy as HTML
-Copy the rendered HTML output to clipboard with one click.
+</details>
 
-### 📄 Export as PDF
-Save the rendered preview as a PDF via the system print dialog. A4-optimized layout with smart page breaks.
+<details open>
+<summary><b>🖼 Image lightbox <sub>v1.0.2</sub></b></summary>
 
-### 🧮 LaTeX Math (KaTeX)
-Render math: `$E = mc^2$` inline, `$$\int_0^\infty e^{-x^2}dx$$` block. KaTeX fonts bundled — works offline.
+Click any image in Preview → full-screen view.
+Wheel to zoom · double-click for 2.5× · drag to pan · ESC to close.
 
-### 🖼 Clipboard Image Paste
-Capture a screenshot, switch to Edit mode, press `Cmd/Ctrl+V` → image auto-inserted as base64 markdown.
+</details>
 
-### 📑 Auto Table of Contents
-Insert `[[TOC]]` or `[[목차]]` anywhere in your markdown → auto-generated, clickable TOC with proper indentation.
+<details open>
+<summary><b>🔍 In-preview search <sub>v1.0.2</sub></b></summary>
 
-### 📌 Sticky Headings
-Current H1/H2 stays pinned at the top while scrolling long documents.
+`Cmd/Ctrl + F` in Preview opens an in-page search bar with match highlighting and Enter / Shift+Enter navigation. Edit mode uses Find & Replace.
 
-### 💾 Save Status Indicator
-Status bar shows `● Modified` / `◐ Saving` / `✓ Saved` in real time.
+</details>
 
----
+<details open>
+<summary><b>📌 Outline scroll tracking <sub>v1.0.2</sub></b></summary>
 
-## 📦 Installation
+The outline sidebar highlights the current section as you scroll, with a colored side-bar and auto-scrolling to keep the active item visible.
 
-### From Marketplace (Recommended)
-1. Open Extensions panel (`Ctrl+Shift+X` / `Cmd+Shift+X`)
-2. Search `md pretty viewer`
-3. Click **Install**
+</details>
 
-### Command Line
-```bash
-code --install-extension innohi.md-pretty-viewer
-```
+<details open>
+<summary><b>🔗 Smart URL paste <sub>v1.0.2</sub></b></summary>
 
-### Manual VSIX
-Download `.vsix` from [Releases](https://github.com/INNO-HI-Inc/md-viewer/releases/latest), then:
-```bash
-code --install-extension md-pretty-viewer-0.7.0.vsix
-```
+Select text → paste a URL → automatically becomes `[selected text](url)`. Multi-line selections and non-URL clipboards are passed through unchanged.
 
----
+</details>
+
+<details open>
+<summary><b>📄 PDF export with options <sub>v1.0.2</sub></b></summary>
+
+Before exporting, choose:
+- Paper size (A4 / Letter)
+- Orientation (portrait / landscape)
+- Margin preset (narrow / normal / wide)
+- Running header on/off
+- Page number on/off
+
+Choices persist via localStorage. A4-optimized layout with smart page breaks — table headers repeat, code blocks avoid splits.
+
+</details>
+
+<details>
+<summary><b>🧮 LaTeX math via KaTeX</b></summary>
+
+Inline: `$E = mc^2$` · Block: `$$\int_0^\infty e^{-x^2}dx$$`
+All KaTeX fonts bundled — works offline.
+
+</details>
+
+<details>
+<summary><b>📈 Mermaid diagrams</b></summary>
+
+Render Mermaid diagrams from ` ```mermaid ` code blocks. The 3.3 MB library is lazy-loaded only when needed.
+
+</details>
+
+<details>
+<summary><b>📊 Tables that work everywhere</b></summary>
+
+- Theme-aware design (light/dark/print)
+- Horizontal scroll wrapper for wide tables, with edge-shadow hints
+- PDF: wrapper removed; headers repeat across page breaks
+
+</details>
+
+<details>
+<summary><b>📑 Outline sidebar + auto TOC</b></summary>
+
+H1–H4 automatically extracted into a navigable tree. Insert `[[TOC]]` or `[[목차]]` anywhere to embed a table of contents in the document body.
+
+</details>
+
+<details>
+<summary><b>☐ Live checkboxes</b></summary>
+
+Click checkboxes directly in Preview — source markdown updates automatically (`[ ]` ↔ `[x]`).
+
+</details>
+
+<details>
+<summary><b>💾 Save status + writing stats</b></summary>
+
+Status bar shows `● Modified` / `◐ Saving` / `✓ Saved` plus word count, character count, and estimated reading time.
+
+</details>
+
+<br/>
 
 ## ⌨️ Keyboard Shortcuts
 
 | Shortcut | Action |
 |----------|--------|
-| `Ctrl/Cmd + E` | Toggle Preview/Edit mode |
-| `Ctrl/Cmd + B` | Bold |
-| `Ctrl/Cmd + I` | Italic |
-| `Ctrl/Cmd + Shift + C` | Code |
-| `Ctrl/Cmd + Alt + M` | Open Pretty View (when on .md file) |
-| `Tab` | Indent (4 spaces) |
-| Double-click | Preview → Edit |
+| `Ctrl/Cmd + E` | Toggle Preview ↔ Edit mode |
+| `Ctrl/Cmd + F` | In-preview search (Preview) · Find & Replace (Edit) |
+| `Ctrl/Cmd + H` | Find & Replace (always) |
+| `Ctrl/Cmd + B` / `+ I` | Bold / Italic |
+| `Ctrl/Cmd + Shift + C` | Inline code |
+| `Ctrl/Cmd + Alt + M` | Open Pretty View on the active `.md` file |
+| `Tab` / `Shift+Tab` | List indent / outdent (4-space fallback) |
+| `Enter` on list item | Auto-continue list with next marker |
+| `Esc` | Close lightbox · preview search · dialogs |
+| Double-click | Toggle Preview ↔ Edit |
 
----
+<br/>
+
+## 📦 Installation
+
+```bash
+# Marketplace
+code --install-extension innohi.md-pretty-viewer
+```
+
+Or search **`md pretty viewer`** in VS Code Extensions.
+
+For manual install, grab the latest `.vsix` from [Releases](https://github.com/INNO-HI-Inc/md-viewer/releases/latest):
+
+```bash
+code --install-extension md-pretty-viewer-1.0.2.vsix
+```
+
+<br/>
 
 ## ⚙️ Settings
 
-Configure via `settings.json`:
-
 ```jsonc
 {
-  // Default color theme (blue | green | rose | purple | amber | neutral | mono)
+  // blue | green | rose | purple | amber | neutral | mono
+  // peach | aqua | orchid | sage | sepia | mist
   "mdPrettyViewer.defaultTheme": "blue",
 
-  // Default preview font size (12-24px)
+  // 12-24
   "mdPrettyViewer.defaultFontSize": 16,
 
-  // Default view mode when opening a .md file (preview | edit | split)
+  // preview | edit | split
   "mdPrettyViewer.defaultMode": "preview",
 
-  // Show outline sidebar by default
   "mdPrettyViewer.showOutline": false
 }
 ```
 
----
-
-## 🖥 Commands
-
-Open Command Palette (`Ctrl/Cmd + Shift + P`) and search `MD Pretty Viewer`:
-
-- `MD Pretty Viewer: Toggle Preview/Edit Mode`
-- `MD Pretty Viewer: Bold`
-- `MD Pretty Viewer: Italic`
-- `MD Pretty Viewer: Code`
-
----
-
-## 📋 Requirements
-
-- **VS Code**: 1.74.0 or later
-- **Platforms**: Windows, macOS, Linux
-- **External dependencies**: None (marked.js and highlight.js are bundled)
-
----
-
-## ⚠️ Known Limitations
-
-- Designed for single-file editing (multiple tabs work independently)
-- Very large markdown files (>10,000 lines) may show performance degradation
-- Diagram rendering (Mermaid, PlantUML) is not supported
-
----
+<br/>
 
 ## 🔒 Security
 
-This extension uses strict VS Code webview CSP and defensively blocks:
-- Raw HTML in markdown (auto-escaped)
-- `javascript:`, `vbscript:`, `data:` URL schemes in links and images
-- Adds `rel="noopener noreferrer"` to all external links
+- Strict VS Code webview CSP
+- Allowlist-based HTML sanitization (raw HTML escaped)
+- Blocks `javascript:`, `vbscript:`, `data:`, `file:` URL schemes
+- All external links get `rel="noopener noreferrer"`
+- **Zero network calls** · zero telemetry · all libraries bundled
 
-No data is collected or sent over the network.
+See [SECURITY.md](SECURITY.md) for the full security design.
+Report vulnerabilities via [GitHub Security Advisory](https://github.com/INNO-HI-Inc/md-viewer/security/advisories/new).
 
-See [SECURITY.md](SECURITY.md) for full security design and vulnerability reporting.
+<br/>
 
-To report a vulnerability, please [open a private GitHub Security Advisory](https://github.com/INNO-HI-Inc/md-viewer/security/advisories/new).
+## 📋 Requirements
 
----
+- VS Code **1.74.0+**
+- Windows / macOS / Linux
+- No external dependencies (everything bundled)
 
-## 🤝 Contributing
-
-Issues, feature requests, and PRs are welcome.
-
-- [Report a bug](https://github.com/INNO-HI-Inc/md-viewer/issues/new?labels=bug)
-- [Request a feature](https://github.com/INNO-HI-Inc/md-viewer/issues/new?labels=enhancement)
-- [Contributing Guide](CONTRIBUTING.md)
-
----
-
-## 📜 Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for release history.
-
----
+<br/>
 
 ## 📦 Bundled Open Source
-
-This extension bundles the following libraries:
 
 | Library | Version | License | Purpose |
 |---------|---------|---------|---------|
 | [marked](https://github.com/markedjs/marked) | 15.x | MIT | Markdown parser |
-| [highlight.js](https://github.com/highlightjs/highlight.js) | 11.x | BSD-3-Clause | Syntax highlighting |
+| [highlight.js](https://github.com/highlightjs/highlight.js) | 11.x | BSD-3-Clause | Code syntax highlighting |
+| [KaTeX](https://katex.org) | 0.16.x | MIT | LaTeX math |
+| [Mermaid](https://mermaid.js.org) | 11.x | MIT | Diagrams |
+| [html2pdf.js](https://github.com/eKoopmans/html2pdf.js) | 0.10.x | MIT | PDF export |
 | [AtoZ font](https://autoa2z.co.kr) | 1.001 | OFL-1.1 | Korean typography |
 
 Full license texts in [NOTICE.md](NOTICE.md).
 
----
+<br/>
+
+## 🤝 Contributing
+
+- [Report a bug](https://github.com/INNO-HI-Inc/md-viewer/issues/new?labels=bug)
+- [Request a feature](https://github.com/INNO-HI-Inc/md-viewer/issues/new?labels=enhancement)
+- [Changelog](CHANGELOG.md) · [Contributing Guide](CONTRIBUTING.md)
+
+<br/>
 
 ## 📄 License
 
@@ -262,56 +312,88 @@ Full license texts in [NOTICE.md](NOTICE.md).
 
 ---
 
-<a name="한국어"></a>
+<a name="-한국어"></a>
 
 ## 🇰🇷 한국어
 
-### 주요 기능
+<table>
+<tr>
+  <td width="33%" valign="top">
 
-- **3가지 뷰 모드** — Preview / Edit / Split. 더블클릭으로 즉시 편집
-- **13가지 컬러 테마** — Blue/Green/Rose/Purple/Amber/Neutral/Mono + Pantone 2026 (Peach/Aqua/Orchid) + 눈 피로 낮은 테마 (Sage/Sepia/Mist)
-- **서식 도구** — 헤딩, 볼드, 이탤릭, 코드, 링크, 리스트, 인용, 수평선
-- **아웃라인 사이드바** — H1~H4 자동 추출, 클릭으로 이동
-- **코드 하이라이팅** — highlight.js 기반, 테마 색상 자동 적용
-- **한글 최적화** — 에이투지체(AtoZ font, OFL) 번들로 깔끔한 한글 표기
-- **폰트 크기** — 12px ~ 24px 자유 조절
-- **GFM 완벽 지원** — 테이블, 클릭 가능한 체크박스, 취소선
-- **줄 번호 표시** — Edit/Split 모드에서 미니멀한 줄 번호
-- **리스트 자동 이어쓰기** — 리스트에서 Enter 치면 다음 마커 자동 생성
-- **포커스 모드** — 한 번 클릭으로 글쓰기에 집중하는 Zen 모드
-- **찾기 기능** — Cmd+F로 프리뷰 내 텍스트 검색
-- **HTML 복사** — 렌더링된 HTML을 클립보드에 복사
-- **PDF로 저장** — 툴바 PDF 버튼 → 시스템 인쇄 다이얼로그에서 "PDF로 저장" (A4 최적화)
+### 🎨 기본부터 예쁘게
+- 손으로 다듬은 13가지 컬러 테마
+- 커스텀 컬러 팔레트
+- 테마 따라 표·코드·인용 모두 변신
+- 한글 우선 타이포 (AtoZ font)
+- 자동 라이트/다크/고대비
 
-### 설치
+  </td>
+  <td width="33%" valign="top">
 
-VS Code Extensions에서 `md pretty viewer` 검색 후 Install. 또는:
+### ✍️ 빠르게 쓰기
+- Preview · Edit · Split 3가지 모드
+- 더블클릭으로 즉시 토글
+- 리스트 자동 이어쓰기
+- 슬래시 명령 (`/h1`, `/quote`, …)
+- 찾기·바꾸기 + 프리뷰 내 검색
+- 스마트 URL 붙여넣기 → 마크다운 링크
+- 스크린샷 붙여넣기 → base64 변환
+
+  </td>
+  <td width="33%" valign="top">
+
+### 📤 어디든 내보내기
+- **PDF 옵션 다이얼로그**
+- 용지·여백·헤더·페이지번호 선택
+- HTML 복사
+- Lazy 로딩 · 오프라인 동작
+- KaTeX + Mermaid 번들 포함
+- 텔레메트리·네트워크 호출 0
+
+  </td>
+</tr>
+</table>
+
+### 🚀 v1.0.2 새 기능
+
+- **🖼 이미지 라이트박스** — 클릭하면 풀스크린, 휠로 확대, 드래그로 이동, ESC로 닫기
+- **🔍 프리뷰 인-페이지 검색** — `Cmd/Ctrl+F`로 매치 하이라이트 + 화살표 탐색
+- **📌 아웃라인 스크롤 추적** — 스크롤 위치에 따라 현재 섹션이 강조
+- **🔗 스마트 URL 붙여넣기** — 선택 후 URL 붙여넣기 → `[선택텍스트](url)` 자동 변환
+- **📄 PDF 옵션 다이얼로그** — 추출 전 용지/방향/여백/헤더/페이지번호 선택, 설정 저장
+- **📊 표 가로 스크롤** — 화면보다 넓은 표는 가로 스크롤 wrapper에 자동 감싸짐
+
+### 📦 설치
+
+VS Code Extensions에서 **`md pretty viewer`** 검색 후 Install. 또는:
 
 ```bash
 code --install-extension innohi.md-pretty-viewer
 ```
 
-### 설정
-
-`settings.json`에서 조정:
+### ⚙️ 설정
 
 ```jsonc
 {
-  "mdPrettyViewer.defaultTheme": "blue",       // 기본 테마
-  "mdPrettyViewer.defaultFontSize": 16,         // 기본 폰트 크기
-  "mdPrettyViewer.defaultMode": "preview",      // 기본 모드
-  "mdPrettyViewer.showOutline": false           // 아웃라인 기본 표시
+  "mdPrettyViewer.defaultTheme": "blue",   // 13가지 + custom
+  "mdPrettyViewer.defaultFontSize": 16,    // 12-24
+  "mdPrettyViewer.defaultMode": "preview", // preview | edit | split
+  "mdPrettyViewer.showOutline": false      // 아웃라인 기본 표시
 }
 ```
 
-### 단축키
+### ⌨️ 단축키
 
 | 단축키 | 기능 |
 |--------|------|
-| `Cmd/Ctrl + E` | Preview/Edit 모드 전환 |
-| `Cmd/Ctrl + B` | 볼드 |
-| `Cmd/Ctrl + I` | 이탤릭 |
-| `Cmd/Ctrl + Shift + C` | 코드 |
+| `Cmd/Ctrl + E` | Preview ↔ Edit 모드 전환 |
+| `Cmd/Ctrl + F` | 프리뷰 검색 · 에디터 찾기 |
+| `Cmd/Ctrl + H` | 찾기·바꾸기 |
+| `Cmd/Ctrl + B` / `+ I` | 볼드 / 이탤릭 |
+| `Cmd/Ctrl + Shift + C` | 인라인 코드 |
+| `Cmd/Ctrl + Alt + M` | `.md` 파일에서 Pretty View 열기 |
+| `Tab` / `Shift+Tab` | 리스트 들여쓰기 / 내어쓰기 |
+| `Esc` | 라이트박스·검색·다이얼로그 닫기 |
 
 ---
 

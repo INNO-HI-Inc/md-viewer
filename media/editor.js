@@ -199,6 +199,133 @@ function highlightCodeBlocks(container) {
     enhanceCodeBlocks(container);
 }
 
+/* Image lightbox (v1.0.2) — click to enlarge, ESC/click to close, wheel to zoom */
+var _lightboxEl = null;
+var _lightboxCleanup = null;  // tear down window listeners when closing
+function openLightbox(src, alt) {
+    closeLightbox();
+    var overlay = document.createElement('div');
+    overlay.className = 'image-lightbox';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', alt || 'Image preview');
+    var img = document.createElement('img');
+    img.src = src;
+    img.alt = alt || '';
+    img.draggable = false;
+
+    var caption = document.createElement('div');
+    caption.className = 'lightbox-caption';
+    caption.textContent = alt || '';
+    if (!alt) caption.style.display = 'none';
+
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'lightbox-close';
+    closeBtn.setAttribute('aria-label', 'Close');
+    closeBtn.textContent = '×';
+
+    var hint = document.createElement('div');
+    hint.className = 'lightbox-hint';
+    hint.textContent = 'ESC 또는 클릭으로 닫기 · 휠로 확대/축소';
+
+    overlay.appendChild(img);
+    overlay.appendChild(caption);
+    overlay.appendChild(closeBtn);
+    overlay.appendChild(hint);
+    document.body.appendChild(overlay);
+    _lightboxEl = overlay;
+
+    var scale = 1, tx = 0, ty = 0;
+    var isDragging = false, dragStartX = 0, dragStartY = 0, dragOriginX = 0, dragOriginY = 0;
+    function apply() {
+        img.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
+    }
+    function onWheel(e) {
+        e.preventDefault();
+        var delta = -e.deltaY * 0.0015;
+        scale = Math.min(6, Math.max(0.3, scale + delta * scale));
+        apply();
+    }
+    function onMouseDown(e) {
+        if (scale <= 1) return;
+        isDragging = true;
+        dragStartX = e.clientX; dragStartY = e.clientY;
+        dragOriginX = tx; dragOriginY = ty;
+        img.style.cursor = 'grabbing';
+        e.preventDefault();
+    }
+    function onMouseMove(e) {
+        if (!isDragging) return;
+        tx = dragOriginX + (e.clientX - dragStartX);
+        ty = dragOriginY + (e.clientY - dragStartY);
+        apply();
+    }
+    function onMouseUp() {
+        if (!isDragging) return;
+        isDragging = false;
+        img.style.cursor = 'grab';
+    }
+    function onDblClick(e) {
+        e.stopPropagation();
+        if (scale > 1) { scale = 1; tx = 0; ty = 0; } else { scale = 2.5; }
+        apply();
+    }
+    function onClickOverlay(e) {
+        if (e.target === overlay || e.target === closeBtn) closeLightbox();
+    }
+
+    overlay.addEventListener('wheel', onWheel, { passive: false });
+    img.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    img.addEventListener('dblclick', onDblClick);
+    overlay.addEventListener('click', onClickOverlay);
+
+    // Tear-down used by closeLightbox to detach window listeners (avoid leak)
+    _lightboxCleanup = function () {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    // Defer fade-in to next frame for transition
+    requestAnimationFrame(function () { overlay.classList.add('show'); });
+}
+function closeLightbox() {
+    if (!_lightboxEl) return;
+    var el = _lightboxEl;
+    _lightboxEl = null;
+    if (_lightboxCleanup) { _lightboxCleanup(); _lightboxCleanup = null; }
+    el.classList.remove('show');
+    setTimeout(function () { if (el && el.parentNode) el.parentNode.removeChild(el); }, 180);
+}
+function bindImageLightbox(container) {
+    if (!container) return;
+    container.querySelectorAll('img').forEach(function (img) {
+        // Skip emoji/inline-icon style tiny images
+        if (img.dataset.lightboxBound === '1') return;
+        img.dataset.lightboxBound = '1';
+        img.style.cursor = 'zoom-in';
+        img.addEventListener('click', function (e) {
+            e.preventDefault();
+            openLightbox(img.src, img.alt || '');
+        });
+    });
+}
+
+/* Wrap wide tables in horizontal scroll container (v1.0.2) */
+function wrapTablesScrollable(container) {
+    if (!container) return;
+    container.querySelectorAll('table').forEach(function (table) {
+        var parent = table.parentElement;
+        if (!parent || parent.classList.contains('table-scroll')) return;
+        // Don't wrap if table is inside our own admonition body or other special wrapper
+        var wrap = document.createElement('div');
+        wrap.className = 'table-scroll';
+        parent.insertBefore(wrap, table);
+        wrap.appendChild(table);
+    });
+}
+
 /* Code block enhancement (v0.9.4) — language label + copy button */
 function enhanceCodeBlocks(container) {
     container.querySelectorAll('pre').forEach(function (pre) {
@@ -305,15 +432,86 @@ function buildOutline(html) {
     if (!outlineListEl) return;
     outlineListEl.innerHTML = '';
     var headings = extractHeadings(html);
-    headings.forEach(function (h) {
+    headings.forEach(function (h, idx) {
         var item = document.createElement('div');
         item.className = 'outline-item level-' + h.level;
         item.textContent = h.text;
+        item.dataset.headingIndex = idx;
         item.addEventListener('click', function () {
             scrollToHeading(h.text);
         });
         outlineListEl.appendChild(item);
     });
+    // Wire up scroll tracking after headings are rendered into preview
+    setupOutlineScrollSpy();
+}
+
+/* Outline scroll-spy (v1.0.2) — highlight active heading as user scrolls */
+var _outlineSpyObserver = null;
+var _outlineActiveItem = null;
+function setupOutlineScrollSpy() {
+    if (!previewEl || !outlineListEl) return;
+    if (_outlineSpyObserver) { _outlineSpyObserver.disconnect(); _outlineSpyObserver = null; }
+    var headingEls = previewEl.querySelectorAll('h1, h2, h3, h4');
+    if (!headingEls.length) return;
+    var items = outlineListEl.querySelectorAll('.outline-item');
+    if (!items.length) return;
+
+    // Map heading element → outline item, in DOM order
+    var pairs = [];
+    var itemIdx = 0;
+    headingEls.forEach(function (h) {
+        // Only match levels 1-4 (extractHeadings filters to these)
+        var level = parseInt(h.tagName[1], 10);
+        if (level > 4) return;
+        if (itemIdx < items.length) {
+            pairs.push({ heading: h, item: items[itemIdx] });
+            itemIdx++;
+        }
+    });
+    if (!pairs.length) return;
+
+    // Track which headings are in viewport; pick topmost as active
+    var visible = new Set();
+    _outlineSpyObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+            if (e.isIntersecting) visible.add(e.target);
+            else visible.delete(e.target);
+        });
+        // Pick topmost visible; if none visible, pick last one above viewport
+        var topMost = null;
+        var topMostY = Infinity;
+        visible.forEach(function (el) {
+            var rect = el.getBoundingClientRect();
+            if (rect.top < topMostY) { topMostY = rect.top; topMost = el; }
+        });
+        if (!topMost) {
+            // Find last heading whose top is above current scroll position
+            var scrollTop = previewEl.parentElement ? previewEl.parentElement.scrollTop : window.scrollY;
+            for (var i = pairs.length - 1; i >= 0; i--) {
+                if (pairs[i].heading.offsetTop <= scrollTop + 20) { topMost = pairs[i].heading; break; }
+            }
+        }
+        if (!topMost) return;
+        var match = pairs.find(function (p) { return p.heading === topMost; });
+        if (match && match.item !== _outlineActiveItem) {
+            if (_outlineActiveItem) _outlineActiveItem.classList.remove('active');
+            match.item.classList.add('active');
+            _outlineActiveItem = match.item;
+            // Keep active item visible in outline panel
+            var rect = match.item.getBoundingClientRect();
+            var pr = outlineListEl.getBoundingClientRect();
+            if (rect.top < pr.top + 10 || rect.bottom > pr.bottom - 10) {
+                match.item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+    }, {
+        // top margin negative pushes the trigger line down (heading must reach near top to be 'active')
+        root: previewEl.parentElement || null,
+        rootMargin: '0px 0px -70% 0px',
+        threshold: [0, 1]
+    });
+    pairs.forEach(function (p) { _outlineSpyObserver.observe(p.heading); });
 }
 
 function scrollToHeading(text) {
@@ -346,8 +544,12 @@ function renderPreview() {
         addHeadingIds();
         buildOutline(html);
         makeCheckboxesClickable();
+        wrapTablesScrollable(previewEl);
+        bindImageLightbox(previewEl);
         renderMath(previewEl);
         renderMermaid(previewEl);
+        // Rebuild scroll-sync anchors after each render so heading offsets stay accurate
+        buildScrollAnchors();
     } catch (err) {
         console.error('MD Pretty Viewer: render failed', err);
     } finally {
@@ -705,6 +907,122 @@ function toolbarAction(action) {
 }
 
 var _isExporting = false;
+/* PDF options dialog (v1.0.2) — paper size, orientation, margins, header/footer */
+var PDF_DEFAULTS = {
+    paperSize: 'a4',          // 'a4' | 'letter'
+    orientation: 'portrait',   // 'portrait' | 'landscape'
+    margin: 'normal',          // 'narrow' | 'normal' | 'wide'
+    showHeader: true,
+    showPageNumber: true
+};
+function getPdfOptions() {
+    var saved = lsGet('md-viewer-pdf-options');
+    if (!saved) return Object.assign({}, PDF_DEFAULTS);
+    try {
+        var parsed = JSON.parse(saved);
+        return Object.assign({}, PDF_DEFAULTS, parsed);
+    } catch (_) { return Object.assign({}, PDF_DEFAULTS); }
+}
+function savePdfOptions(o) { lsSet('md-viewer-pdf-options', JSON.stringify(o)); }
+
+function showPdfOptionsDialog(onConfirm) {
+    var existing = document.querySelector('.pdf-options-dialog');
+    if (existing) existing.remove();
+    var opts = getPdfOptions();
+
+    var overlay = document.createElement('div');
+    overlay.className = 'pdf-options-dialog';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'PDF 내보내기 옵션');
+    overlay.innerHTML =
+        '<div class="pdf-dialog-panel">' +
+            '<h3>PDF 내보내기 옵션</h3>' +
+            '<div class="pdf-row">' +
+                '<label>용지 크기</label>' +
+                '<div class="pdf-segmented" data-key="paperSize">' +
+                    '<button data-val="a4">A4</button>' +
+                    '<button data-val="letter">Letter</button>' +
+                '</div>' +
+            '</div>' +
+            '<div class="pdf-row">' +
+                '<label>방향</label>' +
+                '<div class="pdf-segmented" data-key="orientation">' +
+                    '<button data-val="portrait">세로</button>' +
+                    '<button data-val="landscape">가로</button>' +
+                '</div>' +
+            '</div>' +
+            '<div class="pdf-row">' +
+                '<label>여백</label>' +
+                '<div class="pdf-segmented" data-key="margin">' +
+                    '<button data-val="narrow">좁게</button>' +
+                    '<button data-val="normal">보통</button>' +
+                    '<button data-val="wide">넓게</button>' +
+                '</div>' +
+            '</div>' +
+            '<div class="pdf-row">' +
+                '<label class="pdf-check"><input type="checkbox" data-key="showHeader"> <span>상단 제목 표시</span></label>' +
+            '</div>' +
+            '<div class="pdf-row">' +
+                '<label class="pdf-check"><input type="checkbox" data-key="showPageNumber"> <span>페이지 번호 표시</span></label>' +
+            '</div>' +
+            '<div class="pdf-actions">' +
+                '<button class="pdf-cancel">취소</button>' +
+                '<button class="pdf-confirm">PDF 만들기</button>' +
+            '</div>' +
+        '</div>';
+    document.body.appendChild(overlay);
+
+    function syncUI() {
+        overlay.querySelectorAll('.pdf-segmented').forEach(function (group) {
+            var key = group.dataset.key;
+            group.querySelectorAll('button').forEach(function (b) {
+                b.classList.toggle('active', b.dataset.val === opts[key]);
+            });
+        });
+        overlay.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
+            cb.checked = !!opts[cb.dataset.key];
+        });
+    }
+    syncUI();
+
+    overlay.querySelectorAll('.pdf-segmented button').forEach(function (b) {
+        b.addEventListener('click', function () {
+            opts[b.parentElement.dataset.key] = b.dataset.val;
+            syncUI();
+        });
+    });
+    overlay.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
+        cb.addEventListener('change', function () { opts[cb.dataset.key] = cb.checked; });
+    });
+    var keyHandler;  // forward decl so close() can reference it
+    function close() {
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        if (keyHandler) document.removeEventListener('keydown', keyHandler, true);
+    }
+    overlay.querySelector('.pdf-cancel').addEventListener('click', close);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+    overlay.querySelector('.pdf-confirm').addEventListener('click', function () {
+        savePdfOptions(opts);
+        close();
+        onConfirm(opts);
+    });
+    // Keyboard: ESC cancels, Enter confirms (when not focused on a button)
+    keyHandler = function (e) {
+        // Defensive: if overlay already detached, unbind and bail
+        if (!overlay.parentNode) { document.removeEventListener('keydown', keyHandler, true); return; }
+        if (e.key === 'Escape') { e.preventDefault(); close(); }
+        else if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') {
+            e.preventDefault();
+            savePdfOptions(opts);
+            close();
+            onConfirm(opts);
+        }
+    };
+    document.addEventListener('keydown', keyHandler, true);
+    requestAnimationFrame(function () { overlay.classList.add('show'); });
+}
+
 function exportToPdf() {
     // Guard against double-trigger (rapid clicks, keyboard repeat)
     if (_isExporting) { showToast('PDF 생성 중입니다'); return; }
@@ -716,7 +1034,11 @@ function exportToPdf() {
         lazyLoadScript('html2pdf', assets.html2pdf).then(function () { exportToPdf(); }).catch(function () { showToast('PDF 라이브러리 로드 실패'); });
         return;
     }
+    // Show options dialog first; actual export proceeds in callback
+    showPdfOptionsDialog(function (userOpts) { _runPdfExport(userOpts); });
+}
 
+function _runPdfExport(userOpts) {
     var previousMode = currentMode;
     if (currentMode !== 'preview') {
         setMode('preview');
@@ -742,8 +1064,19 @@ function exportToPdf() {
     var element = previewEl;
     if (!element) {
         showToast('프리뷰를 찾을 수 없습니다');
+        _isExporting = false;
         return;
     }
+
+    // Resolve margin preset to mm tuple [top, left, bottom, right]
+    var marginPresets = {
+        narrow: [10, 10, 14, 10],
+        normal: [18, 18, 22, 18],
+        wide: [25, 25, 28, 25]
+    };
+    var marginMm = marginPresets[userOpts.margin] || marginPresets.normal;
+    var paperFormat = userOpts.paperSize === 'letter' ? 'letter' : 'a4';
+    var pageOrient = userOpts.orientation === 'landscape' ? 'landscape' : 'portrait';
 
     var restore = function () { /* no-op — onclone touches only the cloned doc */ };
 
@@ -761,7 +1094,7 @@ function exportToPdf() {
 
     setTimeout(function () {
         var opt = {
-            margin: [18, 18, 22, 18],   // top, left, bottom, right (mm)
+            margin: marginMm,
             filename: fileName,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: {
@@ -859,7 +1192,7 @@ function exportToPdf() {
                     clonedDoc.head.appendChild(s);
                 }
             },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            jsPDF: { unit: 'mm', format: paperFormat, orientation: pageOrient },
             // v0.9.1: 'avoid' selectors prevent tables/figures from getting split awkwardly at page edges
             pagebreak: {
                 mode: ['css', 'legacy'],
@@ -876,20 +1209,22 @@ function exportToPdf() {
                 pdf.setPage(i);
 
                 // Running header (skip first page — already has title in body)
-                if (docTitle && i > 1) {
+                if (userOpts.showHeader && docTitle && i > 1) {
                     pdf.setFontSize(9);
                     pdf.setTextColor(140, 140, 140);
-                    pdf.text(docTitle, 18, 12, { align: 'left' });
+                    pdf.text(docTitle, marginMm[1], 12, { align: 'left' });
                     // Header underline
                     pdf.setDrawColor(220, 220, 220);
                     pdf.setLineWidth(0.2);
-                    pdf.line(18, 14, pageWidth - 18, 14);
+                    pdf.line(marginMm[1], 14, pageWidth - marginMm[3], 14);
                 }
 
                 // Footer page number
-                pdf.setFontSize(9);
-                pdf.setTextColor(140, 140, 140);
-                pdf.text(i + ' / ' + pageCount, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                if (userOpts.showPageNumber) {
+                    pdf.setFontSize(9);
+                    pdf.setTextColor(140, 140, 140);
+                    pdf.text(i + ' / ' + pageCount, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                }
             }
 
             pdf.save(fileName);
@@ -985,15 +1320,171 @@ function saveToDocument(content) {
 /* ───────────────────────────────────────────
    Scroll synchronization (Split mode)
    ─────────────────────────────────────────── */
+/*
+ * Anchor-based scroll sync (v1.0.2)
+ *
+ * Build two parallel arrays of anchor points:
+ *   - editor: { sourceLine, scrollTop }
+ *   - preview: { heading, offsetTop }
+ *
+ * For each heading in the rendered preview, find its source line in the editor.
+ * When user scrolls, find the two surrounding anchors and interpolate.
+ * Falls back to % ratio if no headings or sparse anchors.
+ */
+var _scrollAnchors = null;
+function buildScrollAnchors() {
+    _scrollAnchors = null;
+    if (!editorEl || !previewEl) return;
+    var headingEls = previewEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
+    if (!headingEls.length) return;
+    var src = editorEl.value;
+    var lines = src.split('\n');
+
+    // Pre-scan source lines for headings (markdown `#`-style only; setext '====' rare)
+    function stripMd(s) {
+        // Strip common inline markdown to align with rendered .textContent
+        return s
+            .replace(/`([^`]+)`/g, '$1')                          // inline code
+            .replace(/\*\*([^*]+)\*\*/g, '$1')                    // bold
+            .replace(/__([^_]+)__/g, '$1')                        // bold alt
+            .replace(/\*([^*]+)\*/g, '$1')                        // italic
+            .replace(/_([^_]+)_/g, '$1')                          // italic alt
+            .replace(/~~([^~]+)~~/g, '$1')                        // strike
+            .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')              // link
+            .replace(/\s+/g, ' ')                                  // collapse ws
+            .trim();
+    }
+    var srcHeadings = [];
+    var lineOffsets = [0]; // char offset of each line start
+    for (var i = 0; i < lines.length; i++) {
+        var ln = lines[i];
+        var m = ln.match(/^(#{1,6})\s+(.+?)\s*$/);
+        if (m) {
+            srcHeadings.push({ line: i, level: m[1].length, text: stripMd(m[2]) });
+        }
+        lineOffsets.push(lineOffsets[lineOffsets.length - 1] + ln.length + 1);
+    }
+    if (!srcHeadings.length) return;
+
+    // Match rendered headings to source headings in DOM order
+    var anchors = [];
+    var srcIdx = 0;
+    headingEls.forEach(function (h) {
+        var hText = stripMd(h.textContent);
+        var hLevel = parseInt(h.tagName[1], 10);
+        // Walk forward from srcIdx; pick first source heading with same level whose text matches loosely
+        for (var i = srcIdx; i < srcHeadings.length; i++) {
+            // Loose match: equal OR rendered starts with source OR source starts with rendered
+            // (handles emoji decorations on either side, e.g. "🎉 Title" rendered vs "Title" source)
+            if (srcHeadings[i].level === hLevel && (
+                hText === srcHeadings[i].text ||
+                hText.indexOf(srcHeadings[i].text) >= 0 ||
+                srcHeadings[i].text.indexOf(hText) >= 0
+            )) {
+                anchors.push({
+                    sourceLine: srcHeadings[i].line,
+                    headingEl: h
+                });
+                srcIdx = i + 1;
+                break;
+            }
+        }
+    });
+    if (anchors.length < 1) return;
+    _scrollAnchors = { anchors: anchors, lineOffsets: lineOffsets, lineCount: lines.length };
+}
+
+function getCurrentEditorLine() {
+    if (!editorEl || !_scrollAnchors) return 0;
+    // Approximate line at editor scroll center using lineHeight
+    var lh = parseFloat(getComputedStyle(editorEl).lineHeight) || 22;
+    var centerY = editorEl.scrollTop + editorEl.clientHeight * 0.3;
+    var line = Math.floor(centerY / lh);
+    return Math.max(0, Math.min(_scrollAnchors.lineCount - 1, line));
+}
+
+function syncEditorToPreview() {
+    if (!_scrollAnchors || !previewEl) return false;
+    var container = previewEl.parentElement;
+    if (!container) return false;
+    var line = getCurrentEditorLine();
+    var anchors = _scrollAnchors.anchors;
+    // Find surrounding anchors
+    var prev = null, next = null;
+    for (var i = 0; i < anchors.length; i++) {
+        if (anchors[i].sourceLine <= line) prev = anchors[i];
+        else { next = anchors[i]; break; }
+    }
+    var lh = parseFloat(getComputedStyle(editorEl).lineHeight) || 22;
+    var targetTop;
+    if (prev && next) {
+        var srcSpan = next.sourceLine - prev.sourceLine || 1;
+        var ratio = (line - prev.sourceLine) / srcSpan;
+        var prevTop = prev.headingEl.offsetTop;
+        var nextTop = next.headingEl.offsetTop;
+        targetTop = prevTop + (nextTop - prevTop) * ratio;
+    } else if (prev) {
+        // Past last heading — interpolate using remaining source lines vs preview height
+        var remainSrc = Math.max(1, _scrollAnchors.lineCount - prev.sourceLine);
+        var ratio2 = (line - prev.sourceLine) / remainSrc;
+        var remainPv = previewEl.scrollHeight - prev.headingEl.offsetTop;
+        targetTop = prev.headingEl.offsetTop + remainPv * ratio2;
+    } else if (next) {
+        var ratio3 = line / Math.max(1, next.sourceLine);
+        targetTop = next.headingEl.offsetTop * ratio3;
+    } else {
+        return false;
+    }
+    // Apply with small offset so heading sits a bit below top edge
+    container.scrollTop = Math.max(0, targetTop - container.clientHeight * 0.15);
+    return true;
+}
+
+function syncPreviewToEditor() {
+    if (!_scrollAnchors || !previewEl || !editorEl) return false;
+    var container = previewEl.parentElement;
+    if (!container) return false;
+    var anchors = _scrollAnchors.anchors;
+    // Find the heading anchor nearest to current scroll
+    var scrollTop = container.scrollTop + container.clientHeight * 0.15;
+    var prev = null, next = null;
+    for (var i = 0; i < anchors.length; i++) {
+        if (anchors[i].headingEl.offsetTop <= scrollTop) prev = anchors[i];
+        else { next = anchors[i]; break; }
+    }
+    var lh = parseFloat(getComputedStyle(editorEl).lineHeight) || 22;
+    var targetLine;
+    if (prev && next) {
+        var pvSpan = next.headingEl.offsetTop - prev.headingEl.offsetTop || 1;
+        var ratio = (scrollTop - prev.headingEl.offsetTop) / pvSpan;
+        targetLine = prev.sourceLine + (next.sourceLine - prev.sourceLine) * ratio;
+    } else if (prev) {
+        var remainPv = Math.max(1, previewEl.scrollHeight - prev.headingEl.offsetTop);
+        var ratio2 = (scrollTop - prev.headingEl.offsetTop) / remainPv;
+        var remainSrc = _scrollAnchors.lineCount - prev.sourceLine;
+        targetLine = prev.sourceLine + remainSrc * ratio2;
+    } else if (next) {
+        targetLine = next.sourceLine * (scrollTop / Math.max(1, next.headingEl.offsetTop));
+    } else {
+        return false;
+    }
+    editorEl.scrollTop = Math.max(0, targetLine * lh - editorEl.clientHeight * 0.3);
+    return true;
+}
+
 function setupScrollSync() {
     if (!editorEl || !previewEl) return;
 
     editorEl.addEventListener('scroll', function () {
         if (isSyncingScroll || currentMode !== 'split') return;
         isSyncingScroll = true;
-        var pct = editorEl.scrollTop / (editorEl.scrollHeight - editorEl.clientHeight || 1);
-        var previewContainer = previewEl.parentElement;
-        previewContainer.scrollTop = pct * (previewContainer.scrollHeight - previewContainer.clientHeight);
+        var ok = syncEditorToPreview();
+        if (!ok) {
+            // Fallback: percentage
+            var pct = editorEl.scrollTop / (editorEl.scrollHeight - editorEl.clientHeight || 1);
+            var c = previewEl.parentElement;
+            c.scrollTop = pct * (c.scrollHeight - c.clientHeight);
+        }
         requestAnimationFrame(function () { isSyncingScroll = false; });
     });
 
@@ -1001,8 +1492,11 @@ function setupScrollSync() {
     previewContainer.addEventListener('scroll', function () {
         if (isSyncingScroll || currentMode !== 'split') return;
         isSyncingScroll = true;
-        var pct = previewContainer.scrollTop / (previewContainer.scrollHeight - previewContainer.clientHeight || 1);
-        editorEl.scrollTop = pct * (editorEl.scrollHeight - editorEl.clientHeight);
+        var ok = syncPreviewToEditor();
+        if (!ok) {
+            var pct = previewContainer.scrollTop / (previewContainer.scrollHeight - previewContainer.clientHeight || 1);
+            editorEl.scrollTop = pct * (editorEl.scrollHeight - editorEl.clientHeight);
+        }
         requestAnimationFrame(function () { isSyncingScroll = false; });
     });
 }
@@ -1013,6 +1507,20 @@ function setupScrollSync() {
 function setupKeyboardShortcuts() {
     document.addEventListener('keydown', function (e) {
         var mod = e.metaKey || e.ctrlKey;
+        // ESC closes lightbox / preview search before anything else
+        if (e.key === 'Escape') {
+            if (_lightboxEl) { e.preventDefault(); closeLightbox(); return; }
+            if (_previewSearchPanel && _previewSearchPanel.style.display !== 'none') {
+                e.preventDefault(); closePreviewSearch(); return;
+            }
+        }
+        // Cmd/Ctrl+F: preview-mode search; edit/split → existing Find&Replace
+        if (mod && (e.key === 'f' || e.key === 'F')) {
+            e.preventDefault();
+            if (currentMode === 'preview') openPreviewSearch();
+            else openFindReplace();
+            return;
+        }
         if (mod && (e.key === 'h' || e.key === 'H')) { e.preventDefault(); openFindReplace(); return; }
         if (mod && e.key === 'e') {
             e.preventDefault();
@@ -1658,9 +2166,10 @@ function buildUI(fileName) {
         if (lineNumbersEl) lineNumbersEl.scrollTop = editorEl.scrollTop;
     });
 
-    // Paste handler — convert clipboard images to base64 markdown
+    // Paste handler — image → base64 markdown; URL + selection → markdown link (v1.0.2)
     editorEl.addEventListener('paste', function (e) {
         if (!e.clipboardData || !e.clipboardData.items) return;
+        // 1) Image paste
         for (var i = 0; i < e.clipboardData.items.length; i++) {
             var item = e.clipboardData.items[i];
             if (item.type && item.type.indexOf('image/') === 0) {
@@ -1684,6 +2193,28 @@ function buildUI(fileName) {
                 return;
             }
         }
+
+        // 2) Smart URL paste: text selected + clipboard is a URL → wrap as [text](url)
+        var pasted = e.clipboardData.getData('text/plain');
+        if (!pasted) return;
+        pasted = pasted.trim();
+        // Strict URL regex — must start with http(s)://, no whitespace
+        var URL_RE = /^https?:\/\/[^\s]+$/i;
+        if (!URL_RE.test(pasted)) return;
+        var selStart = editorEl.selectionStart;
+        var selEnd = editorEl.selectionEnd;
+        var selected = editorEl.value.substring(selStart, selEnd);
+        if (!selected) return; // no selection → let default paste happen (bare URL)
+        // Skip if selection itself contains markdown link syntax or newlines
+        if (/[\n\r]/.test(selected) || /\]\(/.test(selected)) return;
+        e.preventDefault();
+        var ins = '[' + selected + '](' + pasted + ')';
+        editorEl.value = editorEl.value.substring(0, selStart) + ins + editorEl.value.substring(selEnd);
+        // Place caret right after inserted link
+        editorEl.selectionStart = editorEl.selectionEnd = selStart + ins.length;
+        onEditorInput();
+        updateLineNumbers();
+        showToast('링크 변환됨 / Linked');
     });
 
     editorWrap.appendChild(lineNumbersEl);
@@ -1874,6 +2405,131 @@ function initEditor(content, fileName, baseUri, initialSettings) {
     setupScrollSync();
     setupKeyboardShortcuts();
     setupMessageListener();
+}
+
+/* Preview-mode search (v1.0.2) — highlights matches in rendered DOM */
+var _previewSearchPanel = null;
+var _previewMatches = [];
+var _previewMatchIdx = -1;
+var _previewSearchQuery = '';
+
+function clearPreviewHighlights() {
+    if (!previewEl) return;
+    var marks = previewEl.querySelectorAll('mark.preview-search-hit, mark.preview-search-active');
+    marks.forEach(function (m) {
+        var parent = m.parentNode;
+        if (!parent) return;
+        while (m.firstChild) parent.insertBefore(m.firstChild, m);
+        parent.removeChild(m);
+        parent.normalize();
+    });
+    _previewMatches = [];
+    _previewMatchIdx = -1;
+}
+
+function highlightPreviewMatches(query) {
+    clearPreviewHighlights();
+    if (!previewEl || !query) return;
+    var q = query.toLowerCase();
+    // Walk text nodes; skip script/style/already-marked content
+    var walker = document.createTreeWalker(previewEl, NodeFilter.SHOW_TEXT, {
+        acceptNode: function (n) {
+            if (!n.nodeValue || !n.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+            var p = n.parentNode;
+            while (p && p !== previewEl) {
+                var tag = (p.tagName || '').toLowerCase();
+                if (tag === 'script' || tag === 'style' || tag === 'mark') return NodeFilter.FILTER_REJECT;
+                p = p.parentNode;
+            }
+            return n.nodeValue.toLowerCase().indexOf(q) >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+        }
+    });
+    var nodes = [];
+    var n;
+    while ((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(function (node) {
+        var text = node.nodeValue;
+        var lower = text.toLowerCase();
+        var idx = 0;
+        var frag = document.createDocumentFragment();
+        var hits = [];
+        while (true) {
+            var pos = lower.indexOf(q, idx);
+            if (pos < 0) break;
+            if (pos > idx) frag.appendChild(document.createTextNode(text.substring(idx, pos)));
+            var mark = document.createElement('mark');
+            mark.className = 'preview-search-hit';
+            mark.textContent = text.substring(pos, pos + query.length);
+            frag.appendChild(mark);
+            hits.push(mark);
+            idx = pos + query.length;
+        }
+        if (idx < text.length) frag.appendChild(document.createTextNode(text.substring(idx)));
+        node.parentNode.replaceChild(frag, node);
+        for (var i = 0; i < hits.length; i++) _previewMatches.push(hits[i]);
+    });
+}
+
+function setActiveMatch(i) {
+    if (!_previewMatches.length) return;
+    if (_previewMatchIdx >= 0 && _previewMatches[_previewMatchIdx]) {
+        _previewMatches[_previewMatchIdx].classList.remove('preview-search-active');
+        _previewMatches[_previewMatchIdx].classList.add('preview-search-hit');
+    }
+    _previewMatchIdx = ((i % _previewMatches.length) + _previewMatches.length) % _previewMatches.length;
+    var el = _previewMatches[_previewMatchIdx];
+    el.classList.add('preview-search-active');
+    el.classList.remove('preview-search-hit');
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    updatePreviewSearchCount();
+}
+
+function updatePreviewSearchCount() {
+    if (!_previewSearchPanel) return;
+    var c = _previewSearchPanel.querySelector('.ps-count');
+    if (!c) return;
+    if (!_previewMatches.length) { c.textContent = _previewSearchQuery ? '0 / 0' : ''; return; }
+    c.textContent = (_previewMatchIdx + 1) + ' / ' + _previewMatches.length;
+}
+
+function openPreviewSearch() {
+    if (!previewEl) return;
+    if (!_previewSearchPanel) {
+        var p = document.createElement('div');
+        p.className = 'preview-search-panel';
+        p.innerHTML =
+            '<input type="text" class="ps-input" placeholder="프리뷰에서 찾기 / Find in preview" aria-label="Search preview">' +
+            '<span class="ps-count" aria-live="polite"></span>' +
+            '<button class="ps-prev" title="이전 (Shift+Enter)" aria-label="Previous match">↑</button>' +
+            '<button class="ps-next" title="다음 (Enter)" aria-label="Next match">↓</button>' +
+            '<button class="ps-close" title="닫기 (ESC)" aria-label="Close">×</button>';
+        document.body.appendChild(p);
+        _previewSearchPanel = p;
+        var input = p.querySelector('.ps-input');
+        input.addEventListener('input', function () {
+            _previewSearchQuery = input.value;
+            highlightPreviewMatches(_previewSearchQuery);
+            if (_previewMatches.length) setActiveMatch(0);
+            else updatePreviewSearchCount();
+        });
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); setActiveMatch(_previewMatchIdx + (e.shiftKey ? -1 : 1)); }
+            else if (e.key === 'Escape') { e.preventDefault(); closePreviewSearch(); }
+        });
+        p.querySelector('.ps-next').addEventListener('click', function () { setActiveMatch(_previewMatchIdx + 1); });
+        p.querySelector('.ps-prev').addEventListener('click', function () { setActiveMatch(_previewMatchIdx - 1); });
+        p.querySelector('.ps-close').addEventListener('click', closePreviewSearch);
+    }
+    _previewSearchPanel.style.display = 'flex';
+    var input = _previewSearchPanel.querySelector('.ps-input');
+    input.focus();
+    input.select();
+}
+function closePreviewSearch() {
+    if (_previewSearchPanel) _previewSearchPanel.style.display = 'none';
+    clearPreviewHighlights();
+    _previewSearchQuery = '';
 }
 
 /* Find & Replace panel (v0.9.0) */

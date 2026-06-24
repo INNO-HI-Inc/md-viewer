@@ -5,6 +5,31 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.2] - 2026-06-24
+
+### Added — 사용성 개선 5종
+
+- **🖼 이미지 라이트박스** — 프리뷰의 이미지를 클릭하면 풀스크린으로 확대. 휠로 줌, 더블클릭 2.5×, 드래그 패닝, ESC/외부 클릭으로 닫기
+- **🔍 프리뷰 인-페이지 검색** — Preview 모드에서 `Cmd/Ctrl+F`로 인-페이지 검색. 매치 하이라이트, Enter/Shift+Enter로 이동, 활성 매치는 강조색으로 표시
+- **📌 아웃라인 스크롤 추적** — 스크롤 위치에 따라 현재 섹션이 아웃라인에서 강조 (좌측 색띠 + 굵게 + 자동 스크롤). IntersectionObserver 기반
+- **🔗 스마트 URL 붙여넣기** — 텍스트 선택한 상태에서 URL 붙여넣기 → `[선택텍스트](url)` 자동 변환. 멀티라인 선택/non-URL은 자동으로 건드리지 않음
+- **📄 PDF 옵션 다이얼로그** — PDF 추출 전 다이얼로그로 용지(A4/Letter), 방향(세로/가로), 여백(좁게/보통/넓게), 헤더 표시, 페이지 번호 표시를 선택. 선택값은 localStorage에 저장되어 다음 추출 시 재사용
+
+### Improved
+
+- **Split 스크롤 동기화** — 기존 % 기반 → 헤딩 앵커 기반 보간으로 정확도 향상. 표/이미지가 많은 문서에서 어긋남 감소. 헤딩 없는 구간은 % fallback
+- **표 가로 스크롤** — 화면보다 넓은 표는 자동 wrapper로 가로 스크롤. 양쪽 그림자 힌트, 얇은 스크롤바, PDF에서는 wrapper 제거되어 100% 너비로 인쇄
+
+### Fixed
+
+- **PDF 다이얼로그 키 핸들러 누수** — 다이얼로그를 버튼 클릭으로 닫은 뒤 에디터에서 Enter 칠 때 phantom PDF 익스포트 트리거되던 버그 (수정 후 검증)
+- **스크롤 sync 포맷 헤딩 매칭** — `# **굵게**`처럼 인라인 포맷이 있는 헤딩에서 source ↔ rendered 매칭 실패 → % fallback 떨어지던 정확도 손실. 인라인 마크업 stripping + loose match로 수정
+- **라이트박스 리스너 누수** — `window` 객체에 mousemove/mouseup이 매 오픈마다 쌓이던 누수. close 시 명시적 removeEventListener로 해제
+
+### Verified
+
+- Playwright 헤드리스 검증 31/31 통과 (라이트박스 · 검색 · 아웃라인 · 스마트 paste · PDF 다이얼로그 · 스크롤 sync · 기존 기능 회귀)
+
 ## [1.0.1] - 2026-06-18
 
 ### Fixed
