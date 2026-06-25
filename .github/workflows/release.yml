@@ -11,6 +11,11 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # Job-level env so VSCE_PAT is visible to step `if:` expressions.
+    # A step's own env: block isn't evaluated before its if: — that's why earlier
+    # releases never auto-published even with the secret set.
+    env:
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
     steps:
       - uses: actions/checkout@v4
 
@@ -43,6 +48,4 @@ jobs:
 
       - name: Publish to VS Code Marketplace
         if: env.VSCE_PAT != ''
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: vsce publish --no-git-tag-version -p $VSCE_PAT
+        run: vsce publish --no-git-tag-version -p "$VSCE_PAT"

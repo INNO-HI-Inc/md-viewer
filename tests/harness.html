@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>MD Pretty Viewer Harness</title>
+<link rel="stylesheet" href="../media/editor.css">
+<link rel="stylesheet" href="../media/katex.min.css">
+</head>
+<body class="mode-preview vscode-light">
+<div id="app"></div>
+<script>
+// Mock VS Code API BEFORE editor.js loads (editor.js calls acquireVsCodeApi at module top)
+window.acquireVsCodeApi = function () {
+    var msgs = [];
+    return {
+        postMessage: function (m) { msgs.push(m); window.__lastPostMessage = m; window.__postLog = msgs; },
+        setState: function () {},
+        getState: function () { return {}; }
+    };
+};
+window.__lazyAssets = {
+    mermaid: '../media/mermaid.min.js',
+    html2pdf: '../media/html2pdf.bundle.min.js',
+    nonce: 'test'
+};
+</script>
+<script src="../media/marked.min.js"></script>
+<script src="../media/katex.min.js"></script>
+<script src="../media/katex-auto-render.min.js"></script>
+<script src="../media/highlight.min.js"></script>
+<script src="../media/editor.js"></script>
+<script>
+var SAMPLE_MD = "# 🎉 MD Pretty Viewer 테스트\n\n> 이 문서로 v1.0.2 기능을 검증합니다.\n\n## ✨ 기능 체크리스트\n\n- [x] 라이트박스\n- [ ] 검색\n- [x] 아웃라인 스파이\n\n## 🎨 테마 미리보기\n\n상단바 색상 점을 눌러보세요. 13가지 테마가 있습니다.\n\n| 카테고리 | 테마 |\n|---------|------|\n| Classic | Blue Green Rose |\n| Pantone | Peach Aqua Orchid |\n\n## 이미지 테스트\n\n![sample image](https://placeholder.example/test.png)\n\n## 코드 블록\n\n```javascript\nfunction greet(name) {\n    console.log('Hello, ' + name + '!');\n}\ngreet('verifier');\n```\n\n## **굵은 텍스트가 든 헤딩**\n\n포맷 있는 헤딩에서 스크롤 sync가 깨지지 않는지 검증.\n\n## 긴 문서 시뮬레이션\n\n" + Array(40).fill("- 더미 라인입니다. 스크롤을 만들기 위한 패딩.").join("\n") + "\n\n## 마지막 섹션\n\n끝.\n";
+window.__sampleMd = SAMPLE_MD;
+
+initEditor(SAMPLE_MD, 'test.md', '', {
+    defaultTheme: 'blue',
+    defaultFontSize: 16,
+    defaultMode: 'preview',
+    showOutline: true
+});
+
+// Expose internal functions for test driver
+window.__test = {
+    getMode: function () { return currentMode; },
+    setMode: function (m) { setMode(m); },
+    getContent: function () { return currentContent; },
+    setContent: function (v) {
+        if (editorEl) { editorEl.value = v; currentContent = v; onEditorInput(); renderPreview(); }
+        else { currentContent = v; renderPreview(); }
+    },
+    getLightboxEl: function () { return _lightboxEl; },
+    openLightbox: function (src, alt) { openLightbox(src, alt); },
+    closeLightbox: function () { closeLightbox(); },
+    openPreviewSearch: function () { openPreviewSearch(); },
+    closePreviewSearch: function () { closePreviewSearch(); },
+    getPreviewSearchPanel: function () { return _previewSearchPanel; },
+    getPreviewMatches: function () { return _previewMatches.length; },
+    getPreviewActiveIdx: function () { return _previewMatchIdx; },
+    getOutlineActive: function () { return _outlineActiveItem ? _outlineActiveItem.textContent : null; },
+    getScrollAnchors: function () { return _scrollAnchors ? _scrollAnchors.anchors.length : 0; },
+    showPdfDialog: function () { showPdfOptionsDialog(function (o) { window.__lastPdfOpts = o; }); },
+    getPdfDialog: function () { return document.querySelector('.pdf-options-dialog'); },
+    triggerPaste: function (text) {
+        if (!editorEl) return false;
+        var dt = new DataTransfer();
+        dt.setData('text/plain', text);
+        var ev = new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true });
+        try { Object.defineProperty(ev, 'clipboardData', { value: dt }); } catch (_) {}
+        editorEl.dispatchEvent(ev);
+        return !ev.defaultPrevented;
+    },
+    setEditorSelection: function (start, end) {
+        if (!editorEl) return;
+        editorEl.focus();
+        editorEl.selectionStart = start;
+        editorEl.selectionEnd = end;
+    },
+    setEditorValue: function (v) {
+        if (!editorEl) return;
+        editorEl.value = v;
+        currentContent = v;
+    },
+    getEditorValue: function () { return editorEl ? editorEl.value : ''; }
+};
+</script>
+</body>
+</html>

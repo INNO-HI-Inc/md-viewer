@@ -2,3 +2,5 @@ node_modules/
 *.vsix
 .DS_Store
 .claude/
+tests/evidence/
+__pycache__/
