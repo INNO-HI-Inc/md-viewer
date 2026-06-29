@@ -92,10 +92,14 @@ async function openPrettyView(context, uri, viewColumn) {
     );
 
     openPanels.set(uriKey, panel);
-    activeWebviews.add(panel.webview);
+    // Capture webview ref so we can use it inside onDidDispose without
+    // re-accessing `panel.webview` — that getter throws once the panel is
+    // disposed, which is exactly when onDidDispose fires.
+    const webview = panel.webview;
+    activeWebviews.add(webview);
 
     const docDir = vscode.Uri.joinPath(uri, '..');
-    const docBaseUri = panel.webview.asWebviewUri(docDir);
+    const docBaseUri = webview.asWebviewUri(docDir);
     const nonce = getNonce();
 
     const config = vscode.workspace.getConfiguration('mdPrettyViewer');
@@ -106,7 +110,7 @@ async function openPrettyView(context, uri, viewColumn) {
         showOutline: config.get('showOutline', false)
     };
 
-    panel.webview.html = getHtml(panel.webview, nonce, context, document, docBaseUri, initialSettings);
+    webview.html = getHtml(webview, nonce, context, document, docBaseUri, initialSettings);
 
     // Track if panel has been disposed to avoid postMessage after dispose
     let isDisposed = false;
@@ -114,7 +118,7 @@ async function openPrettyView(context, uri, viewColumn) {
     const safePost = (msg) => {
         if (isDisposed) return;
         try {
-            const p = panel.webview.postMessage(msg);
+            const p = webview.postMessage(msg);
             if (p && typeof p.then === 'function') p.then(undefined, () => {});
         } catch (_) { /* panel disposed mid-call */ }
     };
@@ -149,7 +153,7 @@ async function openPrettyView(context, uri, viewColumn) {
     });
 
     // Handle webview → document edits
-    panel.webview.onDidReceiveMessage(async msg => {
+    webview.onDidReceiveMessage(async msg => {
         if (msg.type === 'edit') {
             if (isDisposed) return;
             try {
@@ -171,9 +175,9 @@ async function openPrettyView(context, uri, viewColumn) {
     });
 
     panel.onDidDispose(() => {
-        openPanels.delete(uriKey);
         isDisposed = true;
-        activeWebviews.delete(panel.webview);
+        openPanels.delete(uriKey);
+        activeWebviews.delete(webview);  // captured ref — never throws
         changeDocSub.dispose();
         configSub.dispose();
     });

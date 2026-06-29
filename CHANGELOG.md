@@ -5,6 +5,12 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.3] - 2026-06-29
+
+### Fixed
+
+- **Webview is disposed 에러** — panel이 dispose된 후 `onDidDispose` 콜백에서 `panel.webview` getter를 호출하면 throw되는 race. webview 참조를 panel 생성 시점에 미리 캡처해서 dispose 시점에 안전하게 cleanup하도록 수정. 콘솔 에러 없어짐.
+
 ## [1.0.2] - 2026-06-24
 
 ### Added — 사용성 개선 5종
