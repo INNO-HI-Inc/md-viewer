@@ -25,19 +25,9 @@
   </sub>
 </p>
 
-<p>
-  <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer"><b>Install →</b></a>
-  &nbsp;·&nbsp;
-  <a href="https://inno-hi-inc.github.io/md-viewer/">Homepage</a>
-  &nbsp;·&nbsp;
-  <a href="https://inno-hi-inc.github.io/md-viewer/demo.html">Live Demo</a>
-  &nbsp;·&nbsp;
-  <a href="https://github.com/INNO-HI-Inc/md-viewer/issues">Report Bug</a>
-</p>
+<p><a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer"><b>Install →</b></a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://inno-hi-inc.github.io/md-viewer/">Homepage</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://inno-hi-inc.github.io/md-viewer/demo.html">Live Demo</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://github.com/INNO-HI-Inc/md-viewer/issues">Report Bug</a></p>
 
-<p>
-  <sub><a href="#-english"><b>English</b></a> &nbsp;·&nbsp; <a href="#-한국어"><b>한국어</b></a></sub>
-</p>
+<p><sub><a href="#-english"><b>English</b></a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="#-한국어"><b>한국어</b></a></sub></p>
 
 <br/>
 
