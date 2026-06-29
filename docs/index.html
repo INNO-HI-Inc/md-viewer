@@ -688,14 +688,14 @@
 <!-- Hero -->
 <section class="hero">
     <div class="hero-glow"></div>
-    <div class="hero-tag"><span class="dot"></span> v0.9.0 — Slash · Footnotes · Admonitions · Find/Replace</div>
+    <div class="hero-tag"><span class="dot"></span> v1.0.2 — Lightbox · In-preview search · Outline spy · PDF options</div>
     <h1>
         <span class="ko">내가 쓴 마크다운이<br><span class="accent">작품이 되는</span> 순간</span>
         <span class="en">Where your markdown<br>becomes a <span class="accent">masterpiece</span></span>
     </h1>
     <p class="hero-desc">
-        <span class="ko">13가지 테마 · LaTeX 수식 · 한 클릭 PDF · 이미지 클립보드 붙여넣기 · 한글 폰트 번들.<br>회의록부터 제안서까지 — 한 번 쓰고 그대로 발표 자료가 됩니다.</span>
-        <span class="en">13 themes · LaTeX math · one-click PDF · clipboard image paste · Korean fonts bundled.<br>From notes to proposals — write once, present instantly.</span>
+        <span class="ko">13가지 테마 · LaTeX 수식 · Mermaid 다이어그램 · PDF 옵션 다이얼로그 · 한글 폰트 번들.<br>회의록부터 제안서까지 — 한 번 쓰고 그대로 발표 자료가 됩니다.</span>
+        <span class="en">13 themes · LaTeX math · Mermaid diagrams · PDF export with options · Korean fonts bundled.<br>From notes to proposals — write once, present instantly.</span>
     </p>
     <div class="hero-btns">
         <a class="btn btn-primary" href="demo.html">
@@ -778,13 +778,33 @@
         </div>
         <div class="feature-card">
             <span class="icon">&#128269;</span>
-            <h3><span class="ko">찾기(Cmd+F)</span><span class="en">Find (Cmd+F)</span></h3>
-            <p><span class="ko">VS Code 내장 찾기 위젯으로 프리뷰 내 텍스트 검색.</span><span class="en">Native VS Code find widget for searching text in preview.</span></p>
+            <h3><span class="ko">프리뷰 검색 (Cmd+F)</span><span class="en">In-preview search (Cmd+F)</span></h3>
+            <p><span class="ko">프리뷰 모드에서 인-페이지 검색. 매치 하이라이트 · Enter로 이동 · 수식·표 안까지 검색.</span><span class="en">In-page search with match highlight. Enter/Shift+Enter to navigate. Works across text, tables, and math.</span></p>
         </div>
         <div class="feature-card">
             <span class="icon">&#128196;</span>
-            <h3><span class="ko">PDF로 저장</span><span class="en">Export as PDF</span></h3>
-            <p><span class="ko">툴바 PDF 버튼 한 번으로 깔끔한 A4 레이아웃 PDF 출력.</span><span class="en">One-click PDF export via system print dialog. A4-optimized layout.</span></p>
+            <h3><span class="ko">PDF 옵션 다이얼로그</span><span class="en">PDF export with options</span></h3>
+            <p><span class="ko">A4/Letter · 세로/가로 · 여백 · 헤더 · 페이지번호 선택. 설정 저장. 스마트 페이지 분할.</span><span class="en">A4/Letter · portrait/landscape · margins · header · page number — all configurable, choices persist.</span></p>
+        </div>
+        <div class="feature-card">
+            <span class="icon">&#128247;</span>
+            <h3><span class="ko">이미지 라이트박스</span><span class="en">Image lightbox</span></h3>
+            <p><span class="ko">이미지 클릭 → 풀스크린. 휠로 확대 · 더블클릭 2.5× · 드래그 패닝 · ESC 닫기.</span><span class="en">Click any image → full-screen. Wheel to zoom · double-click 2.5× · drag to pan · ESC to close.</span></p>
+        </div>
+        <div class="feature-card">
+            <span class="icon">&#128205;</span>
+            <h3><span class="ko">아웃라인 스크롤 추적</span><span class="en">Outline scroll tracking</span></h3>
+            <p><span class="ko">스크롤 위치에 따라 현재 섹션이 아웃라인에서 강조. 긴 문서에서 위치 파악.</span><span class="en">Outline highlights the current section as you scroll, with auto-scroll to keep it visible.</span></p>
+        </div>
+        <div class="feature-card">
+            <span class="icon">&#128279;</span>
+            <h3><span class="ko">스마트 URL 붙여넣기</span><span class="en">Smart URL paste</span></h3>
+            <p><span class="ko">텍스트 선택 후 URL 붙여넣기 → <code>[선택텍스트](url)</code> 자동 변환.</span><span class="en">Select text → paste a URL → auto-becomes <code>[selected](url)</code> markdown link.</span></p>
+        </div>
+        <div class="feature-card">
+            <span class="icon">&#128202;</span>
+            <h3><span class="ko">표 가로 스크롤</span><span class="en">Horizontal table scroll</span></h3>
+            <p><span class="ko">넓은 표는 자동 wrapper로 가로 스크롤. 가장자리 그림자 힌트. PDF에선 풀 너비로 인쇄.</span><span class="en">Wide tables auto-wrap in a horizontal scroll container with edge-shadow hints. Full width in PDF.</span></p>
         </div>
         <div class="feature-card">
             <span class="icon">&#931;</span>
@@ -928,7 +948,7 @@
     </p>
     <a class="btn btn-primary" href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer" target="_blank">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-        <span class="ko">다운로드 v0.9.0</span><span class="en">Install v0.9.0</span>
+        <span class="ko">다운로드 v1.0.2</span><span class="en">Install v1.0.2</span>
     </a>
 </section>
 
