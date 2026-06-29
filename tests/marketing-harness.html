@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>MD Pretty Viewer Marketing</title>
+<link rel="stylesheet" href="../media/editor.css">
+<link rel="stylesheet" href="../media/katex.min.css">
+<style>
+  body { margin: 0; }
+</style>
+</head>
+<body class="mode-preview vscode-light">
+<div id="app"></div>
+<script>
+window.acquireVsCodeApi = function () {
+    return { postMessage: function () {}, setState: function () {}, getState: function () { return {}; } };
+};
+window.__lazyAssets = {
+    mermaid: '../media/mermaid.min.js',
+    html2pdf: '../media/html2pdf.bundle.min.js',
+    nonce: 'mkt'
+};
+</script>
+<script src="../media/marked.min.js"></script>
+<script src="../media/katex.min.js"></script>
+<script src="../media/katex-auto-render.min.js"></script>
+<script src="../media/highlight.min.js"></script>
+<script src="../media/editor.js"></script>
+<script>
+// Rich marketing-grade sample: shows off LaTeX, code, table, image, checklist, quote, math, mermaid
+var MD = `# 📝 회의록 — Q3 제품 전략
+
+> **참석자**: 김민수, 이서연, 박지훈, 정다은
+> **장소**: 본사 4F · **시간**: 14:00–16:00
+
+---
+
+## 🎯 핵심 의사결정
+
+- [x] iOS 앱 1.0 출시 일정 확정 — **2026-09-15**
+- [x] 마케팅 예산 \\$50K 추가 승인
+- [ ] 채용 5명 (엔지니어 3, 디자이너 2) — 다음 주 의사결정
+- [ ] 베타 테스터 100명 모집 계획 수립
+
+## 📊 분기 성과
+
+| 지표 | Q2 | Q3 목표 | 달성률 |
+|------|----:|---------:|:------:|
+| MAU | 12,400 | 25,000 | **108%** ✅ |
+| 매출 (KRW) | 4.2억 | 8.0억 | **94%** ⚠️ |
+| 리텐션 (D30) | 38% | 50% | **52%** 🎉 |
+| NPS | 42 | 55 | **48** |
+
+## 🧮 단가 모델
+
+월 사용료를 \\(p\\), 사용자 수를 \\(u\\), 이탈률을 \\(c\\)라 할 때 LTV는:
+
+$$\\text{LTV} = \\frac{p \\cdot u}{c} \\cdot (1 + \\alpha \\sqrt{t})$$
+
+여기서 \\(\\alpha\\)는 성장 가속도, \\(t\\)는 가입 후 경과 개월입니다.
+
+## 💡 가설 검증 실험
+
+\`\`\`javascript
+// A/B 테스트 — 가격 페이지 컨버전
+function runExperiment(variant) {
+    const cohort = assignToCohort(user.id);
+    track('pricing_view', {
+        variant: variant,        // 'control' | 'treatment'
+        cohort: cohort,
+        revenue: estimateLTV(user)
+    });
+    return variant === 'treatment'
+        ? showNewPricingPage()
+        : showLegacyPricingPage();
+}
+
+const result = await analyze({
+    metric: 'conversion_rate',
+    confidence: 0.95,
+    minSampleSize: 10000
+});
+\`\`\`
+
+## 🔄 사용자 여정
+
+\`\`\`mermaid
+flowchart LR
+    A[랜딩 페이지] --> B{관심 등록}
+    B -->|이메일| C[온보딩 이메일]
+    B -->|무시| D[리타게팅 광고]
+    C --> E[무료 체험 시작]
+    D --> E
+    E --> F{14일 후}
+    F -->|결제| G[유료 전환 ✅]
+    F -->|미결제| H[연장 제안]
+\`\`\`
+
+> "사용자가 무료 체험에서 결제로 넘어가는 순간이 우리가 가장 모르는 구간이에요. 그 사이에 뭐가 일어나는지 정확히 봐야 합니다."
+>
+> — 정다은, Product Lead
+
+## 📌 다음 액션
+
+1. **이서연** — 가격 페이지 A/B 셋업, ~ 06/28
+2. **박지훈** — 베타 테스터 모집 페이지, ~ 06/30
+3. **김민수** — 채용 공고 게시, ~ 06/26
+
+---
+
+*다음 회의: 2026-07-08 (월) 14:00*
+`;
+
+initEditor(MD, '회의록.md', '', {
+    defaultTheme: 'blue',
+    defaultFontSize: 16,
+    defaultMode: 'preview',
+    showOutline: true
+});
+
+// Marketing controls
+window.__mkt = {
+    setTheme: function (name) {
+        if (typeof applyTheme === 'function') applyTheme(name);
+    },
+    setMode: function (m) { setMode(m); },
+    setOutline: function (visible) {
+        if (outlineEl) {
+            outlineEl.classList.toggle('hidden', !visible);
+            var btn = document.querySelector('.outline-toggle');
+            if (btn) btn.classList.toggle('active', visible);
+        }
+    },
+    openLightbox: function (src, alt) { openLightbox(src, alt); },
+    openPdfDialog: function () { showPdfOptionsDialog(function () {}); },
+    openPreviewSearch: function (q) {
+        openPreviewSearch();
+        if (q) {
+            var i = document.querySelector('.preview-search-panel .ps-input');
+            i.value = q;
+            i.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    },
+    closeOverlays: function () {
+        closeLightbox();
+        closePreviewSearch();
+        var d = document.querySelector('.pdf-options-dialog');
+        if (d && d.parentNode) d.parentNode.removeChild(d);
+    },
+    setVscodeTheme: function (t) {
+        document.body.classList.remove('vscode-light', 'vscode-dark', 'vscode-high-contrast');
+        document.body.classList.add(t);
+    },
+    setEditorContent: function (s) {
+        currentContent = s;
+        if (editorEl) editorEl.value = s;
+        renderPreview();
+        if (typeof updateStats === 'function') updateStats();
+    }
+};
+</script>
+</body>
+</html>

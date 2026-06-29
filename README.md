@@ -42,8 +42,33 @@
 <br/>
 
 <a href="https://inno-hi-inc.github.io/md-viewer/demo.html">
-  <img src="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/screenshot.png" alt="MD Pretty Viewer screenshot" width="100%">
+  <img src="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/screenshot.png" alt="MD Pretty Viewer — preview with code, Mermaid diagram, and outline" width="100%">
 </a>
+
+<br/><br/>
+
+<table>
+<tr>
+  <td width="50%" valign="top" align="center">
+    <a href="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/marketing/09-split-mode.png"><img src="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/marketing/09-split-mode.png" alt="Split mode — edit and preview side by side" width="100%"></a>
+    <sub><b>Split mode</b> — edit and preview side by side with anchor-based scroll sync</sub>
+  </td>
+  <td width="50%" valign="top" align="center">
+    <a href="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/marketing/10-pdf-dialog.png"><img src="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/marketing/10-pdf-dialog.png" alt="PDF export with options dialog" width="100%"></a>
+    <sub><b>PDF export</b> — paper · margin · header · page number, all configurable</sub>
+  </td>
+</tr>
+<tr>
+  <td width="50%" valign="top" align="center">
+    <a href="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/marketing/11-preview-search.png"><img src="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/marketing/11-preview-search.png" alt="In-preview search highlights matches across text, tables, and math" width="100%"></a>
+    <sub><b>In-preview search</b> — Cmd/Ctrl+F highlights across text, tables, and math</sub>
+  </td>
+  <td width="50%" valign="top" align="center">
+    <a href="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/marketing/05-theme-peach.png"><img src="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/marketing/05-theme-peach.png" alt="Theme variety including Pantone 2026 Peach"></a>
+    <sub><b>13 themes</b> — Classic + Pantone 2026 + Eye-friendly</sub>
+  </td>
+</tr>
+</table>
 
 </div>
 
