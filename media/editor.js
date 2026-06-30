@@ -312,20 +312,6 @@ function bindImageLightbox(container) {
     });
 }
 
-/* Emoji parsing (v1.0.4) — Twemoji SVG replacement for consistent cross-platform look */
-function parseEmojis(container) {
-    if (!container) return;
-    if (typeof MDEmoji === 'undefined') return;
-    var base = window.__twemojiBase;
-    if (!base) return;
-    try {
-        MDEmoji.parse(container, { base: base });
-    } catch (e) {
-        // Parsing failure should never break the render — native emojis remain visible
-        console.warn('MD Pretty Viewer: emoji parse failed', e);
-    }
-}
-
 /* Wrap wide tables in horizontal scroll container (v1.0.2) */
 function wrapTablesScrollable(container) {
     if (!container) return;
@@ -562,7 +548,6 @@ function renderPreview() {
         bindImageLightbox(previewEl);
         renderMath(previewEl);
         renderMermaid(previewEl);
-        parseEmojis(previewEl);
         // Rebuild scroll-sync anchors after each render so heading offsets stay accurate
         buildScrollAnchors();
     } catch (err) {

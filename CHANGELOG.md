@@ -5,6 +5,14 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.5] - 2026-06-30
+
+### Changed
+
+- **이모지 스타일을 Tossface로 교체** — 토스가 디자인한 Tossface 컬러 웹폰트(v2.2, 14MB 12개 woff2 청크) 번들. 모던하고 일관된 한국 디자인 톤. Twemoji SVG 번들(3,838개)과 emoji-parser.js를 제거해서 코드 단순화. SVG 교체 방식이 아니라 폰트 fallback 방식이라 JS 처리 0, 마크다운 렌더 후 추가 작업 없음.
+- **font-family 체인 마지막에 Tossface 배치** — Chromium은 폰트가 체인 앞에 있으면 unicode-range를 무시하고 가진 글리프 전부 사용. 그래서 Tossface가 키캡(1️⃣) 베이스로 클레임한 ASCII 숫자/`#`/`*`까지 Tossface 모양으로 렌더되어 "1 2 , 4 0 0"처럼 자간이 깨졌음. Tossface를 마지막에 두면 AtoZ/Pretendard/시스템 폰트가 일반 텍스트 먼저 처리하고, 이모지만 Tossface로 fallback.
+- **tossface.css에서 ASCII overlap unicode-range 정리** — 위 안전망. `U+30-39`(숫자), `U+23`(#), `U+2A`(*), `U+A9`(©), `U+AE`(®) 그리고 `U+3020E3` 형태의 compound keycap 코드를 unicode-range 선언에서 제거. 폰트 자체는 그대로, 메타데이터만 정리.
+
 ## [1.0.4] - 2026-06-30
 
 ### Added

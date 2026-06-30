@@ -3,6 +3,9 @@
    Notion + Typora inspired design with VS Code theme integration
    ═══════════════════════════════════════════════════════════════ */
 
+/* ── Tossface emoji font (bundled, v1.0.5) ── */
+@import url('./tossface/tossface.css');
+
 /* ── KaTeX fonts (bundled) ── */
 @font-face { font-family: 'KaTeX_Main'; src: url('fonts/katex/KaTeX_Main-Regular.woff2') format('woff2'); font-weight: normal; font-style: normal; }
 @font-face { font-family: 'KaTeX_Main'; src: url('fonts/katex/KaTeX_Main-Bold.woff2') format('woff2'); font-weight: bold; font-style: normal; }
@@ -268,9 +271,14 @@ body.vscode-high-contrast {
 }
 
 /* ── Body base ── */
+/* Tossface is LAST in the chain — Chromium ignores unicode-range when the
+   font is first and would render every glyph it has (including digits and
+   ASCII that overlap with keycap base codepoints). Putting it last means
+   regular text uses AtoZ/Pretendard/system, and only emojis (which none of
+   those have) fall through to Tossface. */
 body {
     font-family: 'AtoZ', 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
-        'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+        'Segoe UI', Roboto, 'Noto Sans KR', 'Tossface', sans-serif;
     font-size: var(--md-font-size);
     background: var(--md-bg);
     color: var(--md-text);
@@ -2793,44 +2801,7 @@ body.vscode-dark .pdf-options-dialog .pdf-segmented {
     color: #e8e8e8;
 }
 
-/* ══════════════════════════════════════════════════════════════
-   TWEMOJI EMOJI RENDERING (v1.0.4)
-   ══════════════════════════════════════════════════════════════ */
-.markdown-body .md-emoji {
-    display: inline-block;
-    height: 1em;
-    width: 1em;
-    margin: 0 0.05em 0 0.1em;
-    vertical-align: -0.15em;
-    user-select: none;
-    -webkit-user-select: none;
-    image-rendering: -webkit-optimize-contrast;
-    /* Subtle theme tint via mix-blend at low strength; emojis stay readable */
-    transition: opacity 0.15s ease;
-}
-
-/* Headings get slightly larger emojis */
-.markdown-body h1 .md-emoji { height: 0.9em; width: 0.9em; vertical-align: -0.1em; }
-.markdown-body h2 .md-emoji,
-.markdown-body h3 .md-emoji { height: 0.95em; width: 0.95em; vertical-align: -0.12em; }
-
-/* Fallback span if SVG fails to load — use native emoji font */
-.markdown-body .md-emoji-fallback {
-    display: inline-block;
-    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
-    font-style: normal;
-    font-weight: normal;
-    line-height: 1;
-}
-
-/* In PDF export, emojis should stay full color (no theme tint), proper sizing */
-body.exporting-pdf .markdown-body .md-emoji {
-    height: 1.05em;
-    width: 1.05em;
-    vertical-align: -0.18em;
-    filter: none !important;
-}
-
-/* Table cells: align emoji baseline with text */
-.markdown-body td .md-emoji,
-.markdown-body th .md-emoji { vertical-align: -0.18em; }
+/* Emoji rendering is handled by the bundled Tossface webfont (top of file
+   @import + font-family chain on body). Browser auto-selects Tossface for
+   emoji codepoints via its unicode-range and falls through for everything
+   else. No JS parsing or SVG replacement needed. */
