@@ -72,14 +72,17 @@
   <td width="33%" valign="top">
 
 ### 🎨 Beautiful by default
-- 13 hand-tuned color themes
-- Custom color palette
-- Theme-aware tables, code, quotes
-- Korean-first typography (AtoZ font)
-- Auto light/dark/high-contrast
+-   13 hand-tuned color themes
+    
+-   Custom color palette
+    
+-   Theme-aware tables, code, quotes
+    
+-   Korean-first typography (AtoZ font)
+    
+-   Auto light/dark/high-contrast
 
-  </td>
-  <td width="33%" valign="top">
+
 
 ### ✍️ Write fluently
 - Preview · Edit · Split modes
@@ -200,7 +203,7 @@ Render Mermaid diagrams from ` ```mermaid ` code blocks. The 3.3 MB library is l
 <details>
 <summary><b>📑 Outline sidebar + auto TOC</b></summary>
 
-H1–H4 automatically extracted into a navigable tree. Insert `[[TOC]]` or `[[목차]]` anywhere to embed a table of contents in the document body.
+H1–H4 automatically extracted into a navigable tree. Insert `<div class="md-toc"><div class="md-toc-title">목차 / Table of Contents</div><ul><li class="md-toc-level-2"><a href="#heading--features">✨ Features</a></li><li class="md-toc-level-3"><a href="#heading--beautiful-by-default">🎨 Beautiful by default</a></li><li class="md-toc-level-3"><a href="#heading--write-fluently">✍️ Write fluently</a></li><li class="md-toc-level-3"><a href="#heading--ship-anywhere">📤 Ship anywhere</a></li><li class="md-toc-level-2"><a href="#heading--themes">🎨 Themes</a></li><li class="md-toc-level-2"><a href="#heading--highlights">🚀 Highlights</a></li><li class="md-toc-level-2"><a href="#heading--keyboard-shortcuts">⌨️ Keyboard Shortcuts</a></li><li class="md-toc-level-2"><a href="#heading--installation">📦 Installation</a></li><li class="md-toc-level-2"><a href="#heading--settings">⚙️ Settings</a></li><li class="md-toc-level-2"><a href="#heading--security">🔒 Security</a></li><li class="md-toc-level-2"><a href="#heading--requirements">📋 Requirements</a></li><li class="md-toc-level-2"><a href="#heading--bundled-open-source">📦 Bundled Open Source</a></li><li class="md-toc-level-2"><a href="#heading--contributing">🤝 Contributing</a></li><li class="md-toc-level-2"><a href="#heading--license">📄 License</a></li><li class="md-toc-level-2"><a href="#heading--한국어">🇰🇷 한국어</a></li><li class="md-toc-level-3"><a href="#heading--기본부터-예쁘게">🎨 기본부터 예쁘게</a></li><li class="md-toc-level-3"><a href="#heading--빠르게-쓰기">✍️ 빠르게 쓰기</a></li><li class="md-toc-level-3"><a href="#heading--어디든-내보내기">📤 어디든 내보내기</a></li><li class="md-toc-level-3"><a href="#heading--v102-새-기능">🚀 v1.0.2 새 기능</a></li><li class="md-toc-level-3"><a href="#heading--설치">📦 설치</a></li><li class="md-toc-level-3"><a href="#heading--설정">⚙️ 설정</a></li><li class="md-toc-level-3"><a href="#heading--단축키">⌨️ 단축키</a></li></ul></div>` or `<div class="md-toc"><div class="md-toc-title">목차 / Table of Contents</div><ul><li class="md-toc-level-2"><a href="#heading--features">✨ Features</a></li><li class="md-toc-level-3"><a href="#heading--beautiful-by-default">🎨 Beautiful by default</a></li><li class="md-toc-level-3"><a href="#heading--write-fluently">✍️ Write fluently</a></li><li class="md-toc-level-3"><a href="#heading--ship-anywhere">📤 Ship anywhere</a></li><li class="md-toc-level-2"><a href="#heading--themes">🎨 Themes</a></li><li class="md-toc-level-2"><a href="#heading--highlights">🚀 Highlights</a></li><li class="md-toc-level-2"><a href="#heading--keyboard-shortcuts">⌨️ Keyboard Shortcuts</a></li><li class="md-toc-level-2"><a href="#heading--installation">📦 Installation</a></li><li class="md-toc-level-2"><a href="#heading--settings">⚙️ Settings</a></li><li class="md-toc-level-2"><a href="#heading--security">🔒 Security</a></li><li class="md-toc-level-2"><a href="#heading--requirements">📋 Requirements</a></li><li class="md-toc-level-2"><a href="#heading--bundled-open-source">📦 Bundled Open Source</a></li><li class="md-toc-level-2"><a href="#heading--contributing">🤝 Contributing</a></li><li class="md-toc-level-2"><a href="#heading--license">📄 License</a></li><li class="md-toc-level-2"><a href="#heading--한국어">🇰🇷 한국어</a></li><li class="md-toc-level-3"><a href="#heading--기본부터-예쁘게">🎨 기본부터 예쁘게</a></li><li class="md-toc-level-3"><a href="#heading--빠르게-쓰기">✍️ 빠르게 쓰기</a></li><li class="md-toc-level-3"><a href="#heading--어디든-내보내기">📤 어디든 내보내기</a></li><li class="md-toc-level-3"><a href="#heading--v102-새-기능">🚀 v1.0.2 새 기능</a></li><li class="md-toc-level-3"><a href="#heading--설치">📦 설치</a></li><li class="md-toc-level-3"><a href="#heading--설정">⚙️ 설정</a></li><li class="md-toc-level-3"><a href="#heading--단축키">⌨️ 단축키</a></li></ul></div>` anywhere to embed a table of contents in the document body.
 
 </details>
 

@@ -2859,6 +2859,25 @@ body.mode-preview .markdown-body .md-block:hover {
 .markdown-body .md-block-wysiwyg *::selection {
     background: color-mix(in srgb, var(--md-accent) 25%, transparent);
 }
+
+/* Cell-level editing — single th/td gets the accent ring */
+.markdown-body .md-cell-editing {
+    outline: 2px solid var(--md-accent) !important;
+    outline-offset: -2px;
+    background: color-mix(in srgb, var(--md-accent) 8%, transparent) !important;
+    caret-color: var(--md-accent);
+}
+.markdown-body .md-cell-editing::selection,
+.markdown-body .md-cell-editing *::selection {
+    background: color-mix(in srgb, var(--md-accent) 30%, transparent);
+}
+
+/* Tables get a subtle hover hint per cell in Preview mode */
+body.mode-preview .markdown-body .md-block table th:hover,
+body.mode-preview .markdown-body .md-block table td:hover {
+    background: color-mix(in srgb, var(--md-accent) 5%, transparent);
+    cursor: text;
+}
 .markdown-body .md-block-editor {
     width: 100%;
     background: transparent;

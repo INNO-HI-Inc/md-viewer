@@ -5,6 +5,16 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.10] - 2026-06-30
+
+### Added
+
+- **표 셀 단위 인-라인 편집** — Preview의 표 셀(`<th>` / `<td>`)을 더블클릭하면 그 셀만 편집 가능. 표 구조·정렬·다른 셀의 굵게/이탤릭 등 서식 모두 보존. Enter 또는 Cmd/Ctrl+Enter로 저장, ESC로 취소, Tab으로 다음 셀로 이동. 호버 시 셀에 옅은 액센트 컬러 배경 힌트.
+
+### Technical
+
+- 표 토큰은 `header[col].text` / `rows[row][col].text` 구조라서 셀 텍스트만 갈아 끼우고 `regenerateTableMarkdown(token)`으로 markdown 재생성. 그 결과로 셀 외 구조(헤더 행, alignment delimiter `:---:`, 빈 행)가 자동 유지됨.
+
 ## [1.0.9] - 2026-06-30
 
 ### Added

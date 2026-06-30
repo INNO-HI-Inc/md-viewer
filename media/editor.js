@@ -379,6 +379,17 @@ function bindBlockEditing(container) {
     container.querySelectorAll('.md-block').forEach(function (blockEl) {
         if (blockEl.dataset.editBound === '1') return;
         blockEl.dataset.editBound = '1';
+
+        var blockIdx = parseInt(blockEl.dataset.blockIdx, 10);
+        var token = _currentTokens && _currentTokens[blockIdx];
+
+        // Tables get cell-level WYSIWYG editing — preserves the table
+        // structure and only swaps the touched cell.
+        if (token && token.type === 'table') {
+            bindTableCellEditing(blockEl, blockIdx, token);
+            return;
+        }
+
         blockEl.addEventListener('dblclick', function (e) {
             // Skip when target is a link, image, or interactive child — those
             // have their own gestures (image lightbox, link navigation).
@@ -391,6 +402,127 @@ function bindBlockEditing(container) {
             openBlockEditor(blockEl);
         });
     });
+}
+
+function bindTableCellEditing(blockEl, blockIdx, token) {
+    blockEl.querySelectorAll('th, td').forEach(function (cell) {
+        cell.addEventListener('dblclick', function (e) {
+            if (e.target.tagName === 'A' || e.target.tagName === 'IMG') return;
+            e.preventDefault();
+            e.stopPropagation();
+            openCellEditor(cell, blockIdx);
+        });
+    });
+}
+
+function openCellEditor(cell, blockIdx) {
+    if (_activeBlockEdit) closeBlockEditor(true);
+    if (!_currentTokens || !_currentTokens[blockIdx]) return;
+    var token = _currentTokens[blockIdx];
+
+    var row = cell.parentElement;                 // <tr>
+    var section = row.parentElement;              // <thead> | <tbody>
+    var isHeader = section.tagName === 'THEAD';
+    var colIdx = Array.from(row.children).indexOf(cell);
+    var rowIdx = -1;
+    if (!isHeader) {
+        rowIdx = Array.from(section.children).indexOf(row);
+    }
+
+    cell.classList.add('md-cell-editing');
+    cell.setAttribute('contenteditable', 'true');
+    cell.setAttribute('spellcheck', 'true');
+    cell.focus();
+    try {
+        var range = document.createRange();
+        range.selectNodeContents(cell);
+        range.collapse(false);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+    } catch (_) {}
+
+    _activeBlockEdit = {
+        mode: 'cell',
+        blockIdx: blockIdx,
+        cell: cell,
+        rowIdx: rowIdx,
+        colIdx: colIdx,
+        isHeader: isHeader,
+        originalRaw: token.raw,
+        trailingBlanks: (token.raw || '').match(/\n*$/)[0]
+    };
+
+    var keyHandler = function (ev) {
+        if (ev.key === 'Escape') { ev.preventDefault(); closeBlockEditor(false); }
+        else if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) {
+            ev.preventDefault();
+            closeBlockEditor(true);
+        } else if (ev.key === 'Enter' && !ev.shiftKey) {
+            // Cells don't get multi-line content in markdown — Enter should commit
+            ev.preventDefault();
+            closeBlockEditor(true);
+        } else if (ev.key === 'Tab') {
+            // Tab moves to next cell
+            ev.preventDefault();
+            var next = ev.shiftKey ? prevCell(cell) : nextCell(cell);
+            closeBlockEditor(true);
+            if (next) {
+                // Re-bind happens after renderPreview; defer to next frame
+                setTimeout(function () {
+                    var newBlock = previewEl && previewEl.querySelector('.md-block[data-block-idx="' + blockIdx + '"]');
+                    if (!newBlock) return;
+                    var newRow = newBlock.querySelectorAll('tr')[isHeader && next.rowIdx === 0 ? 1 : 0];  // simplification
+                    var newCell = newBlock.querySelectorAll(next.isHeader ? 'th' : 'tr td')[next.colIdx];
+                    if (newCell) openCellEditor(newCell, blockIdx);
+                }, 50);
+            }
+        }
+    };
+    var blurHandler = function () {
+        setTimeout(function () {
+            if (_activeBlockEdit && _activeBlockEdit.cell === cell) closeBlockEditor(true);
+        }, 0);
+    };
+    cell.addEventListener('keydown', keyHandler);
+    cell.addEventListener('blur', blurHandler);
+    _activeBlockEdit.teardown = function () {
+        cell.removeEventListener('keydown', keyHandler);
+        cell.removeEventListener('blur', blurHandler);
+        cell.removeAttribute('contenteditable');
+        cell.removeAttribute('spellcheck');
+        cell.classList.remove('md-cell-editing');
+    };
+}
+
+function nextCell(cell) {
+    if (cell.nextElementSibling) return cell.nextElementSibling;
+    var row = cell.parentElement;
+    if (row.nextElementSibling) return row.nextElementSibling.firstElementChild;
+    return null;
+}
+function prevCell(cell) {
+    if (cell.previousElementSibling) return cell.previousElementSibling;
+    var row = cell.parentElement;
+    if (row.previousElementSibling) return row.previousElementSibling.lastElementChild;
+    return null;
+}
+
+function alignToDelim(a) {
+    if (a === 'left') return ':---';
+    if (a === 'right') return '---:';
+    if (a === 'center') return ':---:';
+    return '---';
+}
+function regenerateTableMarkdown(token) {
+    var sep = ' | ';
+    var lines = [];
+    lines.push('| ' + token.header.map(function (h) { return (h.text || '').trim(); }).join(sep) + ' |');
+    lines.push('| ' + (token.align || []).map(alignToDelim).join(' | ') + ' |');
+    token.rows.forEach(function (row) {
+        lines.push('| ' + row.map(function (c) { return (c.text || '').trim(); }).join(sep) + ' |');
+    });
+    return lines.join('\n') + '\n';
 }
 
 // Tokens whose rendered form is safe to edit via contenteditable +
@@ -515,12 +647,34 @@ function closeBlockEditor(commit) {
     }
 
     var newRaw;
-    if (ed.mode === 'wysiwyg') {
-        // Convert edited HTML → markdown via turndown
+    var token = _currentTokens && _currentTokens[ed.blockIdx];
+    if (!token) { renderPreview(); return; }
+
+    if (ed.mode === 'cell') {
+        // Cell-level edit — update only the touched cell's text, regenerate
+        // the whole table markdown, keep all other cells/rows intact.
         var td = getTurndown();
-        if (!td) { renderPreview(); return; }
+        var cellText;
+        if (td) {
+            try { cellText = td.turndown(ed.cell.innerHTML).replace(/[\r\n]+/g, ' ').trim(); }
+            catch (_) { cellText = ed.cell.innerText.trim(); }
+        } else {
+            cellText = ed.cell.innerText.trim();
+        }
+        if (ed.isHeader) {
+            if (token.header && token.header[ed.colIdx]) token.header[ed.colIdx].text = cellText;
+        } else {
+            if (token.rows && token.rows[ed.rowIdx] && token.rows[ed.rowIdx][ed.colIdx]) {
+                token.rows[ed.rowIdx][ed.colIdx].text = cellText;
+            }
+        }
+        newRaw = regenerateTableMarkdown(token);
+        if (ed.teardown) ed.teardown();
+    } else if (ed.mode === 'wysiwyg') {
+        var td2 = getTurndown();
+        if (!td2) { renderPreview(); return; }
         try {
-            newRaw = td.turndown(ed.blockEl.innerHTML).trim();
+            newRaw = td2.turndown(ed.blockEl.innerHTML).trim();
         } catch (e) {
             console.warn('MD Pretty Viewer: turndown failed', e);
             renderPreview();
@@ -532,15 +686,11 @@ function closeBlockEditor(commit) {
     }
 
     var oldRaw = (ed.originalRaw || '').replace(/\n+$/, '');
-    if (newRaw === oldRaw) {
+    if (newRaw.replace(/\n+$/, '') === oldRaw) {
         renderPreview();
         return;
     }
-    if (!_currentTokens || !_currentTokens[ed.blockIdx]) {
-        renderPreview();
-        return;
-    }
-    var newRawWithTrailing = newRaw + (ed.trailingBlanks || '\n\n');
+    var newRawWithTrailing = newRaw.replace(/\n+$/, '') + (ed.trailingBlanks || '\n\n');
     var parts = [];
     for (var i = 0; i < _currentTokens.length; i++) {
         parts.push(i === ed.blockIdx ? newRawWithTrailing : (_currentTokens[i].raw || ''));
