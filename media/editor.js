@@ -149,6 +149,9 @@ function isAllowedAttribute(tag, name, value) {
     var attr = name.toLowerCase();
     if (attr.indexOf('on') === 0 || attr === 'style' || attr === 'srcdoc') return false;
     if (attr.indexOf('aria-') === 0) return true;
+    // data-* are safe by spec (no script execution surface); needed for our
+    // own block-edit metadata (data-block-idx).
+    if (attr.indexOf('data-') === 0) return true;
     if (attr === 'class' || attr === 'id' || attr === 'title' || attr === 'role') return true;
     if (attr === 'align') return /^(p|div|h[1-6]|td|th)$/.test(tag);
     if ((attr === 'colspan' || attr === 'rowspan') && (tag === 'td' || tag === 'th')) return /^\d+$/.test(value);
@@ -185,9 +188,35 @@ function resolveUri(href) {
     return docBaseUri.replace(/\/+$/, '') + '/' + cleanPath;
 }
 
+/* Token-aware rendering (v1.0.6) — keeps top-level token list around so
+   inline block-edit can find the raw markdown for any rendered block. */
+var _currentTokens = null;
 function renderMarkdown(text) {
-    var html = marked.parse(text);
-    return sanitizeHtml(html);
+    var tokens = marked.lexer(text);
+    _currentTokens = tokens;
+    // Render each top-level token individually and wrap with a div carrying
+    // its index in the token array. Editable blocks: heading/paragraph/
+    // blockquote/list/code/hr/table. Other tokens render as-is without a
+    // wrapper so structural elements (space) don't pollute the DOM.
+    var EDITABLE_TYPES = {
+        heading: 1, paragraph: 1, blockquote: 1, list: 1, code: 1, hr: 1, table: 1, html: 1
+    };
+    var parts = [];
+    for (var i = 0; i < tokens.length; i++) {
+        var token = tokens[i];
+        var blockHtml;
+        try {
+            blockHtml = marked.parser([token]);
+        } catch (_) {
+            blockHtml = '';
+        }
+        if (EDITABLE_TYPES[token.type]) {
+            parts.push('<div class="md-block" data-block-idx="' + i + '" title="Double-click to edit">' + blockHtml + '</div>');
+        } else {
+            parts.push(blockHtml);
+        }
+    }
+    return sanitizeHtml(parts.join(''));
 }
 
 function highlightCodeBlocks(container) {
@@ -310,6 +339,113 @@ function bindImageLightbox(container) {
             openLightbox(img.src, img.alt || '');
         });
     });
+}
+
+/* In-place block editing (v1.0.6) — double-click any rendered block in
+   Preview to edit its raw markdown without leaving the mode. */
+var _activeBlockEdit = null;  // { blockEl, textarea, blockIdx, originalRaw }
+
+function bindBlockEditing(container) {
+    if (!container) return;
+    container.querySelectorAll('.md-block').forEach(function (blockEl) {
+        if (blockEl.dataset.editBound === '1') return;
+        blockEl.dataset.editBound = '1';
+        blockEl.addEventListener('dblclick', function (e) {
+            // Skip when target is a link, image, or interactive child — those
+            // have their own gestures (image lightbox, link navigation).
+            var t = e.target;
+            if (t.tagName === 'A' || t.tagName === 'IMG' || t.tagName === 'INPUT') return;
+            // Skip nested .md-block (rare, but list items can contain blocks)
+            if (t.closest('.md-block') !== blockEl) return;
+            e.preventDefault();
+            e.stopPropagation();
+            openBlockEditor(blockEl);
+        });
+    });
+}
+
+function openBlockEditor(blockEl) {
+    if (_activeBlockEdit) closeBlockEditor(true);  // commit any in-flight edit
+    if (!_currentTokens) return;
+    var blockIdx = parseInt(blockEl.dataset.blockIdx, 10);
+    if (isNaN(blockIdx) || !_currentTokens[blockIdx]) return;
+    var token = _currentTokens[blockIdx];
+    var raw = (token.raw || '').replace(/\n+$/, '');  // trim trailing blank lines for editing
+    var trailingBlanks = (token.raw || '').match(/\n*$/)[0];
+
+    var textarea = document.createElement('textarea');
+    textarea.className = 'md-block-editor';
+    textarea.value = raw;
+    textarea.spellcheck = false;
+    // Match rendered block width
+    var rect = blockEl.getBoundingClientRect();
+    textarea.style.minHeight = Math.max(40, rect.height) + 'px';
+
+    blockEl.classList.add('md-block-editing');
+    blockEl.innerHTML = '';
+    blockEl.appendChild(textarea);
+    autoResizeTextarea(textarea);
+    textarea.focus();
+    // Place cursor at end
+    textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+
+    _activeBlockEdit = { blockEl: blockEl, textarea: textarea, blockIdx: blockIdx, originalRaw: token.raw, trailingBlanks: trailingBlanks };
+
+    textarea.addEventListener('input', function () { autoResizeTextarea(textarea); });
+    textarea.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Escape') {
+            ev.preventDefault();
+            closeBlockEditor(false);  // discard
+        } else if ((ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey))) {
+            ev.preventDefault();
+            closeBlockEditor(true);   // commit
+        }
+    });
+    textarea.addEventListener('blur', function () {
+        // Slight delay so click on adjacent block doesn't double-trigger
+        setTimeout(function () { if (_activeBlockEdit && _activeBlockEdit.textarea === textarea) closeBlockEditor(true); }, 0);
+    });
+}
+
+function autoResizeTextarea(ta) {
+    ta.style.height = 'auto';
+    ta.style.height = Math.max(40, ta.scrollHeight + 2) + 'px';
+}
+
+function closeBlockEditor(commit) {
+    if (!_activeBlockEdit) return;
+    var ed = _activeBlockEdit;
+    _activeBlockEdit = null;
+    if (!commit) {
+        // Discard: re-render whole preview, which restores the original block
+        renderPreview();
+        return;
+    }
+    var newRaw = ed.textarea.value;
+    var oldRaw = ed.originalRaw || '';
+    if (newRaw === oldRaw.replace(/\n+$/, '')) {
+        // No change — just re-render to drop the textarea
+        renderPreview();
+        return;
+    }
+    // Splice the new raw into the source. We rebuild currentContent from the
+    // token array by joining each token's raw, swapping our block out.
+    if (!_currentTokens || !_currentTokens[ed.blockIdx]) {
+        renderPreview();
+        return;
+    }
+    // Preserve the original trailing whitespace so block separation stays intact
+    var newRawWithTrailing = newRaw + (ed.trailingBlanks || '\n\n');
+    var parts = [];
+    for (var i = 0; i < _currentTokens.length; i++) {
+        parts.push(i === ed.blockIdx ? newRawWithTrailing : (_currentTokens[i].raw || ''));
+    }
+    var updated = parts.join('');
+    currentContent = updated;
+    if (editorEl) editorEl.value = updated;
+    saveToDocument(updated);
+    updateStats();
+    renderPreview();
 }
 
 /* Wrap wide tables in horizontal scroll container (v1.0.2) */
@@ -489,7 +625,7 @@ function setupOutlineScrollSpy() {
             // Find last heading whose top is above current scroll position
             var scrollTop = previewEl.parentElement ? previewEl.parentElement.scrollTop : window.scrollY;
             for (var i = pairs.length - 1; i >= 0; i--) {
-                if (pairs[i].heading.offsetTop <= scrollTop + 20) { topMost = pairs[i].heading; break; }
+                if (topWithin(pairs[i].heading, previewEl) <= scrollTop + 20) { topMost = pairs[i].heading; break; }
             }
         }
         if (!topMost) return;
@@ -546,6 +682,7 @@ function renderPreview() {
         makeCheckboxesClickable();
         wrapTablesScrollable(previewEl);
         bindImageLightbox(previewEl);
+        bindBlockEditing(previewEl);
         renderMath(previewEl);
         renderMermaid(previewEl);
         // Rebuild scroll-sync anchors after each render so heading offsets stay accurate
@@ -1320,6 +1457,19 @@ function saveToDocument(content) {
 /* ───────────────────────────────────────────
    Scroll synchronization (Split mode)
    ─────────────────────────────────────────── */
+/* True top of `el` relative to `root` — sums offsetTop up the offsetParent
+ * chain. Needed when intermediate wrappers (e.g. .md-block, position:relative)
+ * reset the offsetParent so el.offsetTop alone isn't relative to previewEl. */
+function topWithin(el, root) {
+    var top = 0;
+    var cur = el;
+    while (cur && cur !== root) {
+        top += cur.offsetTop || 0;
+        cur = cur.offsetParent;
+    }
+    return top;
+}
+
 /*
  * Anchor-based scroll sync (v1.0.2)
  *
@@ -1420,18 +1570,18 @@ function syncEditorToPreview() {
     if (prev && next) {
         var srcSpan = next.sourceLine - prev.sourceLine || 1;
         var ratio = (line - prev.sourceLine) / srcSpan;
-        var prevTop = prev.headingEl.offsetTop;
-        var nextTop = next.headingEl.offsetTop;
+        var prevTop = topWithin(prev.headingEl, previewEl);
+        var nextTop = topWithin(next.headingEl, previewEl);
         targetTop = prevTop + (nextTop - prevTop) * ratio;
     } else if (prev) {
         // Past last heading — interpolate using remaining source lines vs preview height
         var remainSrc = Math.max(1, _scrollAnchors.lineCount - prev.sourceLine);
         var ratio2 = (line - prev.sourceLine) / remainSrc;
-        var remainPv = previewEl.scrollHeight - prev.headingEl.offsetTop;
-        targetTop = prev.headingEl.offsetTop + remainPv * ratio2;
+        var remainPv = previewEl.scrollHeight - topWithin(prev.headingEl, previewEl);
+        targetTop = topWithin(prev.headingEl, previewEl) + remainPv * ratio2;
     } else if (next) {
         var ratio3 = line / Math.max(1, next.sourceLine);
-        targetTop = next.headingEl.offsetTop * ratio3;
+        targetTop = topWithin(next.headingEl, previewEl) * ratio3;
     } else {
         return false;
     }
@@ -1449,22 +1599,22 @@ function syncPreviewToEditor() {
     var scrollTop = container.scrollTop + container.clientHeight * 0.15;
     var prev = null, next = null;
     for (var i = 0; i < anchors.length; i++) {
-        if (anchors[i].headingEl.offsetTop <= scrollTop) prev = anchors[i];
+        if (topWithin(anchors[i].headingEl, previewEl) <= scrollTop) prev = anchors[i];
         else { next = anchors[i]; break; }
     }
     var lh = parseFloat(getComputedStyle(editorEl).lineHeight) || 22;
     var targetLine;
     if (prev && next) {
-        var pvSpan = next.headingEl.offsetTop - prev.headingEl.offsetTop || 1;
-        var ratio = (scrollTop - prev.headingEl.offsetTop) / pvSpan;
+        var pvSpan = topWithin(next.headingEl, previewEl) - topWithin(prev.headingEl, previewEl) || 1;
+        var ratio = (scrollTop - topWithin(prev.headingEl, previewEl)) / pvSpan;
         targetLine = prev.sourceLine + (next.sourceLine - prev.sourceLine) * ratio;
     } else if (prev) {
-        var remainPv = Math.max(1, previewEl.scrollHeight - prev.headingEl.offsetTop);
-        var ratio2 = (scrollTop - prev.headingEl.offsetTop) / remainPv;
+        var remainPv = Math.max(1, previewEl.scrollHeight - topWithin(prev.headingEl, previewEl));
+        var ratio2 = (scrollTop - topWithin(prev.headingEl, previewEl)) / remainPv;
         var remainSrc = _scrollAnchors.lineCount - prev.sourceLine;
         targetLine = prev.sourceLine + remainSrc * ratio2;
     } else if (next) {
-        targetLine = next.sourceLine * (scrollTop / Math.max(1, next.headingEl.offsetTop));
+        targetLine = next.sourceLine * (scrollTop / Math.max(1, topWithin(next.headingEl, previewEl)));
     } else {
         return false;
     }

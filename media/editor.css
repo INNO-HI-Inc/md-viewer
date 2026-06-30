@@ -2805,3 +2805,71 @@ body.vscode-dark .pdf-options-dialog .pdf-segmented {
    @import + font-family chain on body). Browser auto-selects Tossface for
    emoji codepoints via its unicode-range and falls through for everything
    else. No JS parsing or SVG replacement needed. */
+
+/* ══════════════════════════════════════════════════════════════
+   IN-PLACE BLOCK EDITING (v1.0.6)
+   ══════════════════════════════════════════════════════════════ */
+.markdown-body .md-block {
+    position: relative;
+    transition: background 0.12s ease;
+    border-radius: 4px;
+    margin: 0;
+    padding: 0;
+}
+/* Subtle hover hint that double-click opens editor */
+body.mode-preview .markdown-body .md-block:hover {
+    background: color-mix(in srgb, var(--md-accent) 4%, transparent);
+    cursor: text;
+}
+body.mode-preview .markdown-body .md-block:hover::after {
+    content: '✏ dblclick';
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 10.5px;
+    color: var(--md-text-muted, #8b8b9a);
+    opacity: 0.55;
+    pointer-events: none;
+    font-family: 'AtoZ', 'Pretendard', sans-serif;
+    background: var(--md-bg);
+    padding: 1px 6px;
+    border-radius: 4px;
+    line-height: 1.4;
+    border: 1px solid var(--md-border, #e5e7eb);
+}
+
+/* Active editor — textarea swapped in place of rendered HTML */
+.markdown-body .md-block-editing {
+    background: color-mix(in srgb, var(--md-accent) 7%, transparent);
+    box-shadow: 0 0 0 1px var(--md-accent), inset 0 0 0 1px var(--md-bg);
+    padding: 4px 6px;
+    cursor: text;
+}
+.markdown-body .md-block-editing::after { display: none; }
+.markdown-body .md-block-editor {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'SF Mono', Consolas, monospace;
+    font-size: 0.92em;
+    line-height: 1.55;
+    color: var(--md-text);
+    padding: 4px 2px;
+    overflow: hidden;
+    tab-size: 4;
+    -moz-tab-size: 4;
+    caret-color: var(--md-accent);
+}
+
+/* Edit/Split mode: no editing hints in preview side (only Preview-only mode) */
+body.mode-edit .markdown-body .md-block:hover::after,
+body.mode-split .markdown-body .md-block:hover::after { display: none; }
+body.mode-edit .markdown-body .md-block:hover,
+body.mode-split .markdown-body .md-block:hover { background: transparent; cursor: default; }
+
+/* PDF export: strip all editing affordances */
+body.exporting-pdf .markdown-body .md-block { background: transparent !important; padding: 0 !important; }
+body.exporting-pdf .markdown-body .md-block::after,
+body.exporting-pdf .markdown-body .md-block:hover::after { display: none !important; }

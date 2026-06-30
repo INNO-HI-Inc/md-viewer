@@ -5,6 +5,22 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.6] - 2026-06-30
+
+### Added
+
+- **✏ Preview에서 인-라인 블록 편집** — Preview 모드에서 임의의 블록(제목·문단·리스트·인용·코드)을 **더블클릭**하면 그 자리에서 raw markdown으로 바뀝니다. `Cmd/Ctrl+Enter`로 저장, `ESC`로 취소. 모드 전환 없이 빠르게 수정 가능. 호버 시 우측 상단에 `✏ dblclick` 힌트.
+
+### Changed
+
+- **렌더 파이프라인이 토큰 단위** — `marked.parse(text)` → `marked.lexer(text)` + 토큰별 `marked.parser([token])`로 변경. 각 블록이 `<div class="md-block" data-block-idx>`로 감싸져 인-라인 편집의 앵커가 됨. 출력 HTML은 동일.
+- **Sanitizer가 `data-*` 속성 허용** — 우리 자체 메타데이터(`data-block-idx`)에 필요. data-* 속성은 스펙상 스크립트 실행 표면이 없어 안전.
+- **`.vscodeignore` 확장** — `tests/`, `SECURITY.md`, `test-click.md` 추가 제외. 배포 vsix에서 개발용 아티팩트 제거.
+
+### Fixed
+
+- **스크롤 sync 정확도** — `.md-block` 래퍼가 `position:relative`라 그 안의 헤딩 `offsetTop`이 블록 기준으로 측정되던 회귀. `topWithin(el, root)` 헬퍼로 offsetParent 체인 합산해서 previewEl 기준 좌표로 보정. 31/31 통과.
+
 ## [1.0.5] - 2026-06-30
 
 ### Changed

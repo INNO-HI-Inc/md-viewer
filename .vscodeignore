@@ -1,7 +1,10 @@
 .claude/
 .github/
 test-sample.md
+test-click.md
 .gitignore
 docs/
+tests/
 *.vsix
 CONTRIBUTING.md
+SECURITY.md

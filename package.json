@@ -2,7 +2,7 @@
   "name": "md-pretty-viewer",
   "displayName": "MD Pretty Viewer",
   "description": "Beautiful markdown preview · 13 color themes · LaTeX math · Mermaid diagrams · one-click PDF export · Korean typography bundled. The markdown editor that makes your writing look like art. — 마크다운을 작품처럼. 13가지 테마, LaTeX 수식, Mermaid 다이어그램, PDF 한 번 클릭, 한글 폰트 번들.",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "publisher": "innohi",
   "author": {
     "name": "INNO-HI Inc.",
