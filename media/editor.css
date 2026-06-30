@@ -2838,12 +2838,26 @@ body.mode-preview .markdown-body .md-block:hover {
     cursor: text;
 }
 
-/* Active editor — textarea swapped in place of rendered HTML */
+/* Active editor — frame appears around the editing block */
 .markdown-body .md-block-editing {
     background: color-mix(in srgb, var(--md-accent) 7%, transparent);
     box-shadow: 0 0 0 1px var(--md-accent), inset 0 0 0 1px var(--md-bg);
     padding: 4px 6px;
     cursor: text;
+}
+/* WYSIWYG state — block content stays rendered, just editable + outline ring */
+.markdown-body .md-block-wysiwyg {
+    outline: none;
+    caret-color: var(--md-accent);
+    /* Keep prose readable while editing — no font swap */
+}
+.markdown-body .md-block-wysiwyg * {
+    /* Don't strip styling — user sees their formatted text as they type */
+    -webkit-user-modify: read-write;
+}
+.markdown-body .md-block-wysiwyg::selection,
+.markdown-body .md-block-wysiwyg *::selection {
+    background: color-mix(in srgb, var(--md-accent) 25%, transparent);
 }
 .markdown-body .md-block-editor {
     width: 100%;

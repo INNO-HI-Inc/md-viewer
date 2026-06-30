@@ -5,6 +5,13 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.9] - 2026-06-30
+
+### Added
+
+- **인-라인 편집이 WYSIWYG 방식으로** — Preview에서 블록 더블클릭 시 이제 raw markdown(`#`, `**`, `>` 보임)이 아니라 **렌더된 텍스트 그대로**를 편집합니다. 제목은 H1 모양 유지, 굵게/이탤릭/링크 모두 시각 그대로. 마음 편하게 글자만 고치면 됨. Cmd/Ctrl+Enter로 저장 시 HTML→markdown 자동 변환 (turndown 라이브러리, 26KB).
+- **복잡한 블록은 raw textarea 폴백** — 코드 블록·표·수식(KaTeX)·Mermaid 다이어그램·admonition은 round-trip 손실 위험이 커서 기존처럼 raw markdown 편집을 유지. 단순 블록(제목·문단·리스트·인용)만 WYSIWYG.
+
 ## [1.0.8] - 2026-06-30
 
 ### Changed

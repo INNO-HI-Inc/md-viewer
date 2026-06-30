@@ -341,9 +341,38 @@ function bindImageLightbox(container) {
     });
 }
 
-/* In-place block editing (v1.0.6) — double-click any rendered block in
-   Preview to edit its raw markdown without leaving the mode. */
-var _activeBlockEdit = null;  // { blockEl, textarea, blockIdx, originalRaw }
+/* In-place block editing (v1.0.6 / v1.0.9 WYSIWYG)
+   Preview에서 블록 더블클릭 → 그 블록만 contenteditable로 바뀌어 렌더된 텍스트를
+   그대로 편집. 저장 시 turndown으로 HTML→markdown 라운드트립.
+   복잡한 블록(code/math/mermaid/table/html)은 fallback으로 raw textarea를 사용. */
+var _activeBlockEdit = null;  // { blockEl, blockIdx, originalRaw, mode: 'wysiwyg'|'raw', textarea, trailingBlanks }
+var _turndown = null;
+
+function getTurndown() {
+    if (_turndown) return _turndown;
+    if (typeof TurndownService === 'undefined') return null;
+    _turndown = new TurndownService({
+        headingStyle: 'atx',          // # not ===
+        bulletListMarker: '-',
+        codeBlockStyle: 'fenced',
+        fence: '```',
+        emDelimiter: '*',
+        strongDelimiter: '**',
+        linkStyle: 'inlined'
+    });
+    // Strip Tossface emoji <img> wrapper — emojis live in the body text fine
+    // (the font handles them) but if any are inlined as <img>, keep alt text.
+    _turndown.addRule('mdEmojiImg', {
+        filter: function (node) { return node.nodeName === 'IMG' && node.classList && node.classList.contains('md-emoji'); },
+        replacement: function (content, node) { return node.getAttribute('alt') || ''; }
+    });
+    // Preserve hard line breaks
+    _turndown.addRule('lineBreak', {
+        filter: 'br',
+        replacement: function () { return '  \n'; }
+    });
+    return _turndown;
+}
 
 function bindBlockEditing(container) {
     if (!container) return;
@@ -364,20 +393,83 @@ function bindBlockEditing(container) {
     });
 }
 
+// Tokens whose rendered form is safe to edit via contenteditable +
+// HTML→markdown round-trip. Complex tokens (code, table, math, html, hr)
+// fall back to raw textarea so we don't lose formatting.
+function isWysiwygSafe(token, blockEl) {
+    if (!token) return false;
+    var simple = { heading: 1, paragraph: 1, blockquote: 1, list: 1 };
+    if (!simple[token.type]) return false;
+    // Block contains math / mermaid / interactive — fall back to raw
+    if (blockEl.querySelector('.katex, .mermaid-diagram, pre, code, .md-admonition')) return false;
+    return true;
+}
+
 function openBlockEditor(blockEl) {
     if (_activeBlockEdit) closeBlockEditor(true);  // commit any in-flight edit
     if (!_currentTokens) return;
     var blockIdx = parseInt(blockEl.dataset.blockIdx, 10);
     if (isNaN(blockIdx) || !_currentTokens[blockIdx]) return;
     var token = _currentTokens[blockIdx];
-    var raw = (token.raw || '').replace(/\n+$/, '');  // trim trailing blank lines for editing
     var trailingBlanks = (token.raw || '').match(/\n*$/)[0];
 
+    if (isWysiwygSafe(token, blockEl) && getTurndown()) {
+        openWysiwygEditor(blockEl, blockIdx, token, trailingBlanks);
+    } else {
+        openRawEditor(blockEl, blockIdx, token, trailingBlanks);
+    }
+}
+
+function openWysiwygEditor(blockEl, blockIdx, token, trailingBlanks) {
+    blockEl.classList.add('md-block-editing', 'md-block-wysiwyg');
+    blockEl.setAttribute('contenteditable', 'true');
+    blockEl.setAttribute('spellcheck', 'true');
+    blockEl.focus();
+
+    // Place cursor at end of block
+    try {
+        var range = document.createRange();
+        range.selectNodeContents(blockEl);
+        range.collapse(false);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+    } catch (_) {}
+
+    _activeBlockEdit = {
+        blockEl: blockEl, blockIdx: blockIdx, originalRaw: token.raw,
+        trailingBlanks: trailingBlanks, mode: 'wysiwyg'
+    };
+
+    var keyHandler = function (ev) {
+        if (ev.key === 'Escape') { ev.preventDefault(); closeBlockEditor(false); }
+        else if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) {
+            ev.preventDefault();
+            closeBlockEditor(true);
+        }
+    };
+    var blurHandler = function () {
+        setTimeout(function () {
+            if (_activeBlockEdit && _activeBlockEdit.blockEl === blockEl) closeBlockEditor(true);
+        }, 0);
+    };
+    blockEl.addEventListener('keydown', keyHandler);
+    blockEl.addEventListener('blur', blurHandler);
+    _activeBlockEdit.teardown = function () {
+        blockEl.removeEventListener('keydown', keyHandler);
+        blockEl.removeEventListener('blur', blurHandler);
+        blockEl.removeAttribute('contenteditable');
+        blockEl.removeAttribute('spellcheck');
+        blockEl.classList.remove('md-block-editing', 'md-block-wysiwyg');
+    };
+}
+
+function openRawEditor(blockEl, blockIdx, token, trailingBlanks) {
+    var raw = (token.raw || '').replace(/\n+$/, '');
     var textarea = document.createElement('textarea');
     textarea.className = 'md-block-editor';
     textarea.value = raw;
     textarea.spellcheck = false;
-    // Match rendered block width
     var rect = blockEl.getBoundingClientRect();
     textarea.style.minHeight = Math.max(40, rect.height) + 'px';
 
@@ -386,23 +478,22 @@ function openBlockEditor(blockEl) {
     blockEl.appendChild(textarea);
     autoResizeTextarea(textarea);
     textarea.focus();
-    // Place cursor at end
     textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
 
-    _activeBlockEdit = { blockEl: blockEl, textarea: textarea, blockIdx: blockIdx, originalRaw: token.raw, trailingBlanks: trailingBlanks };
+    _activeBlockEdit = {
+        blockEl: blockEl, blockIdx: blockIdx, originalRaw: token.raw,
+        trailingBlanks: trailingBlanks, mode: 'raw', textarea: textarea
+    };
 
     textarea.addEventListener('input', function () { autoResizeTextarea(textarea); });
     textarea.addEventListener('keydown', function (ev) {
-        if (ev.key === 'Escape') {
+        if (ev.key === 'Escape') { ev.preventDefault(); closeBlockEditor(false); }
+        else if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) {
             ev.preventDefault();
-            closeBlockEditor(false);  // discard
-        } else if ((ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey))) {
-            ev.preventDefault();
-            closeBlockEditor(true);   // commit
+            closeBlockEditor(true);
         }
     });
     textarea.addEventListener('blur', function () {
-        // Slight delay so click on adjacent block doesn't double-trigger
         setTimeout(function () { if (_activeBlockEdit && _activeBlockEdit.textarea === textarea) closeBlockEditor(true); }, 0);
     });
 }
@@ -416,25 +507,39 @@ function closeBlockEditor(commit) {
     if (!_activeBlockEdit) return;
     var ed = _activeBlockEdit;
     _activeBlockEdit = null;
+
     if (!commit) {
-        // Discard: re-render whole preview, which restores the original block
+        if (ed.teardown) ed.teardown();
         renderPreview();
         return;
     }
-    var newRaw = ed.textarea.value;
-    var oldRaw = ed.originalRaw || '';
-    if (newRaw === oldRaw.replace(/\n+$/, '')) {
-        // No change — just re-render to drop the textarea
+
+    var newRaw;
+    if (ed.mode === 'wysiwyg') {
+        // Convert edited HTML → markdown via turndown
+        var td = getTurndown();
+        if (!td) { renderPreview(); return; }
+        try {
+            newRaw = td.turndown(ed.blockEl.innerHTML).trim();
+        } catch (e) {
+            console.warn('MD Pretty Viewer: turndown failed', e);
+            renderPreview();
+            return;
+        }
+        if (ed.teardown) ed.teardown();
+    } else {
+        newRaw = ed.textarea.value;
+    }
+
+    var oldRaw = (ed.originalRaw || '').replace(/\n+$/, '');
+    if (newRaw === oldRaw) {
         renderPreview();
         return;
     }
-    // Splice the new raw into the source. We rebuild currentContent from the
-    // token array by joining each token's raw, swapping our block out.
     if (!_currentTokens || !_currentTokens[ed.blockIdx]) {
         renderPreview();
         return;
     }
-    // Preserve the original trailing whitespace so block separation stays intact
     var newRawWithTrailing = newRaw + (ed.trailingBlanks || '\n\n');
     var parts = [];
     for (var i = 0; i < _currentTokens.length; i++) {
