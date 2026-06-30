@@ -5,6 +5,16 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.4] - 2026-06-30
+
+### Added
+
+- **🎨 Twemoji 이모지 통일** — 모든 이모지가 Twitter Twemoji v15.1 SVG로 자동 교체. OS와 무관하게(macOS / Windows / Linux) 동일한 비주얼. 3,838개 이모지 전체 번들 (vsix 2.8MB → 7.2MB). 코드 블록·`<kbd>`·`<code>` 안의 텍스트는 건드리지 않음. SVG 로드 실패 시 native 이모지로 fallback.
+
+### Changed
+
+- **인용문 디자인 정리** — blockquote 좌측 상단의 거대한 데코 따옴표(`"`) 제거. 깔끔한 accent bar + soft background만 유지. italic 강제 적용도 빼서 인용 내용이 또렷하게 보이도록.
+
 ## [1.0.3] - 2026-06-29
 
 ### Fixed

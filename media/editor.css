@@ -971,30 +971,14 @@ body.mode-split .editor-pane:hover::after {
 .markdown-body blockquote {
     position: relative;
     margin: 1.4em 0;
-    padding: 1em 1.4em 1em 2.2em;
+    padding: 0.85em 1.2em;
     background: var(--md-quote-bg);
     color: var(--md-quote-text);
-    border-radius: 4px 12px 12px 4px;
-    font-style: italic;
-    box-shadow: inset 4px 0 0 var(--md-accent),
-                0 1px 2px rgba(0, 0, 0, 0.03);
-    border: none;
-}
-
-/* Decorative opening quote mark */
-.markdown-body blockquote::before {
-    content: '"';
-    position: absolute;
-    top: 0;
-    left: 0.5em;
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: 3em;
-    line-height: 1;
-    color: var(--md-accent);
-    opacity: 0.22;
+    border-radius: 0 8px 8px 0;
     font-style: normal;
-    pointer-events: none;
-    font-weight: 700;
+    box-shadow: inset 4px 0 0 var(--md-accent);
+    border: none;
+    line-height: 1.65;
 }
 
 .markdown-body blockquote p {
@@ -2808,3 +2792,45 @@ body.vscode-dark .pdf-options-dialog .pdf-segmented {
     border-color: #3a3f4a;
     color: #e8e8e8;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   TWEMOJI EMOJI RENDERING (v1.0.4)
+   ══════════════════════════════════════════════════════════════ */
+.markdown-body .md-emoji {
+    display: inline-block;
+    height: 1em;
+    width: 1em;
+    margin: 0 0.05em 0 0.1em;
+    vertical-align: -0.15em;
+    user-select: none;
+    -webkit-user-select: none;
+    image-rendering: -webkit-optimize-contrast;
+    /* Subtle theme tint via mix-blend at low strength; emojis stay readable */
+    transition: opacity 0.15s ease;
+}
+
+/* Headings get slightly larger emojis */
+.markdown-body h1 .md-emoji { height: 0.9em; width: 0.9em; vertical-align: -0.1em; }
+.markdown-body h2 .md-emoji,
+.markdown-body h3 .md-emoji { height: 0.95em; width: 0.95em; vertical-align: -0.12em; }
+
+/* Fallback span if SVG fails to load — use native emoji font */
+.markdown-body .md-emoji-fallback {
+    display: inline-block;
+    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+}
+
+/* In PDF export, emojis should stay full color (no theme tint), proper sizing */
+body.exporting-pdf .markdown-body .md-emoji {
+    height: 1.05em;
+    width: 1.05em;
+    vertical-align: -0.18em;
+    filter: none !important;
+}
+
+/* Table cells: align emoji baseline with text */
+.markdown-body td .md-emoji,
+.markdown-body th .md-emoji { vertical-align: -0.18em; }

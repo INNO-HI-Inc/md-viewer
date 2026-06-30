@@ -44,6 +44,7 @@ function getHtml(webview, nonce, context, document, docBaseUri, settings) {
     <script nonce="${nonce}" src="${mediaUri('katex.min.js')}"></script>
     <script nonce="${nonce}" src="${mediaUri('katex-auto-render.min.js')}"></script>
     <script nonce="${nonce}" src="${mediaUri('highlight.min.js')}"></script>
+    <script nonce="${nonce}" src="${mediaUri('emoji-parser.js')}"></script>
     <script nonce="${nonce}" src="${mediaUri('editor.js')}"></script>
     <script nonce="${nonce}">
         // Lazy-loaded heavy libraries: paths passed in for on-demand <script> injection
@@ -52,6 +53,7 @@ function getHtml(webview, nonce, context, document, docBaseUri, settings) {
             html2pdf: ${JSON.stringify(mediaUri('html2pdf.bundle.min.js').toString())},
             nonce: ${JSON.stringify(nonce)}
         };
+        window.__twemojiBase = ${JSON.stringify(mediaUri('twemoji').toString())};
         initEditor(${JSON.stringify(content)}, ${JSON.stringify(fileName)}, ${JSON.stringify(docBaseUri.toString())}, ${JSON.stringify(settings)});
     </script>
 </body>
