@@ -5,6 +5,12 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.8] - 2026-06-30
+
+### Changed
+
+- **블록 호버 시 "✏ dblclick" 라벨 제거** — 매 블록마다 따라다니는 영문 보조 라벨이 시각적 노이즈였습니다. Notion/Obsidian/Typora 패턴대로 변경: 호버 시 **아주 옅은 액센트 컬러 배경 + 텍스트 커서**만으로 편집 가능성을 암시. 발견은 `title` 툴팁(한글 "더블클릭으로 편집") + 사용자 학습이 담당. 한 번 알면 다음부턴 자연스럽게 보임.
+
 ## [1.0.7] - 2026-06-30
 
 ### Fixed

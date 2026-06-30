@@ -211,7 +211,7 @@ function renderMarkdown(text) {
             blockHtml = '';
         }
         if (EDITABLE_TYPES[token.type]) {
-            parts.push('<div class="md-block" data-block-idx="' + i + '" title="Double-click to edit">' + blockHtml + '</div>');
+            parts.push('<div class="md-block" data-block-idx="' + i + '" title="더블클릭으로 편집">' + blockHtml + '</div>');
         } else {
             parts.push(blockHtml);
         }

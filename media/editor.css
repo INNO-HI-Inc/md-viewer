@@ -2830,26 +2830,12 @@ body.vscode-dark .pdf-options-dialog .pdf-segmented {
     margin: 0;
     padding: 0;
 }
-/* Subtle hover hint that double-click opens editor */
+/* Subtle hover affordance — text-style cursor + faint background tint.
+   No visible "dblclick" label; discovery via tooltip (title attr) and
+   muscle memory matches modern editors (Notion, Obsidian, Typora). */
 body.mode-preview .markdown-body .md-block:hover {
-    background: color-mix(in srgb, var(--md-accent) 4%, transparent);
+    background: color-mix(in srgb, var(--md-accent) 3.5%, transparent);
     cursor: text;
-}
-body.mode-preview .markdown-body .md-block:hover::after {
-    content: '✏ dblclick';
-    position: absolute;
-    top: 6px;
-    right: 8px;
-    font-size: 10.5px;
-    color: var(--md-text-muted, #8b8b9a);
-    opacity: 0.55;
-    pointer-events: none;
-    font-family: 'AtoZ', 'Pretendard', sans-serif;
-    background: var(--md-bg);
-    padding: 1px 6px;
-    border-radius: 4px;
-    line-height: 1.4;
-    border: 1px solid var(--md-border, #e5e7eb);
 }
 
 /* Active editor — textarea swapped in place of rendered HTML */
@@ -2859,7 +2845,6 @@ body.mode-preview .markdown-body .md-block:hover::after {
     padding: 4px 6px;
     cursor: text;
 }
-.markdown-body .md-block-editing::after { display: none; }
 .markdown-body .md-block-editor {
     width: 100%;
     background: transparent;
@@ -2877,13 +2862,10 @@ body.mode-preview .markdown-body .md-block:hover::after {
     caret-color: var(--md-accent);
 }
 
-/* Edit/Split mode: no editing hints in preview side (only Preview-only mode) */
-body.mode-edit .markdown-body .md-block:hover::after,
-body.mode-split .markdown-body .md-block:hover::after { display: none; }
+/* Edit/Split mode: suppress the hover background (inline editing is
+   Preview-only — Edit/Split already let you change source directly). */
 body.mode-edit .markdown-body .md-block:hover,
 body.mode-split .markdown-body .md-block:hover { background: transparent; cursor: default; }
 
-/* PDF export: strip all editing affordances */
+/* PDF export: strip the hover tint just in case mid-export DOM has it */
 body.exporting-pdf .markdown-body .md-block { background: transparent !important; padding: 0 !important; }
-body.exporting-pdf .markdown-body .md-block::after,
-body.exporting-pdf .markdown-body .md-block:hover::after { display: none !important; }
