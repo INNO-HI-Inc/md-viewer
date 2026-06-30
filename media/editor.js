@@ -532,8 +532,11 @@ function isWysiwygSafe(token, blockEl) {
     if (!token) return false;
     var simple = { heading: 1, paragraph: 1, blockquote: 1, list: 1 };
     if (!simple[token.type]) return false;
-    // Block contains math / mermaid / interactive — fall back to raw
-    if (blockEl.querySelector('.katex, .mermaid-diagram, pre, code, .md-admonition')) return false;
+    // Only block-level complex content forces raw fallback. Inline <code>
+    // is safe — turndown wraps it back in backticks correctly. We exclude
+    // <pre> (fenced code blocks), KaTeX math nodes, Mermaid diagrams, and
+    // admonition boxes whose round-trip is lossy.
+    if (blockEl.querySelector('pre, .katex, .katex-display, .mermaid-diagram, .md-admonition')) return false;
     return true;
 }
 

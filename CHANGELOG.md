@@ -5,6 +5,12 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.11] - 2026-06-30
+
+### Fixed
+
+- **인라인 코드(`` `text` ``) 포함 블록도 WYSIWYG로** — `isWysiwygSafe`가 인라인 `<code>`를 보면 무조건 raw textarea로 떨어뜨려서, CHANGELOG처럼 `` `<th>` ``같은 인라인 코드가 든 리스트가 모두 `*`, `` ` `` 등 마크다운 기호 그대로 보였음. 인라인 `<code>`는 turndown이 백틱으로 정확히 round-trip하므로 안전. 진짜 위험한 블록 코드(`<pre>`)와 수식(`.katex`), Mermaid, admonition만 raw fallback으로 남김. 이제 리스트·문단 더블클릭 시 굵게/이탤릭/인라인 코드 모두 렌더된 모습 그대로 편집.
+
 ## [1.0.10] - 2026-06-30
 
 ### Added
