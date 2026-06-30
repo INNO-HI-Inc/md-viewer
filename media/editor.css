@@ -1139,17 +1139,31 @@ body.mode-split .editor-pane:hover::after {
 }
 
 /* ── Images ── */
+/* Images default to inline so badges and inline icons flow naturally on one
+   line. Standalone content images (e.g., hero screenshot, photos alone in
+   a paragraph) get promoted to block via the rule below. */
 .markdown-body img {
     max-width: 100%;
     height: auto;
-    border-radius: 8px;
-    box-shadow: var(--md-img-shadow);
-    margin: 1em 0;
-    display: block;
+    vertical-align: middle;
+    border-radius: 4px;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.markdown-body img:hover {
+/* Standalone images — alone in their paragraph or sole content of a link
+   that's alone in its paragraph — get the spotlight treatment. */
+.markdown-body p > img:only-child,
+.markdown-body p > a:only-child > img:only-child,
+.markdown-body div > a:only-child > img:only-child {
+    display: block;
+    margin: 1em auto;
+    border-radius: 8px;
+    box-shadow: var(--md-img-shadow);
+}
+
+.markdown-body p > img:only-child:hover,
+.markdown-body p > a:only-child > img:only-child:hover,
+.markdown-body div > a:only-child > img:only-child:hover {
     transform: scale(1.005);
 }
 

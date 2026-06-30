@@ -5,6 +5,12 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.7] - 2026-06-30
+
+### Fixed
+
+- **인라인 이미지(배지·아이콘)가 세로로 쌓이던 문제** — `.markdown-body img`가 `display: block; margin: 1em 0`이었음. 콘텐츠 이미지에는 좋은 기본값이지만 배지처럼 같은 줄에 여러 개 있는 인라인 이미지까지 모두 강제로 새 줄에 떨어뜨림. 기본은 `vertical-align: middle`로 인라인, 단독 이미지(`p > img:only-child` 등)만 block + 그림자 + 중앙 정렬로 승격하도록 분리. 배지가 옆으로 나란히 표시됨.
+
 ## [1.0.6] - 2026-06-30
 
 ### Added
