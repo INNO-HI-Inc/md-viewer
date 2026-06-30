@@ -12,10 +12,7 @@
 </p>
 
 <p>
-  <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer"><img src="https://img.shields.io/badge/VS%20Code-v1.0.3-448CFF?style=for-the-badge&labelColor=0E1128&logo=visualstudiocode&logoColor=white" alt="VS Code v1.0.3"></a>&nbsp;
-  <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer"><img src="https://img.shields.io/badge/marketplace-install-448CFF?style=for-the-badge&labelColor=0E1128&logo=visualstudiocode&logoColor=white" alt="Install from Marketplace"></a>&nbsp;
-  <a href="https://github.com/INNO-HI-Inc/md-viewer/releases"><img src="https://img.shields.io/github/v/release/INNO-HI-Inc/md-viewer?style=for-the-badge&color=448CFF&labelColor=0E1128&label=release" alt="GitHub Release"></a>&nbsp;
-  <a href="https://github.com/INNO-HI-Inc/md-viewer/blob/main/LICENSE"><img src="https://img.shields.io/github/license/INNO-HI-Inc/md-viewer?style=for-the-badge&color=448CFF&labelColor=0E1128" alt="License"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer"><img src="https://img.shields.io/github/v/release/INNO-HI-Inc/md-viewer?style=flat-square&color=448CFF&labelColor=0E1128&label=VS%20Code&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>&nbsp;<a href="https://github.com/INNO-HI-Inc/md-viewer/blob/main/LICENSE"><img src="https://img.shields.io/github/license/INNO-HI-Inc/md-viewer?style=flat-square&color=448CFF&labelColor=0E1128" alt="License"></a>
 </p>
 
 <p>
