@@ -371,6 +371,24 @@ function getTurndown() {
         filter: 'br',
         replacement: function () { return '  \n'; }
     });
+    // Compact list output — turndown's default indents li content by 4 spaces
+    // and adds blank lines between items, which visibly changes the source
+    // formatting after a WYSIWYG edit. Emit "- text\n" per item so the source
+    // stays close to what the user originally wrote.
+    _turndown.addRule('compactList', {
+        filter: 'li',
+        replacement: function (content, node, options) {
+            content = content.replace(/^\s+/, '').replace(/\s+$/, '').replace(/\n/g, '\n  ');
+            var marker = options.bulletListMarker + ' ';
+            var parent = node.parentNode;
+            if (parent && parent.nodeName === 'OL') {
+                var start = parent.getAttribute('start');
+                var index = Array.prototype.indexOf.call(parent.children, node);
+                marker = (start ? parseInt(start, 10) + index : index + 1) + '. ';
+            }
+            return marker + content + (node.nextSibling && !/\n$/.test(content) ? '\n' : '');
+        }
+    });
     return _turndown;
 }
 
