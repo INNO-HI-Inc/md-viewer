@@ -5,6 +5,12 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.15] - 2026-07-01
+
+### Fixed
+
+- HTML로 쓴 표에서 셀 하나를 편집하면 저장 파일에 우리 extension이 렌더링용으로 붙이는 내부 wrapper(예: `<div class="md-block" data-block-idx>`)와 스크롤 wrapper가 그대로 새어나가 표 구조가 붕괴되던 큰 버그를 고쳤습니다. 이제 원본 소스를 시작점으로 잡고 편집한 셀만 정확히 갈아치우기 때문에, 표의 `<td width="50%" valign="top">` 같은 원본 속성과 다른 셀의 서식이 모두 그대로 유지됩니다.
+
 ## [1.0.14] - 2026-07-01
 
 ### Fixed

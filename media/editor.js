@@ -706,22 +706,45 @@ function closeBlockEditor(commit) {
         newRaw = regenerateTableMarkdown(token);
         if (ed.teardown) ed.teardown();
     } else if (ed.mode === 'html-cell') {
-        // HTML table cell edit — first strip the editing affordances so the
-        // captured innerHTML doesn't include contenteditable / class markers,
-        // then use the block's current innerHTML as the new raw source. Table
-        // structure and other cells stay untouched because only the one cell
-        // was modified.
+        // HTML table cell edit — do NOT capture the block's live innerHTML,
+        // because that includes runtime wrappers we injected (.md-block,
+        // .table-scroll, data-block-idx, contenteditable, spellcheck…) and
+        // would contaminate the saved source. Instead, take the ORIGINAL
+        // token.raw, parse it, find the same cell by row/col index, and
+        // swap just its innerHTML with the edited version. Everything else
+        // in the source markup is preserved byte-for-byte.
+        var editedInnerHtml = ed.cell.innerHTML;
         if (ed.teardown) ed.teardown();
-        var container = ed.blockEl;
-        if (container) {
-            newRaw = container.innerHTML;
-            // Undo browser normalization that adds implicit <tbody> when the
-            // source didn't have one — keeps diffs small.
-            if (!/<tbody[\s>]/i.test(ed.originalRaw || '') && /<tbody[\s>]/i.test(newRaw)) {
-                newRaw = newRaw.replace(/<tbody[^>]*>/gi, '').replace(/<\/tbody>/gi, '');
+        var scratch = document.createElement('div');
+        scratch.innerHTML = ed.originalRaw || '';
+        var sourceTable = scratch.querySelector('table');
+        if (sourceTable) {
+            var targetCell = null;
+            if (ed.isHeader) {
+                // Header cells live in either <thead> or the first <tr>
+                var thead = sourceTable.querySelector('thead');
+                if (thead) {
+                    var hrow = thead.querySelector('tr');
+                    if (hrow) targetCell = hrow.children[ed.colIdx];
+                }
+                if (!targetCell) {
+                    var firstRow = sourceTable.querySelector('tr');
+                    if (firstRow) targetCell = firstRow.children[ed.colIdx];
+                }
+            } else {
+                // Body cell — index rows across tbody (or table if no tbody),
+                // matching how openCellEditor computed rowIdx.
+                var section = sourceTable.querySelector('tbody') || sourceTable;
+                var bodyRows = Array.from(section.children).filter(function (n) { return n.tagName === 'TR'; });
+                var row = bodyRows[ed.rowIdx];
+                if (row) targetCell = row.children[ed.colIdx];
             }
-        } else {
-            newRaw = ed.originalRaw || '';
+            if (targetCell) targetCell.innerHTML = editedInnerHtml;
+        }
+        newRaw = scratch.innerHTML;
+        // Strip implicit <tbody> the browser added if the original didn't have one
+        if (!/<tbody[\s>]/i.test(ed.originalRaw || '') && /<tbody[\s>]/i.test(newRaw)) {
+            newRaw = newRaw.replace(/<tbody[^>]*>/gi, '').replace(/<\/tbody>/gi, '');
         }
     } else if (ed.mode === 'wysiwyg') {
         var td2 = getTurndown();
