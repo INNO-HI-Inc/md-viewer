@@ -83,11 +83,13 @@ POSSIBILITY OF SUCH DAMAGE.
 
 ## 에이투지체 (AtoZ Font)
 
-- **Project**: https://autoa2z.co.kr
+- **Project**: [https://autoa2z.co.kr](https://autoa2z.co.kr)
 - **Designer**: 오토노머스에이투지(Autonomous a2z) X 이주임
 - **Version**: v1.001
 - **License**: SIL Open Font License 1.1 (OFL)
 - **Location in package**: `media/fonts/atoz-*.woff2`
+
+
 
 이 확장은 에이투지체를 번들 포함하며, OFL 조건에 따라 상업적 이용, 수정, 재배포가 허용됩니다. 단, 폰트 파일 자체를 판매하지 않습니다.
 

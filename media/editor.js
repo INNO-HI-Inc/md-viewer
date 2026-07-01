@@ -440,18 +440,40 @@ function bindTableCellEditing(blockEl, blockIdx, token, kind) {
 }
 
 function openCellEditor(cell, blockIdx, kind) {
-    if (_activeBlockEdit) closeBlockEditor(true);
-    if (!_currentTokens || !_currentTokens[blockIdx]) return;
-    var token = _currentTokens[blockIdx];
-
+    // Capture row/col coordinates BEFORE anything mutates the DOM.
+    // If _activeBlockEdit is set, closing it triggers renderPreview which
+    // rebuilds the DOM — the incoming `cell` reference would then be stale
+    // (detached), and every mutation below would silently no-op.
     var row = cell.parentElement;                 // <tr>
-    var section = row.parentElement;              // <thead> | <tbody>
+    var section = row.parentElement;              // <thead> | <tbody> | <table>
     var isHeader = section.tagName === 'THEAD';
     var colIdx = Array.from(row.children).indexOf(cell);
     var rowIdx = -1;
     if (!isHeader) {
         rowIdx = Array.from(section.children).indexOf(row);
     }
+
+    if (_activeBlockEdit) {
+        closeBlockEditor(true);
+        // Re-find the target cell in the freshly rendered DOM using the
+        // coordinates we captured a moment ago.
+        var freshBlock = previewEl && previewEl.querySelector('.md-block[data-block-idx="' + blockIdx + '"]');
+        if (!freshBlock) return;
+        var freshTable = freshBlock.querySelector('table');
+        if (!freshTable) return;
+        if (isHeader) {
+            var thead = freshTable.querySelector('thead');
+            var hrow = thead ? thead.querySelector('tr') : freshTable.querySelector('tr');
+            cell = hrow ? hrow.children[colIdx] : null;
+        } else {
+            var freshSection = freshTable.querySelector('tbody') || freshTable;
+            var freshRow = Array.from(freshSection.children).filter(function (n) { return n.tagName === 'TR'; })[rowIdx];
+            cell = freshRow ? freshRow.children[colIdx] : null;
+        }
+        if (!cell) return;
+    }
+    if (!_currentTokens || !_currentTokens[blockIdx]) return;
+    var token = _currentTokens[blockIdx];
 
     cell.classList.add('md-cell-editing');
     cell.setAttribute('contenteditable', 'true');
@@ -573,10 +595,17 @@ function isWysiwygSafe(token, blockEl) {
 }
 
 function openBlockEditor(blockEl) {
-    if (_activeBlockEdit) closeBlockEditor(true);  // commit any in-flight edit
-    if (!_currentTokens) return;
+    // Capture block index BEFORE closeBlockEditor triggers renderPreview —
+    // the `blockEl` reference we were passed would become detached.
     var blockIdx = parseInt(blockEl.dataset.blockIdx, 10);
-    if (isNaN(blockIdx) || !_currentTokens[blockIdx]) return;
+    if (isNaN(blockIdx)) return;
+    if (_activeBlockEdit) {
+        closeBlockEditor(true);
+        // Re-find the same block in the freshly rendered DOM
+        blockEl = previewEl && previewEl.querySelector('.md-block[data-block-idx="' + blockIdx + '"]');
+        if (!blockEl) return;
+    }
+    if (!_currentTokens || !_currentTokens[blockIdx]) return;
     var token = _currentTokens[blockIdx];
     var trailingBlanks = (token.raw || '').match(/\n*$/)[0];
 
