@@ -211,7 +211,7 @@ function renderMarkdown(text) {
             blockHtml = '';
         }
         if (EDITABLE_TYPES[token.type]) {
-            parts.push('<div class="md-block" data-block-idx="' + i + '" title="더블클릭으로 편집">' + blockHtml + '</div>');
+            parts.push('<div class="md-block" data-block-idx="' + i + '">' + blockHtml + '</div>');
         } else {
             parts.push(blockHtml);
         }
@@ -414,19 +414,10 @@ function bindBlockEditing(container) {
             return;
         }
 
-        // ✏️ edit affordance — pencil button in the top-right corner on hover.
-        // Double-click still works as a power-user shortcut.
+        // ✏ pencil icon in the top-right corner on hover — the only way to
+        // open the inline editor. (Double-click no longer opens editing; it
+        // still bubbles up to the preview pane's Preview↔Edit mode toggle.)
         addEditIcon(blockEl, function () { openBlockEditor(blockEl); });
-
-        blockEl.addEventListener('dblclick', function (e) {
-            var t = e.target;
-            if (t.tagName === 'A' || t.tagName === 'IMG' || t.tagName === 'INPUT') return;
-            if (t.classList && t.classList.contains('md-edit-icon')) return;  // icon has its own click
-            if (t.closest('.md-block') !== blockEl) return;
-            e.preventDefault();
-            e.stopPropagation();
-            openBlockEditor(blockEl);
-        });
     });
 }
 
@@ -483,13 +474,6 @@ function bindTableCellEditing(blockEl, blockIdx, token, kind) {
         // Cell needs positioning context for the absolute edit icon
         if (!cell.style.position) cell.style.position = 'relative';
         addEditIcon(cell, function () { openCellEditor(cell, blockIdx, kind || 'markdown'); });
-        cell.addEventListener('dblclick', function (e) {
-            if (e.target.tagName === 'A' || e.target.tagName === 'IMG') return;
-            if (e.target.classList && e.target.classList.contains('md-edit-icon')) return;
-            e.preventDefault();
-            e.stopPropagation();
-            openCellEditor(cell, blockIdx, kind || 'markdown');
-        });
     });
 }
 

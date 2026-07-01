@@ -5,6 +5,12 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.18] - 2026-07-01
+
+### Changed
+
+- 더블클릭으로 인-라인 편집이 열리던 동작을 뺐습니다. 이제 편집 진입은 오직 ✏ 수정 아이콘 클릭으로만 시작됩니다. 편집 저장은 ✓ 완료 버튼, Cmd/Ctrl+Enter, 또는 다른 곳 클릭으로 그대로 동작합니다.
+
 ## [1.0.17] - 2026-07-01
 
 ### Added

@@ -13,9 +13,9 @@
 Security updates are provided only for the latest minor version.
 
 | Version | Supported |
-|---------|-----------|
-| 0.5.x   | ✅        |
-| < 0.5   | ❌        |
+| --- | --- |
+| 0.5.x | ✅ |
+| < 0.5 | ❌✓ 완료 |
 
 ## Security Design
 
