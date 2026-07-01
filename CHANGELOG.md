@@ -5,6 +5,12 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.19] - 2026-07-01
+
+### Fixed
+
+- HTML 표 안에 마크다운 헤딩·리스트가 들어 있는 구조(README의 Features 표 같은 것)에서 편집 후 저장하면 표 구조가 붕괴되고 내부 wrapper가 소스에 새어나가던 큰 버형 버그를 고쳤습니다. 이제 아직 닫히지 않은 HTML 구조 안에 있는 마크다운 토큰에는 편집용 wrapper를 씌우지 않아서, 원본 표 구조가 그대로 유지됩니다. 대신 그런 토큰은 개별 인-라인 편집 대상에서 제외되므로, 편집이 필요하면 Edit 모드로 전환해서 원문을 수정하시면 됩니다.
+
 ## [1.0.18] - 2026-07-01
 
 ### Changed

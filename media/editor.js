@@ -191,26 +191,52 @@ function resolveUri(href) {
 /* Token-aware rendering (v1.0.6) — keeps top-level token list around so
    inline block-edit can find the raw markdown for any rendered block. */
 var _currentTokens = null;
+
+/* Net difference between opening and closing HTML tags in a chunk of raw
+   text. Void / self-closing elements don't count. Used to detect tokens
+   that live inside an unclosed HTML structure (e.g. markdown that appears
+   inside <table><td>...</td></table>) — wrapping those with .md-block
+   div's breaks the HTML structure. */
+var _voidTags = /^(br|hr|img|input|meta|link|area|base|col|embed|source|track|wbr)$/i;
+function htmlTagDelta(raw) {
+    var opens = 0, closes = 0;
+    var re = /<(\/?)([a-zA-Z][a-zA-Z0-9]*)\b[^>]*?(\/?)>/g;
+    var m;
+    while ((m = re.exec(raw))) {
+        if (m[3] === '/') continue;                 // self-closing
+        if (_voidTags.test(m[2])) continue;         // void element
+        if (m[1] === '/') closes++; else opens++;
+    }
+    return opens - closes;
+}
+
 function renderMarkdown(text) {
     var tokens = marked.lexer(text);
     _currentTokens = tokens;
-    // Render each top-level token individually and wrap with a div carrying
-    // its index in the token array. Editable blocks: heading/paragraph/
-    // blockquote/list/code/hr/table. Other tokens render as-is without a
-    // wrapper so structural elements (space) don't pollute the DOM.
+    // Editable blocks that can be individually wrapped.
     var EDITABLE_TYPES = {
         heading: 1, paragraph: 1, blockquote: 1, list: 1, code: 1, hr: 1, table: 1, html: 1
     };
     var parts = [];
+    // Track running HTML tag balance across tokens. If a preceding html
+    // token opens tags without closing them (e.g. "<table><tr><td>"),
+    // subsequent tokens are structurally inside that container and must
+    // not be individually wrapped with our .md-block div — that would
+    // interleave block elements inside <td>/<tr> and browsers would
+    // rewrite the structure or leak our wrappers into the source on save.
+    var htmlDepth = 0;
     for (var i = 0; i < tokens.length; i++) {
         var token = tokens[i];
+        var depthBefore = htmlDepth;
+        htmlDepth += htmlTagDelta(token.raw || '');
+
         var blockHtml;
-        try {
-            blockHtml = marked.parser([token]);
-        } catch (_) {
-            blockHtml = '';
-        }
-        if (EDITABLE_TYPES[token.type]) {
+        try { blockHtml = marked.parser([token]); }
+        catch (_) { blockHtml = ''; }
+
+        // Only wrap when we're at top level (depthBefore === 0) AND this
+        // token doesn't itself leave us inside an open structure.
+        if (EDITABLE_TYPES[token.type] && depthBefore === 0 && htmlDepth <= 0) {
             parts.push('<div class="md-block" data-block-idx="' + i + '">' + blockHtml + '</div>');
         } else {
             parts.push(blockHtml);
