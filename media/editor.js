@@ -530,13 +530,20 @@ function regenerateTableMarkdown(token) {
 // fall back to raw textarea so we don't lose formatting.
 function isWysiwygSafe(token, blockEl) {
     if (!token) return false;
-    var simple = { heading: 1, paragraph: 1, blockquote: 1, list: 1 };
+    var simple = { heading: 1, paragraph: 1, blockquote: 1, list: 1, html: 1 };
     if (!simple[token.type]) return false;
     // Only block-level complex content forces raw fallback. Inline <code>
     // is safe — turndown wraps it back in backticks correctly. We exclude
     // <pre> (fenced code blocks), KaTeX math nodes, Mermaid diagrams, and
     // admonition boxes whose round-trip is lossy.
     if (blockEl.querySelector('pre, .katex, .katex-display, .mermaid-diagram, .md-admonition')) return false;
+    // HTML tokens that contain their own structural layout (tables, details,
+    // multiple sibling divs) are safer to keep as raw-source editing so we
+    // don't collapse the layout to plain markdown.
+    if (token.type === 'html') {
+        if (blockEl.querySelector('table, details, summary, iframe, form')) return false;
+        if (blockEl.querySelectorAll('div').length > 1) return false;
+    }
     return true;
 }
 

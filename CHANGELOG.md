@@ -5,6 +5,12 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.12] - 2026-07-01
+
+### Fixed
+
+- 문단 안에 `<p>` `<b>` `<sub>` 같은 HTML 태그가 섞여 있는 블록도 더블클릭하면 태그가 안 보이고 렌더된 텍스트만 편집됩니다. 이전 버전에서는 이런 블록만 마크다운 원문 편집기로 넘어가서 태그가 그대로 보였습니다. 다만 표·details·iframe처럼 구조 자체가 HTML로 표현된 블록은 그대로 원문 편집기가 열립니다 — 구조를 무너뜨리지 않기 위함입니다.
+
 ## [1.0.11] - 2026-07-01
 
 ### Fixed
