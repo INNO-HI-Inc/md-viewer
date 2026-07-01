@@ -158,4 +158,4 @@ THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
 
 ## 문의
 
-라이선스 관련 문의: `legal@innohi.ai.kr`
+라이선스 관련 문의: `board@innohi.ai.kr`

@@ -5,6 +5,12 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.17] - 2026-07-01
+
+### Added
+
+- 블록이나 표 셀 위에 마우스를 올리면 우측 상단에 작은 **✏ 수정** 아이콘이 뜹니다. 클릭하면 편집이 시작되고, 편집 중에는 **✓ 완료** 버튼이 뜹니다. 완료 버튼을 누르면 저장됩니다. 더블클릭이나 Cmd/Ctrl+Enter로 저장하던 기존 방식도 그대로 됩니다.
+
 ## [1.0.16] - 2026-07-01
 
 ### Fixed

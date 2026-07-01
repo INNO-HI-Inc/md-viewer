@@ -414,12 +414,14 @@ function bindBlockEditing(container) {
             return;
         }
 
+        // ✏️ edit affordance — pencil button in the top-right corner on hover.
+        // Double-click still works as a power-user shortcut.
+        addEditIcon(blockEl, function () { openBlockEditor(blockEl); });
+
         blockEl.addEventListener('dblclick', function (e) {
-            // Skip when target is a link, image, or interactive child — those
-            // have their own gestures (image lightbox, link navigation).
             var t = e.target;
             if (t.tagName === 'A' || t.tagName === 'IMG' || t.tagName === 'INPUT') return;
-            // Skip nested .md-block (rare, but list items can contain blocks)
+            if (t.classList && t.classList.contains('md-edit-icon')) return;  // icon has its own click
             if (t.closest('.md-block') !== blockEl) return;
             e.preventDefault();
             e.stopPropagation();
@@ -428,10 +430,62 @@ function bindBlockEditing(container) {
     });
 }
 
+/* Small floating pencil that appears in the corner of a hovered block or cell.
+   Click to open the editor. Stored under the block/cell but not part of the
+   saved source — stripped by cleanEditAffordances() before every commit. */
+function addEditIcon(host, onClick) {
+    if (!host || host.querySelector(':scope > .md-edit-icon')) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'md-edit-icon';
+    btn.title = '수정';
+    btn.setAttribute('aria-label', '수정');
+    btn.dataset.mdChrome = '1';   // marker so we can strip on save
+    btn.textContent = '✏';
+    btn.addEventListener('mousedown', function (e) { e.preventDefault(); });  // don't blur active editor
+    btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof onClick === 'function') onClick();
+    });
+    host.appendChild(btn);
+}
+
+/* Remove any UI chrome we injected (edit icons, done buttons) so the
+   captured HTML doesn't include them when we compute the new source. */
+function cleanEditAffordances(root) {
+    if (!root) return;
+    root.querySelectorAll('[data-md-chrome="1"]').forEach(function (n) { n.remove(); });
+}
+
+/* Floating "✓ 완료" button that appears while a block or cell is being
+   edited. Clicking it commits the same way Cmd/Ctrl+Enter does. */
+function addDoneButton(host) {
+    if (!host || host.querySelector(':scope > .md-done-btn')) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'md-done-btn';
+    btn.dataset.mdChrome = '1';
+    btn.setAttribute('aria-label', '완료');
+    btn.textContent = '✓ 완료';
+    // Prevent blur from firing on the editable region when the button is pressed
+    btn.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeBlockEditor(true);
+    });
+    host.appendChild(btn);
+}
+
 function bindTableCellEditing(blockEl, blockIdx, token, kind) {
     blockEl.querySelectorAll('th, td').forEach(function (cell) {
+        // Cell needs positioning context for the absolute edit icon
+        if (!cell.style.position) cell.style.position = 'relative';
+        addEditIcon(cell, function () { openCellEditor(cell, blockIdx, kind || 'markdown'); });
         cell.addEventListener('dblclick', function (e) {
             if (e.target.tagName === 'A' || e.target.tagName === 'IMG') return;
+            if (e.target.classList && e.target.classList.contains('md-edit-icon')) return;
             e.preventDefault();
             e.stopPropagation();
             openCellEditor(cell, blockIdx, kind || 'markdown');
@@ -475,6 +529,11 @@ function openCellEditor(cell, blockIdx, kind) {
     if (!_currentTokens || !_currentTokens[blockIdx]) return;
     var token = _currentTokens[blockIdx];
 
+    // Strip the pencil icon inside this cell before editing starts —
+    // avoids the user typing "into" the button and keeps the captured
+    // innerHTML clean.
+    cleanEditAffordances(cell);
+
     cell.classList.add('md-cell-editing');
     cell.setAttribute('contenteditable', 'true');
     cell.setAttribute('spellcheck', 'true');
@@ -487,6 +546,8 @@ function openCellEditor(cell, blockIdx, kind) {
         sel.removeAllRanges();
         sel.addRange(range);
     } catch (_) {}
+
+    addDoneButton(cell);
 
     _activeBlockEdit = {
         mode: kind === 'html' ? 'html-cell' : 'cell',
@@ -617,6 +678,10 @@ function openBlockEditor(blockEl) {
 }
 
 function openWysiwygEditor(blockEl, blockIdx, token, trailingBlanks) {
+    // Strip any UI chrome (pencil icon) so the captured innerHTML doesn't
+    // include our own markup when it goes through turndown.
+    cleanEditAffordances(blockEl);
+
     blockEl.classList.add('md-block-editing', 'md-block-wysiwyg');
     blockEl.setAttribute('contenteditable', 'true');
     blockEl.setAttribute('spellcheck', 'true');
@@ -631,6 +696,8 @@ function openWysiwygEditor(blockEl, blockIdx, token, trailingBlanks) {
         sel.removeAllRanges();
         sel.addRange(range);
     } catch (_) {}
+
+    addDoneButton(blockEl);
 
     _activeBlockEdit = {
         blockEl: blockEl, blockIdx: blockIdx, originalRaw: token.raw,
@@ -675,6 +742,8 @@ function openRawEditor(blockEl, blockIdx, token, trailingBlanks) {
     autoResizeTextarea(textarea);
     textarea.focus();
     textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+
+    addDoneButton(blockEl);
 
     _activeBlockEdit = {
         blockEl: blockEl, blockIdx: blockIdx, originalRaw: token.raw,
@@ -742,6 +811,7 @@ function closeBlockEditor(commit) {
         // token.raw, parse it, find the same cell by row/col index, and
         // swap just its innerHTML with the edited version. Everything else
         // in the source markup is preserved byte-for-byte.
+        cleanEditAffordances(ed.cell);
         var editedInnerHtml = ed.cell.innerHTML;
         if (ed.teardown) ed.teardown();
         var scratch = document.createElement('div');
@@ -776,6 +846,7 @@ function closeBlockEditor(commit) {
             newRaw = newRaw.replace(/<tbody[^>]*>/gi, '').replace(/<\/tbody>/gi, '');
         }
     } else if (ed.mode === 'wysiwyg') {
+        cleanEditAffordances(ed.blockEl);
         var td2 = getTurndown();
         if (!td2) { renderPreview(); return; }
         try {
