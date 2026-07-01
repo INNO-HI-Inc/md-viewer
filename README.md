@@ -6,21 +6,15 @@
 
 <h1>MD Pretty Viewer</h1>
 
-<p>
-  <b>Where your markdown becomes a masterpiece.</b><br/>
-  <sub>내가 쓴 마크다운이 작품이 되는 순간.</sub>
-</p>
+Where your markdown becomes a masterpiece.  
+내가 쓴 마크다운이 작품이 되는 순간.
 
 <p>
   <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer"><img src="https://img.shields.io/github/v/release/INNO-HI-Inc/md-viewer?style=flat-square&color=448CFF&labelColor=0E1128&label=VS%20Code&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>&nbsp;<a href="https://github.com/INNO-HI-Inc/md-viewer/blob/main/LICENSE"><img src="https://img.shields.io/github/license/INNO-HI-Inc/md-viewer?style=flat-square&color=448CFF&labelColor=0E1128" alt="License"></a>
 </p>
 
-<p>
-  <sub>
-    Live preview that doesn't suck. 13 themes for every mood. PDF export that actually looks good.<br/>
-    LaTeX math · Mermaid · clipboard image paste · auto TOC · Korean-first typography — all bundled, all offline.
-  </sub>
-</p>
+Live preview that doesn't suck. 13 themes for every mood. PDF export that actually looks good.  
+LaTeX math · Mermaid · clipboard image paste · auto TOC · Korean-first typography — all bundled, all offline.
 
 <p><a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer"><b>Install →</b></a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://inno-hi-inc.github.io/md-viewer/">Homepage</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://inno-hi-inc.github.io/md-viewer/demo.html">Live Demo</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://github.com/INNO-HI-Inc/md-viewer/issues">Report Bug</a></p>
 
@@ -32,7 +26,9 @@
   <img src="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/screenshot.png" alt="MD Pretty Viewer — preview with code, Mermaid diagram, and outline" width="100%">
 </a>
 
-<br/><br/>
+
+
+
 
 <table>
 <tr>

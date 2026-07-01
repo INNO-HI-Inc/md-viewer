@@ -5,6 +5,12 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.13] - 2026-07-01
+
+### Added
+
+- 마크다운으로 쓴 표뿐만 아니라 HTML 태그로 직접 쓴 표(예: README의 테마 표)에서도 셀 하나만 더블클릭해서 편집할 수 있습니다. 표의 구조·다른 셀·서식은 그대로 유지되고, 클릭한 셀의 텍스트만 바뀝니다.
+
 ## [1.0.12] - 2026-07-01
 
 ### Fixed

@@ -384,9 +384,15 @@ function bindBlockEditing(container) {
         var token = _currentTokens && _currentTokens[blockIdx];
 
         // Tables get cell-level WYSIWYG editing — preserves the table
-        // structure and only swaps the touched cell.
+        // structure and only swaps the touched cell. Two flavors:
+        //   markdown tables (token.type === 'table')  → precise header/rows edit
+        //   HTML tables inside an html block          → cell edit + innerHTML rewrite
         if (token && token.type === 'table') {
-            bindTableCellEditing(blockEl, blockIdx, token);
+            bindTableCellEditing(blockEl, blockIdx, token, 'markdown');
+            return;
+        }
+        if (token && token.type === 'html' && blockEl.querySelector('table')) {
+            bindTableCellEditing(blockEl, blockIdx, token, 'html');
             return;
         }
 
@@ -404,18 +410,18 @@ function bindBlockEditing(container) {
     });
 }
 
-function bindTableCellEditing(blockEl, blockIdx, token) {
+function bindTableCellEditing(blockEl, blockIdx, token, kind) {
     blockEl.querySelectorAll('th, td').forEach(function (cell) {
         cell.addEventListener('dblclick', function (e) {
             if (e.target.tagName === 'A' || e.target.tagName === 'IMG') return;
             e.preventDefault();
             e.stopPropagation();
-            openCellEditor(cell, blockIdx);
+            openCellEditor(cell, blockIdx, kind || 'markdown');
         });
     });
 }
 
-function openCellEditor(cell, blockIdx) {
+function openCellEditor(cell, blockIdx, kind) {
     if (_activeBlockEdit) closeBlockEditor(true);
     if (!_currentTokens || !_currentTokens[blockIdx]) return;
     var token = _currentTokens[blockIdx];
@@ -443,7 +449,8 @@ function openCellEditor(cell, blockIdx) {
     } catch (_) {}
 
     _activeBlockEdit = {
-        mode: 'cell',
+        mode: kind === 'html' ? 'html-cell' : 'cell',
+        blockEl: cell.closest('.md-block'),
         blockIdx: blockIdx,
         cell: cell,
         rowIdx: rowIdx,
@@ -680,6 +687,24 @@ function closeBlockEditor(commit) {
         }
         newRaw = regenerateTableMarkdown(token);
         if (ed.teardown) ed.teardown();
+    } else if (ed.mode === 'html-cell') {
+        // HTML table cell edit — first strip the editing affordances so the
+        // captured innerHTML doesn't include contenteditable / class markers,
+        // then use the block's current innerHTML as the new raw source. Table
+        // structure and other cells stay untouched because only the one cell
+        // was modified.
+        if (ed.teardown) ed.teardown();
+        var container = ed.blockEl;
+        if (container) {
+            newRaw = container.innerHTML;
+            // Undo browser normalization that adds implicit <tbody> when the
+            // source didn't have one — keeps diffs small.
+            if (!/<tbody[\s>]/i.test(ed.originalRaw || '') && /<tbody[\s>]/i.test(newRaw)) {
+                newRaw = newRaw.replace(/<tbody[^>]*>/gi, '').replace(/<\/tbody>/gi, '');
+            }
+        } else {
+            newRaw = ed.originalRaw || '';
+        }
     } else if (ed.mode === 'wysiwyg') {
         var td2 = getTurndown();
         if (!td2) { renderPreview(); return; }
