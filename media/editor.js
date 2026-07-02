@@ -796,6 +796,10 @@ function closeBlockEditor(commit) {
     if (ed.mode === 'cell') {
         // Cell-level edit — update only the touched cell's text, regenerate
         // the whole table markdown, keep all other cells/rows intact.
+        // Strip UI chrome (✓ 완료 button, any residual edit icon) before
+        // capturing the cell content so their text doesn't sneak into the
+        // markdown as literal characters.
+        cleanEditAffordances(ed.cell);
         var td = getTurndown();
         var cellText;
         if (td) {
