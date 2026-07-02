@@ -455,7 +455,6 @@ function addEditIcon(host, onClick) {
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'md-edit-icon';
-    btn.title = '수정';
     btn.setAttribute('aria-label', '수정');
     btn.dataset.mdChrome = '1';   // marker so we can strip on save
     btn.textContent = '✎';        // heavier pencil (U+270E) — more visible than ✏
@@ -484,7 +483,8 @@ function addDoneButton(host) {
     btn.className = 'md-done-btn';
     btn.dataset.mdChrome = '1';
     btn.setAttribute('aria-label', '완료');
-    btn.title = '완료 (Cmd/Ctrl+Enter)';
+    // Skip the browser title tooltip — it shows a rectangular OS bubble
+    // near the cursor that reads as visual noise when hovering the button.
     btn.textContent = '✓';
     // Prevent blur from firing on the editable region when the button is pressed
     btn.addEventListener('mousedown', function (e) { e.preventDefault(); });

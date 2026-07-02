@@ -5,6 +5,12 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.22] - 2026-07-01
+
+### Changed
+
+- ✎ 수정 아이콘과 ✓ 완료 버튼에 마우스를 올렸을 때 브라우저가 띄우던 회색 툴팁("수정", "완료 (Cmd/Ctrl+Enter)")을 제거했습니다. 아이콘 자체로 의미가 충분해서 툴팁이 오히려 시각 노이즈였습니다. 스크린리더용 라벨(aria-label)은 그대로 유지됩니다.
+
 ## [1.0.21] - 2026-07-01
 
 ### Changed
