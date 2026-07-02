@@ -5,6 +5,12 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.24] - 2026-07-01
+
+### Added
+
+- **텍스트 선택 시 플로팅 서식 툴바** — 편집 중 텍스트를 드래그로 선택하면 위에 굵게(B) · 이탤릭(I) · 코드(</>) · 링크(🔗) 버튼이 뜹니다. 클릭 시 즉시 적용되고 저장할 때 markdown 문법으로 자동 변환됩니다. 링크는 URL 입력 프롬프트가 뜹니다.
+
 ## [1.0.23] - 2026-07-01
 
 ### Added

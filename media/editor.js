@@ -456,7 +456,8 @@ function addEditIcon(host, onClick) {
     btn.type = 'button';
     btn.className = 'md-edit-icon';
     btn.setAttribute('aria-label', '수정');
-    btn.dataset.mdChrome = '1';   // marker so we can strip on save
+    btn.dataset.mdChrome = '1';
+    btn.contentEditable = 'false';   // marker so we can strip on save
     btn.textContent = '✎';        // heavier pencil (U+270E) — more visible than ✏
     btn.addEventListener('mousedown', function (e) { e.preventDefault(); });  // don't blur active editor
     btn.addEventListener('click', function (e) {
@@ -467,11 +468,107 @@ function addEditIcon(host, onClick) {
     host.appendChild(btn);
 }
 
-/* Remove any UI chrome we injected (edit icons, done buttons) so the
-   captured HTML doesn't include them when we compute the new source. */
+/* Remove any UI chrome we injected (edit icons, done buttons, format
+   toolbar) so the captured HTML doesn't include them when we compute the
+   new source. */
 function cleanEditAffordances(root) {
     if (!root) return;
     root.querySelectorAll('[data-md-chrome="1"]').forEach(function (n) { n.remove(); });
+}
+
+/* Floating format toolbar (v1.0.24) — shown above a text selection inside
+   the active editor. Bold / Italic / Code / Link. */
+var _fmtToolbarEl = null;
+function ensureFormatToolbar() {
+    if (_fmtToolbarEl) return _fmtToolbarEl;
+    var t = document.createElement('div');
+    t.className = 'md-fmt-toolbar';
+    t.dataset.mdChrome = '1';
+    t.setAttribute('role', 'toolbar');
+    var BUTTONS = [
+        { cmd: 'bold',   label: 'B',  aria: '굵게'   , style: 'font-weight:700' },
+        { cmd: 'italic', label: 'I',  aria: '이탤릭' , style: 'font-style:italic' },
+        { cmd: 'code',   label: '</>',aria: '코드'   , style: 'font-family:monospace;font-size:10.5px' },
+        { cmd: 'link',   label: '🔗', aria: '링크'   , style: '' }
+    ];
+    BUTTONS.forEach(function (b) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = b.label;
+        btn.setAttribute('aria-label', b.aria);
+        btn.dataset.cmd = b.cmd;
+        if (b.style) btn.setAttribute('style', b.style);
+        btn.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            applyFormatCommand(b.cmd);
+        });
+        t.appendChild(btn);
+    });
+    document.body.appendChild(t);
+    _fmtToolbarEl = t;
+    return t;
+}
+function updateFormatToolbar() {
+    if (!_activeBlockEdit) return hideFormatToolbar();
+    var sel = window.getSelection();
+    if (!sel || sel.isCollapsed || sel.rangeCount === 0) return hideFormatToolbar();
+    var range = sel.getRangeAt(0);
+    // Selection must lie inside the active editor host
+    var host = _activeBlockEdit.cell || _activeBlockEdit.blockEl;
+    if (!host || !host.contains(range.commonAncestorContainer)) return hideFormatToolbar();
+    var rect = range.getBoundingClientRect();
+    if (!rect || rect.width === 0 && rect.height === 0) return hideFormatToolbar();
+    var t = ensureFormatToolbar();
+    t.classList.add('md-fmt-toolbar-show');
+    // Measure after making visible so getBoundingClientRect returns real size
+    var tRect = t.getBoundingClientRect();
+    var x = rect.left + rect.width / 2 - tRect.width / 2;
+    var y = rect.top - tRect.height - 8;
+    if (y < 8) y = rect.bottom + 8;  // flip below if no room above
+    x = Math.max(8, Math.min(window.innerWidth - tRect.width - 8, x));
+    t.style.left = Math.round(x) + 'px';
+    t.style.top = Math.round(y) + 'px';
+}
+function hideFormatToolbar() {
+    if (_fmtToolbarEl) _fmtToolbarEl.classList.remove('md-fmt-toolbar-show');
+}
+function applyFormatCommand(cmd) {
+    if (!_activeBlockEdit) return;
+    var sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    if (cmd === 'link') {
+        var url = window.prompt('링크 URL', 'https://');
+        if (!url) return;
+        try { document.execCommand('createLink', false, url); } catch (_) {}
+    } else if (cmd === 'code') {
+        // Wrap in <code> manually — execCommand doesn't cover it
+        var range = sel.getRangeAt(0);
+        var frag = range.extractContents();
+        var codeEl = document.createElement('code');
+        codeEl.appendChild(frag);
+        range.insertNode(codeEl);
+        // Restore selection over the new element
+        var r = document.createRange();
+        r.selectNodeContents(codeEl);
+        sel.removeAllRanges();
+        sel.addRange(r);
+    } else {
+        try { document.execCommand(cmd, false, null); } catch (_) {}
+    }
+    // Refocus editable host
+    var host = _activeBlockEdit.cell || _activeBlockEdit.blockEl;
+    if (host && host.focus) host.focus();
+    setTimeout(updateFormatToolbar, 0);
+}
+
+// Selection listener registered once
+if (typeof document !== 'undefined') {
+    document.addEventListener('selectionchange', function () {
+        if (_activeBlockEdit) updateFormatToolbar();
+        else hideFormatToolbar();
+    });
 }
 
 /* Floating ✓ 완료 + × 취소 button pair that appears while a block or
@@ -484,6 +581,7 @@ function addDoneButton(host) {
     cancelBtn.type = 'button';
     cancelBtn.className = 'md-cancel-btn';
     cancelBtn.dataset.mdChrome = '1';
+    cancelBtn.contentEditable = 'false';
     cancelBtn.setAttribute('aria-label', '취소');
     cancelBtn.textContent = '✕';
     cancelBtn.addEventListener('mousedown', function (e) { e.preventDefault(); });
@@ -497,6 +595,7 @@ function addDoneButton(host) {
     btn.type = 'button';
     btn.className = 'md-done-btn';
     btn.dataset.mdChrome = '1';
+    btn.contentEditable = 'false';
     btn.setAttribute('aria-label', '완료');
     btn.textContent = '✓';
     btn.addEventListener('mousedown', function (e) { e.preventDefault(); });
@@ -766,13 +865,14 @@ function openWysiwygEditor(blockEl, blockIdx, token, trailingBlanks) {
     blockEl.setAttribute('spellcheck', 'true');
     blockEl.focus();
 
-    // Selection placement — headings usually want a full-select so a fresh
-    // typed word replaces them (common Notion-style flow). Longer content
-    // (paragraph / list / blockquote) opens with the cursor at the end so
-    // the user can keep typing.
+    // Selection placement — target the CONTENT element (last real child)
+    // so the cursor lives inside the paragraph/heading/etc., not adjacent
+    // to it. This keeps typed text from later leaking into the sibling
+    // ✓/✕ chrome buttons we're about to append as children of the block.
     try {
         var range = document.createRange();
-        range.selectNodeContents(blockEl);
+        var contentTarget = blockEl.lastElementChild || blockEl;
+        range.selectNodeContents(contentTarget);
         var isHeading = (token && token.type === 'heading') ||
             !!blockEl.querySelector('h1, h2, h3, h4, h5, h6');
         if (!isHeading) range.collapse(false);
@@ -809,6 +909,64 @@ function openWysiwygEditor(blockEl, blockIdx, token, trailingBlanks) {
         blockEl.removeAttribute('spellcheck');
         blockEl.classList.remove('md-block-editing', 'md-block-wysiwyg');
     };
+}
+
+/* Inline markdown shortcuts (v1.0.24) — as the user types inside a
+   contenteditable block, watch the text around the caret and convert
+   common markdown syntax into the corresponding HTML. Runs on the
+   text node the caret sits in so multi-line content isn't affected. */
+var INLINE_MD_RULES = [
+    // Ordered longest-match-first so ** doesn't shadow *
+    { re: /\*\*([^*\n]+)\*\*$/, wrap: 'strong' },
+    { re: /__([^_\n]+)__$/,       wrap: 'strong' },
+    { re: /\*([^*\n]+)\*$/,       wrap: 'em' },
+    { re: /_([^_\n]+)_$/,          wrap: 'em' },
+    { re: /~~([^~\n]+)~~$/,        wrap: 'del' },
+    { re: /`([^`\n]+)`$/,           wrap: 'code' }
+];
+function applyInlineMarkdownShortcuts(host) {
+    var sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return;
+    var range = sel.getRangeAt(0);
+    if (!range.collapsed) return;
+    var node = range.startContainer;
+    if (node.nodeType !== 3 /* TEXT */) return;
+    if (!host.contains(node)) return;
+    var text = node.nodeValue || '';
+    var caret = range.startOffset;
+    var before = text.substring(0, caret);
+    // Only fire on a "confirming" space so that partial patterns like
+    // "*bold*" don't match while the user is still typing "**bold**".
+    var lastChar = before.charAt(before.length - 1);
+    if (lastChar !== ' ' && lastChar !== '\u00A0') return;
+    var trimmed = before.substring(0, before.length - 1);
+    for (var i = 0; i < INLINE_MD_RULES.length; i++) {
+        var rule = INLINE_MD_RULES[i];
+        var m = trimmed.match(rule.re);
+        if (!m) continue;
+        var matchLen = m[0].length + 1;              // includes trailing space
+        var startInNode = caret - matchLen;
+        // Select the entire matched region (marker + text + trailing space)
+        // so execCommand does the DOM edit atomically. The browser then
+        // places the caret at the end of the inserted HTML, which is where
+        // the user expects to keep typing.
+        var selectRange = document.createRange();
+        selectRange.setStart(node, startInNode);
+        selectRange.setEnd(node, caret);
+        sel.removeAllRanges();
+        sel.addRange(selectRange);
+        var htmlText = m[1].replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        var replacement = '<' + rule.wrap + '>' + htmlText + '</' + rule.wrap + '> ';
+        try { document.execCommand('insertHTML', false, replacement); } catch (_) {}
+        // Chromium's execCommand copies inline font styles onto the inserted
+        // wrapper — strip them so the source stays clean when serialized.
+        host.querySelectorAll(rule.wrap + '[style], span[style]').forEach(function (el) {
+            el.removeAttribute('style');
+        });
+        // Any residual empty <span> the browser injected around the caret
+        host.querySelectorAll('span:empty').forEach(function (el) { el.remove(); });
+        return;
+    }
 }
 
 function openRawEditor(blockEl, blockIdx, token, trailingBlanks) {
@@ -856,6 +1014,7 @@ function closeBlockEditor(commit) {
     if (!_activeBlockEdit) return;
     var ed = _activeBlockEdit;
     _activeBlockEdit = null;
+    hideFormatToolbar();
 
     if (!commit) {
         if (ed.teardown) ed.teardown();

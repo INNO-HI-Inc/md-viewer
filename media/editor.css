@@ -3059,3 +3059,61 @@ body.mode-split .markdown-body .md-edit-icon { display: none; }
 body.exporting-pdf .markdown-body .md-edit-icon,
 body.exporting-pdf .markdown-body .md-done-btn,
 body.exporting-pdf .markdown-body .md-cancel-btn { display: none !important; }
+
+/* ══════════════════════════════════════════════════════════════
+   FLOATING FORMAT TOOLBAR (v1.0.24)
+   ══════════════════════════════════════════════════════════════ */
+.md-fmt-toolbar {
+    position: fixed;
+    top: 0; left: 0;
+    display: none;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
+    background: var(--md-bg-elevated, #1a1c22);
+    border: 1px solid var(--md-border, #3a3f4a);
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.24);
+    z-index: 9500;
+    user-select: none;
+    animation: md-fmt-fade 0.1s ease-out;
+}
+.md-fmt-toolbar.md-fmt-toolbar-show { display: inline-flex; }
+.md-fmt-toolbar button {
+    width: 30px;
+    height: 28px;
+    padding: 0;
+    background: transparent;
+    color: #e8e8e8;
+    border: none;
+    border-radius: 5px;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s;
+}
+.md-fmt-toolbar button:hover {
+    background: color-mix(in srgb, var(--md-accent) 60%, transparent);
+}
+.md-fmt-toolbar button:active {
+    background: var(--md-accent);
+}
+@keyframes md-fmt-fade {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0);  }
+}
+
+/* Light theme adjustments */
+body.vscode-light .md-fmt-toolbar {
+    background: #fff;
+    border-color: #d0d7de;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+}
+body.vscode-light .md-fmt-toolbar button { color: #1a1a1a; }
+body.vscode-light .md-fmt-toolbar button:hover {
+    background: color-mix(in srgb, var(--md-accent) 15%, transparent);
+    color: var(--md-accent);
+}
