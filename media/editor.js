@@ -458,7 +458,7 @@ function addEditIcon(host, onClick) {
     btn.title = '수정';
     btn.setAttribute('aria-label', '수정');
     btn.dataset.mdChrome = '1';   // marker so we can strip on save
-    btn.textContent = '✏';
+    btn.textContent = '✎';        // heavier pencil (U+270E) — more visible than ✏
     btn.addEventListener('mousedown', function (e) { e.preventDefault(); });  // don't blur active editor
     btn.addEventListener('click', function (e) {
         e.preventDefault();
@@ -484,7 +484,8 @@ function addDoneButton(host) {
     btn.className = 'md-done-btn';
     btn.dataset.mdChrome = '1';
     btn.setAttribute('aria-label', '완료');
-    btn.textContent = '✓ 완료';
+    btn.title = '완료 (Cmd/Ctrl+Enter)';
+    btn.textContent = '✓';
     // Prevent blur from firing on the editable region when the button is pressed
     btn.addEventListener('mousedown', function (e) { e.preventDefault(); });
     btn.addEventListener('click', function (e) {

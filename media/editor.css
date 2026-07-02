@@ -2906,91 +2906,100 @@ body.exporting-pdf .markdown-body .md-block { background: transparent !important
 /* ══════════════════════════════════════════════════════════════
    EDIT AFFORDANCE ICONS (v1.0.17)
    ══════════════════════════════════════════════════════════════ */
-/* ✏ Pencil button — appears in corner of a block/cell on hover in Preview */
+/* ✎ Pencil button — hidden by default so the reading view stays clean,
+   pops into full accent color on hover of the block or cell. Only ONE
+   is visible at a time (the one under the pointer). */
 .markdown-body .md-edit-icon {
     position: absolute;
     top: 6px;
     right: 8px;
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     padding: 0;
-    background: var(--md-bg-elevated, var(--md-bg, #fff));
-    border: 1px solid var(--md-border, #e5e7eb);
+    background: var(--md-accent);
+    color: #fff;
+    border: 1px solid var(--md-accent);
     border-radius: 6px;
-    color: var(--md-text-muted, #6b7280);
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1;
     cursor: pointer;
     opacity: 0;
-    transform: scale(0.9);
-    transition: opacity 0.12s ease, transform 0.12s ease, background 0.12s ease;
+    transform: scale(0.85);
+    transition: opacity 0.12s ease, transform 0.12s ease, filter 0.12s ease;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--md-accent) 30%, transparent);
     z-index: 5;
     user-select: none;
 }
 body.mode-preview .markdown-body .md-block:hover > .md-edit-icon,
 body.mode-preview .markdown-body th:hover > .md-edit-icon,
 body.mode-preview .markdown-body td:hover > .md-edit-icon,
-.markdown-body .md-edit-icon:hover,
 .markdown-body .md-edit-icon:focus-visible {
     opacity: 1;
     transform: scale(1);
 }
-.markdown-body .md-edit-icon:hover {
-    background: color-mix(in srgb, var(--md-accent) 10%, var(--md-bg));
-    color: var(--md-accent);
-    border-color: var(--md-accent);
-}
+.markdown-body .md-edit-icon:hover { filter: brightness(1.08); transform: scale(1.05); }
+.markdown-body .md-edit-icon:active { filter: brightness(0.94); transform: scale(0.97); }
 
-/* Table cells get a smaller icon in the top-right corner */
+/* Table cells get a slightly smaller pencil so it doesn't crowd narrow cols */
 .markdown-body th > .md-edit-icon,
 .markdown-body td > .md-edit-icon {
-    width: 20px;
-    height: 20px;
-    top: 2px;
-    right: 2px;
-    font-size: 10.5px;
-    border-radius: 4px;
+    width: 22px;
+    height: 22px;
+    top: 3px;
+    right: 3px;
+    font-size: 11.5px;
+    border-radius: 5px;
 }
 
 /* Hide edit icon while a block or cell is actively being edited */
 .markdown-body .md-block-editing .md-edit-icon,
 .markdown-body .md-cell-editing .md-edit-icon { display: none; }
 
-/* ✓ Done button — floats near the active editor */
+/* ✓ Done button — sits in the SAME corner the pencil was, so the user's
+   mouse doesn't have to travel to commit. Uses the accent color so it
+   reads as "finish" without any label ambiguity. */
 .markdown-body .md-done-btn {
     position: absolute;
-    bottom: 6px;
+    top: 6px;
     right: 8px;
-    padding: 4px 12px;
+    padding: 0;
+    width: 28px;
+    height: 28px;
     background: var(--md-accent);
     color: #fff;
     border: 1px solid var(--md-accent);
     border-radius: 6px;
-    font-size: 12.5px;
-    font-weight: 600;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
     cursor: pointer;
-    box-shadow: 0 2px 6px color-mix(in srgb, var(--md-accent) 30%, transparent);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--md-accent) 40%, transparent);
     z-index: 10;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    line-height: 1;
-    transition: filter 0.12s;
+    justify-content: center;
+    transition: filter 0.12s, transform 0.12s;
+    animation: md-done-pop 0.14s ease-out;
 }
-.markdown-body .md-done-btn:hover { filter: brightness(1.08); }
-.markdown-body .md-done-btn:active { filter: brightness(0.95); }
+.markdown-body .md-done-btn:hover { filter: brightness(1.08); transform: scale(1.05); }
+.markdown-body .md-done-btn:active { filter: brightness(0.94); transform: scale(0.97); }
+@keyframes md-done-pop {
+    from { transform: scale(0.7); opacity: 0.4; }
+    to   { transform: scale(1);   opacity: 1; }
+}
 
-/* Cell-level done button — smaller, positioned inside the cell */
+/* In cells, done button matches the smaller pencil size */
 .markdown-body th.md-cell-editing > .md-done-btn,
 .markdown-body td.md-cell-editing > .md-done-btn {
-    bottom: -30px;
-    right: 0;
-    padding: 3px 10px;
-    font-size: 11.5px;
+    top: 3px;
+    right: 3px;
+    width: 22px;
+    height: 22px;
+    font-size: 12px;
+    border-radius: 5px;
 }
 
 /* Edit/Split modes: no hover chrome (Edit already lets you change source) */
