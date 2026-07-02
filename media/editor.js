@@ -900,15 +900,51 @@ function openWysiwygEditor(blockEl, blockIdx, token, trailingBlanks) {
             if (_activeBlockEdit && _activeBlockEdit.blockEl === blockEl) closeBlockEditor(true);
         }, 0);
     };
+    var pasteHandler = function (ev) { handleEditorImageEvent(ev, 'paste'); };
+    var dropHandler = function (ev) { handleEditorImageEvent(ev, 'drop'); };
+    var dragoverHandler = function (ev) { ev.preventDefault(); ev.dataTransfer.dropEffect = 'copy'; };
+
     blockEl.addEventListener('keydown', keyHandler);
     blockEl.addEventListener('blur', blurHandler);
+    blockEl.addEventListener('paste', pasteHandler);
+    blockEl.addEventListener('drop', dropHandler);
+    blockEl.addEventListener('dragover', dragoverHandler);
     _activeBlockEdit.teardown = function () {
         blockEl.removeEventListener('keydown', keyHandler);
         blockEl.removeEventListener('blur', blurHandler);
+        blockEl.removeEventListener('paste', pasteHandler);
+        blockEl.removeEventListener('drop', dropHandler);
+        blockEl.removeEventListener('dragover', dragoverHandler);
         blockEl.removeAttribute('contenteditable');
         blockEl.removeAttribute('spellcheck');
         blockEl.classList.remove('md-block-editing', 'md-block-wysiwyg');
     };
+}
+
+/* Handle drop / paste of image files inside a WYSIWYG editor. Reads the
+   first image, converts to base64 data URL, inserts as <img> at caret. */
+function handleEditorImageEvent(ev, kind) {
+    var dt = kind === 'paste' ? ev.clipboardData : ev.dataTransfer;
+    if (!dt || !dt.items) return;
+    for (var i = 0; i < dt.items.length; i++) {
+        var item = dt.items[i];
+        if (item.type && item.type.indexOf('image/') === 0) {
+            var file = item.getAsFile();
+            if (!file) continue;
+            ev.preventDefault();
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                var dataUrl = e.target.result;
+                try {
+                    document.execCommand('insertHTML', false,
+                        '<img src="' + dataUrl + '" alt="image">');
+                } catch (_) {}
+                showToast('이미지 삽입됨');
+            };
+            reader.readAsDataURL(file);
+            return;
+        }
+    }
 }
 
 /* Inline markdown shortcuts (v1.0.24) — as the user types inside a
@@ -1119,11 +1155,35 @@ function closeBlockEditor(commit) {
         parts.push(i === ed.blockIdx ? newRawWithTrailing : (_currentTokens[i].raw || ''));
     }
     var updated = parts.join('');
+    pushEditHistory(currentContent);
     currentContent = updated;
     if (editorEl) editorEl.value = updated;
     saveToDocument(updated);
     updateStats();
     renderPreview();
+}
+
+/* Inline-edit undo (v1.0.25) — every commit pushes the pre-change content
+   onto a bounded stack. Cmd/Ctrl+Z in Preview mode pops the stack and
+   restores the previous content. */
+var _editHistory = [];
+var _EDIT_HISTORY_LIMIT = 30;
+function pushEditHistory(prev) {
+    if (typeof prev !== 'string') return;
+    _editHistory.push(prev);
+    if (_editHistory.length > _EDIT_HISTORY_LIMIT) _editHistory.shift();
+}
+function undoInlineEdit() {
+    if (_activeBlockEdit) return false;    // ignore while a block is being edited
+    if (!_editHistory.length) return false;
+    var prev = _editHistory.pop();
+    currentContent = prev;
+    if (editorEl) editorEl.value = prev;
+    saveToDocument(prev);
+    updateStats();
+    renderPreview();
+    showToast('편집 되돌림');
+    return true;
 }
 
 /* Wrap wide tables in horizontal scroll container (v1.0.2) */
@@ -2348,6 +2408,10 @@ function setupKeyboardShortcuts() {
             if (currentMode === 'preview') openPreviewSearch();
             else openFindReplace();
             return;
+        }
+        // Cmd/Ctrl+Z in Preview → undo last inline edit
+        if (mod && !e.shiftKey && (e.key === 'z' || e.key === 'Z') && currentMode === 'preview' && !_activeBlockEdit) {
+            if (undoInlineEdit()) { e.preventDefault(); return; }
         }
         if (mod && (e.key === 'h' || e.key === 'H')) { e.preventDefault(); openFindReplace(); return; }
         if (mod && e.key === 'e') {

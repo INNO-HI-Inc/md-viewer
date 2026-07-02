@@ -5,6 +5,13 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며,
 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 형식을 따릅니다.
 
+## [1.0.25] - 2026-07-01
+
+### Added
+
+- **Cmd/Ctrl+Z로 인-라인 편집 되돌리기** — Preview 모드에서 방금 완료한 편집을 실행 취소할 수 있습니다. 최근 30번까지 편집 히스토리를 보관하며 스택으로 pop.
+- **WYSIWYG 편집기 안에 이미지 붙여넣기·드래그·드롭** — 편집 중 스크린샷 붙여넣기(Cmd/Ctrl+V) 또는 파일을 편집 영역에 끌어다 놓으면 base64로 즉시 삽입됩니다.
+
 ## [1.0.24] - 2026-07-01
 
 ### Added
