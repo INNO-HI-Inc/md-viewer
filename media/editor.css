@@ -3002,10 +3002,60 @@ body.mode-preview .markdown-body td:hover > .md-edit-icon,
     border-radius: 5px;
 }
 
+/* ✕ Cancel button — sits immediately to the LEFT of ✓ so they read as
+   a paired decision. Neutral bg + muted text so it's less loud than ✓. */
+.markdown-body .md-cancel-btn {
+    position: absolute;
+    top: 6px;
+    right: 42px;                                  /* 8 + 28 + 6 gap */
+    padding: 0;
+    width: 28px;
+    height: 28px;
+    background: var(--md-bg-elevated, var(--md-bg, #fff));
+    color: var(--md-text-muted, #6b7280);
+    border: 1px solid var(--md-border, #d0d7de);
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    z-index: 10;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s, color 0.12s, transform 0.12s;
+    animation: md-done-pop 0.14s ease-out;
+}
+.markdown-body .md-cancel-btn:hover {
+    background: color-mix(in srgb, currentColor 8%, var(--md-bg));
+    color: var(--md-text);
+    transform: scale(1.05);
+}
+.markdown-body .md-cancel-btn:active { transform: scale(0.97); }
+
+/* In cells, cancel button matches the smaller size */
+.markdown-body th.md-cell-editing > .md-cancel-btn,
+.markdown-body td.md-cell-editing > .md-cancel-btn {
+    top: 3px;
+    right: 30px;                                  /* 3 + 22 + 5 gap */
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+    border-radius: 5px;
+}
+
+/* Saving state — done button flashes to a neutral ⋯ while commit is pending */
+.markdown-body .md-done-btn-saving {
+    background: color-mix(in srgb, var(--md-accent) 55%, transparent);
+    animation: none;
+}
+
 /* Edit/Split modes: no hover chrome (Edit already lets you change source) */
 body.mode-edit .markdown-body .md-edit-icon,
 body.mode-split .markdown-body .md-edit-icon { display: none; }
 
 /* PDF export: strip all chrome */
 body.exporting-pdf .markdown-body .md-edit-icon,
-body.exporting-pdf .markdown-body .md-done-btn { display: none !important; }
+body.exporting-pdf .markdown-body .md-done-btn,
+body.exporting-pdf .markdown-body .md-cancel-btn { display: none !important; }

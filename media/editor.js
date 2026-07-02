@@ -474,25 +474,42 @@ function cleanEditAffordances(root) {
     root.querySelectorAll('[data-md-chrome="1"]').forEach(function (n) { n.remove(); });
 }
 
-/* Floating "✓ 완료" button that appears while a block or cell is being
-   edited. Clicking it commits the same way Cmd/Ctrl+Enter does. */
+/* Floating ✓ 완료 + × 취소 button pair that appears while a block or
+   cell is being edited. Both are in the same top-right corner where the
+   pencil icon lived, so eye/mouse movement stays minimal. */
 function addDoneButton(host) {
     if (!host || host.querySelector(':scope > .md-done-btn')) return;
+
+    var cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'md-cancel-btn';
+    cancelBtn.dataset.mdChrome = '1';
+    cancelBtn.setAttribute('aria-label', '취소');
+    cancelBtn.textContent = '✕';
+    cancelBtn.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    cancelBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeBlockEditor(false);   // discard
+    });
+
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'md-done-btn';
     btn.dataset.mdChrome = '1';
     btn.setAttribute('aria-label', '완료');
-    // Skip the browser title tooltip — it shows a rectangular OS bubble
-    // near the cursor that reads as visual noise when hovering the button.
     btn.textContent = '✓';
-    // Prevent blur from firing on the editable region when the button is pressed
     btn.addEventListener('mousedown', function (e) { e.preventDefault(); });
     btn.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
-        closeBlockEditor(true);
+        // Brief "saving" flash so a large-doc commit doesn't feel silent.
+        btn.classList.add('md-done-btn-saving');
+        btn.textContent = '⋯';
+        setTimeout(function () { closeBlockEditor(true); }, 40);
     });
+
+    host.appendChild(cancelBtn);
     host.appendChild(btn);
 }
 
@@ -549,10 +566,11 @@ function openCellEditor(cell, blockIdx, kind) {
     cell.setAttribute('contenteditable', 'true');
     cell.setAttribute('spellcheck', 'true');
     cell.focus();
+    // Select all cell content so typing replaces the current value —
+    // matches spreadsheet muscle memory.
     try {
         var range = document.createRange();
         range.selectNodeContents(cell);
-        range.collapse(false);
         var sel = window.getSelection();
         sel.removeAllRanges();
         sel.addRange(range);
@@ -578,24 +596,17 @@ function openCellEditor(cell, blockIdx, kind) {
             ev.preventDefault();
             closeBlockEditor(true);
         } else if (ev.key === 'Enter' && !ev.shiftKey) {
-            // Cells don't get multi-line content in markdown — Enter should commit
+            // Enter → commit + move to same column, next row
             ev.preventDefault();
-            closeBlockEditor(true);
+            moveToCellByOffset(blockIdx, kind, isHeader, rowIdx, colIdx, +1, 'row');
+        } else if (ev.key === 'Enter' && ev.shiftKey) {
+            // Shift+Enter → commit + move to same column, previous row
+            ev.preventDefault();
+            moveToCellByOffset(blockIdx, kind, isHeader, rowIdx, colIdx, -1, 'row');
         } else if (ev.key === 'Tab') {
-            // Tab moves to next cell
+            // Tab → move to next cell in row (Shift+Tab → previous)
             ev.preventDefault();
-            var next = ev.shiftKey ? prevCell(cell) : nextCell(cell);
-            closeBlockEditor(true);
-            if (next) {
-                // Re-bind happens after renderPreview; defer to next frame
-                setTimeout(function () {
-                    var newBlock = previewEl && previewEl.querySelector('.md-block[data-block-idx="' + blockIdx + '"]');
-                    if (!newBlock) return;
-                    var newRow = newBlock.querySelectorAll('tr')[isHeader && next.rowIdx === 0 ? 1 : 0];  // simplification
-                    var newCell = newBlock.querySelectorAll(next.isHeader ? 'th' : 'tr td')[next.colIdx];
-                    if (newCell) openCellEditor(newCell, blockIdx);
-                }, 50);
-            }
+            moveToCellByOffset(blockIdx, kind, isHeader, rowIdx, colIdx, ev.shiftKey ? -1 : +1, 'col');
         }
     };
     var blurHandler = function () {
@@ -625,6 +636,63 @@ function prevCell(cell) {
     var row = cell.parentElement;
     if (row.previousElementSibling) return row.previousElementSibling.lastElementChild;
     return null;
+}
+
+/* Find a cell by its structural coordinates in the current preview DOM.
+   Called after commit → re-render so we can hop to the neighbor cell
+   with a fresh reference. */
+function findCellByCoords(blockIdx, isHeader, rowIdx, colIdx) {
+    var block = previewEl && previewEl.querySelector('.md-block[data-block-idx="' + blockIdx + '"]');
+    if (!block) return null;
+    var table = block.querySelector('table');
+    if (!table) return null;
+    if (isHeader) {
+        var thead = table.querySelector('thead');
+        var hrow = thead ? thead.querySelector('tr') : table.querySelector('tr');
+        return hrow ? hrow.children[colIdx] : null;
+    }
+    var section = table.querySelector('tbody') || table;
+    var rows = Array.from(section.children).filter(function (n) { return n.tagName === 'TR'; });
+    var row = rows[rowIdx];
+    return row ? row.children[colIdx] : null;
+}
+
+/* Commit the current cell edit and hop to a neighbor. `axis` is 'row'
+   (Enter / Shift+Enter) or 'col' (Tab / Shift+Tab). `delta` is ±1. */
+function moveToCellByOffset(blockIdx, kind, isHeader, rowIdx, colIdx, delta, axis) {
+    var destIsHeader = isHeader;
+    var destRow = rowIdx;
+    var destCol = colIdx;
+    if (axis === 'row') {
+        if (isHeader) {
+            if (delta > 0) { destIsHeader = false; destRow = 0; }
+            else { destIsHeader = true; destRow = -1; }  // no-op above header
+        } else {
+            destRow = rowIdx + delta;
+            if (destRow < 0) { destIsHeader = true; destRow = -1; }
+        }
+    } else {
+        destCol = colIdx + delta;
+        if (destCol < 0) {
+            // Wrap to end of previous row
+            if (isHeader) return;                   // no row above
+            destCol = 999; destRow = rowIdx - 1;
+            if (destRow < 0) { destIsHeader = true; destRow = -1; }
+        }
+    }
+    closeBlockEditor(true);
+    // renderPreview runs synchronously inside closeBlockEditor, so the fresh
+    // DOM is already in place — one microtask is enough to let commit-side
+    // effects settle before we open the next cell.
+    setTimeout(function () {
+        var next = findCellByCoords(blockIdx, destIsHeader, destRow, destCol);
+        if (!next && axis === 'col' && destCol > 0) {
+            // Wrapping past end of row → try first cell of next row
+            var trialRow = destRow + 1;
+            next = findCellByCoords(blockIdx, false, trialRow, 0);
+        }
+        if (next) openCellEditor(next, blockIdx, kind);
+    }, 20);
 }
 
 function alignToDelim(a) {
@@ -698,11 +766,16 @@ function openWysiwygEditor(blockEl, blockIdx, token, trailingBlanks) {
     blockEl.setAttribute('spellcheck', 'true');
     blockEl.focus();
 
-    // Place cursor at end of block
+    // Selection placement — headings usually want a full-select so a fresh
+    // typed word replaces them (common Notion-style flow). Longer content
+    // (paragraph / list / blockquote) opens with the cursor at the end so
+    // the user can keep typing.
     try {
         var range = document.createRange();
         range.selectNodeContents(blockEl);
-        range.collapse(false);
+        var isHeading = (token && token.type === 'heading') ||
+            !!blockEl.querySelector('h1, h2, h3, h4, h5, h6');
+        if (!isHeading) range.collapse(false);
         var sel = window.getSelection();
         sel.removeAllRanges();
         sel.addRange(range);
