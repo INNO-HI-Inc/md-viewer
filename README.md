@@ -85,6 +85,7 @@ LaTeX math · Mermaid · clipboard image paste · auto TOC · Korean-first typog
 - Double-click to toggle
 - Smart list continuation
 - Slash commands (`/h1`, `/quote`, …)
+- Notion-style block editing — ＋ insert · ⠿ drag/menu · ✎ in-place WYSIWYG
 - Find & Replace · In-preview search
 - Smart URL paste → markdown link
 - Clipboard image → base64 paste
@@ -199,7 +200,7 @@ Render Mermaid diagrams from ` ```mermaid ` code blocks. The 3.3 MB library is l
 <details>
 <summary><b>📑 Outline sidebar + auto TOC</b></summary>
 
-H1–H4 automatically extracted into a navigable tree. Insert `<div class="md-toc"><div class="md-toc-title">목차 / Table of Contents</div><ul><li class="md-toc-level-2"><a href="#heading--features">✨ Features</a></li><li class="md-toc-level-3"><a href="#heading--beautiful-by-default">🎨 Beautiful by default</a></li><li class="md-toc-level-3"><a href="#heading--write-fluently">✍️ Write fluently</a></li><li class="md-toc-level-3"><a href="#heading--ship-anywhere">📤 Ship anywhere</a></li><li class="md-toc-level-2"><a href="#heading--themes">🎨 Themes</a></li><li class="md-toc-level-2"><a href="#heading--highlights">🚀 Highlights</a></li><li class="md-toc-level-2"><a href="#heading--keyboard-shortcuts">⌨️ Keyboard Shortcuts</a></li><li class="md-toc-level-2"><a href="#heading--installation">📦 Installation</a></li><li class="md-toc-level-2"><a href="#heading--settings">⚙️ Settings</a></li><li class="md-toc-level-2"><a href="#heading--security">🔒 Security</a></li><li class="md-toc-level-2"><a href="#heading--requirements">📋 Requirements</a></li><li class="md-toc-level-2"><a href="#heading--bundled-open-source">📦 Bundled Open Source</a></li><li class="md-toc-level-2"><a href="#heading--contributing">🤝 Contributing</a></li><li class="md-toc-level-2"><a href="#heading--license">📄 License</a></li><li class="md-toc-level-2"><a href="#heading--한국어">🇰🇷 한국어</a></li><li class="md-toc-level-3"><a href="#heading--기본부터-예쁘게">🎨 기본부터 예쁘게</a></li><li class="md-toc-level-3"><a href="#heading--빠르게-쓰기">✍️ 빠르게 쓰기</a></li><li class="md-toc-level-3"><a href="#heading--어디든-내보내기">📤 어디든 내보내기</a></li><li class="md-toc-level-3"><a href="#heading--v102-새-기능">🚀 v1.0.2 새 기능</a></li><li class="md-toc-level-3"><a href="#heading--설치">📦 설치</a></li><li class="md-toc-level-3"><a href="#heading--설정">⚙️ 설정</a></li><li class="md-toc-level-3"><a href="#heading--단축키">⌨️ 단축키</a></li></ul></div>` or `<div class="md-toc"><div class="md-toc-title">목차 / Table of Contents</div><ul><li class="md-toc-level-2"><a href="#heading--features">✨ Features</a></li><li class="md-toc-level-3"><a href="#heading--beautiful-by-default">🎨 Beautiful by default</a></li><li class="md-toc-level-3"><a href="#heading--write-fluently">✍️ Write fluently</a></li><li class="md-toc-level-3"><a href="#heading--ship-anywhere">📤 Ship anywhere</a></li><li class="md-toc-level-2"><a href="#heading--themes">🎨 Themes</a></li><li class="md-toc-level-2"><a href="#heading--highlights">🚀 Highlights</a></li><li class="md-toc-level-2"><a href="#heading--keyboard-shortcuts">⌨️ Keyboard Shortcuts</a></li><li class="md-toc-level-2"><a href="#heading--installation">📦 Installation</a></li><li class="md-toc-level-2"><a href="#heading--settings">⚙️ Settings</a></li><li class="md-toc-level-2"><a href="#heading--security">🔒 Security</a></li><li class="md-toc-level-2"><a href="#heading--requirements">📋 Requirements</a></li><li class="md-toc-level-2"><a href="#heading--bundled-open-source">📦 Bundled Open Source</a></li><li class="md-toc-level-2"><a href="#heading--contributing">🤝 Contributing</a></li><li class="md-toc-level-2"><a href="#heading--license">📄 License</a></li><li class="md-toc-level-2"><a href="#heading--한국어">🇰🇷 한국어</a></li><li class="md-toc-level-3"><a href="#heading--기본부터-예쁘게">🎨 기본부터 예쁘게</a></li><li class="md-toc-level-3"><a href="#heading--빠르게-쓰기">✍️ 빠르게 쓰기</a></li><li class="md-toc-level-3"><a href="#heading--어디든-내보내기">📤 어디든 내보내기</a></li><li class="md-toc-level-3"><a href="#heading--v102-새-기능">🚀 v1.0.2 새 기능</a></li><li class="md-toc-level-3"><a href="#heading--설치">📦 설치</a></li><li class="md-toc-level-3"><a href="#heading--설정">⚙️ 설정</a></li><li class="md-toc-level-3"><a href="#heading--단축키">⌨️ 단축키</a></li></ul></div>` anywhere to embed a table of contents in the document body.
+H1–H4 automatically extracted into a navigable tree. Insert `[[TOC]]` or `[[목차]]` anywhere to embed a table of contents in the document body.
 
 </details>
 
@@ -346,6 +347,7 @@ Full license texts in [NOTICE.md](NOTICE.md).
 - 더블클릭으로 즉시 토글
 - 리스트 자동 이어쓰기
 - 슬래시 명령 (`/h1`, `/quote`, …)
+- 노션처럼 블록 편집 — ＋ 삽입 · ⠿ 드래그/메뉴 · ✎ 제자리 편집
 - 찾기·바꾸기 + 프리뷰 내 검색
 - 스마트 URL 붙여넣기 → 마크다운 링크
 - 스크린샷 붙여넣기 → base64 변환

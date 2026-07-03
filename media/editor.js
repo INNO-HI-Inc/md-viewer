@@ -116,9 +116,9 @@ function sanitizeElement(el) {
         del: true, details: true, div: true, dl: true, dt: true, em: true,
         h1: true, h2: true, h3: true, h4: true, h5: true, h6: true,
         hr: true, img: true, input: true, kbd: true, li: true, ol: true,
-        p: true, pre: true, s: true, span: true, strong: true, sub: true,
-        summary: true, sup: true, table: true, tbody: true, td: true,
-        th: true, thead: true, tr: true, ul: true
+        p: true, pre: true, s: true, section: true, span: true, strong: true,
+        sub: true, summary: true, sup: true, table: true, tbody: true,
+        td: true, th: true, thead: true, tr: true, ul: true
     };
     if (!allowedTags[tag]) {
         if (dropWithContent[tag]) { el.remove(); return; }
@@ -199,49 +199,201 @@ var _currentTokens = null;
    div's breaks the HTML structure. */
 var _voidTags = /^(br|hr|img|input|meta|link|area|base|col|embed|source|track|wbr)$/i;
 function htmlTagDelta(raw) {
+    // Code content renders literally — fenced blocks and inline code spans
+    // must not affect the tag balance. Strip them before counting.
+    var s = String(raw || '')
+        .replace(/```[\s\S]*?(?:```|$)|~~~[\s\S]*?(?:~~~|$)/g, '')
+        .replace(/`[^`\n]*`/g, '');
     var opens = 0, closes = 0;
-    var re = /<(\/?)([a-zA-Z][a-zA-Z0-9]*)\b[^>]*?(\/?)>/g;
+    var re = /<(\/?)([a-zA-Z][a-zA-Z0-9]*)([^>]*?)(\/?)>/g;
     var m;
-    while ((m = re.exec(raw))) {
-        if (m[3] === '/') continue;                 // self-closing
+    while ((m = re.exec(s))) {
+        if (m[4] === '/') continue;                 // self-closing
         if (_voidTags.test(m[2])) continue;         // void element
+        var after = m[3].charAt(0);
+        if (after === ':' || after === '@') continue; // <https://…> autolink / <a@b> email, not a tag
         if (m[1] === '/') closes++; else opens++;
     }
     return opens - closes;
 }
 
+/* Units group the raw token list into structural blocks:
+     kind 'block'          — one ordinary token
+     kind 'admonition'     — ":::type … :::" spanning one or more tokens,
+                             rendered as a single admonition box
+     kind 'html-container' — an html token that opens tags it doesn't close
+                             (e.g. "<table><tr><td>") plus every following
+                             token until the structure closes. Tokens inside
+                             must never be individually wrapped with .md-block
+                             — that would interleave block divs inside
+                             <td>/<tr> and browsers would rewrite the DOM.
+   Both the renderer and every structural operation (insert/move/delete/
+   duplicate) work in unit space, so multi-token constructs move as one. */
+function admonitionSpanAt(tokens, i) {
+    var t = tokens[i];
+    if (!t || !t.raw) return 0;
+    if (t.type !== 'paragraph' && t.type !== 'text') return 0;
+    if (!/^:::\w+/.test(t.raw)) return 0;
+    // Closing ::: on a later line of this same token?
+    var body = t.raw.replace(/^[^\n]*\n?/, '');
+    if (/^:::[ \t]*$/m.test(body)) return 1;
+    for (var j = i + 1; j < tokens.length; j++) {
+        if (tokens[j].type === 'code') continue;   // fences may contain ::: lines
+        if (/^:::[ \t]*$/m.test(tokens[j].raw || '')) return j - i + 1;
+    }
+    return 0;   // unclosed — not an admonition
+}
+
+function computeBlockUnits(tokens) {
+    tokens = tokens || _currentTokens || [];
+    var units = [];
+    var htmlDepth = 0;
+    var i = 0;
+    while (i < tokens.length) {
+        if (htmlDepth > 0 && units.length) {
+            var last = units[units.length - 1];
+            last.span++;
+            htmlDepth += tokenTagDelta(tokens[i]);
+            if (htmlDepth < 0) htmlDepth = 0;
+            i++;
+            continue;
+        }
+        var admSpan = admonitionSpanAt(tokens, i);
+        if (admSpan > 0) {
+            for (var k = i; k < i + admSpan; k++) htmlDepth += tokenTagDelta(tokens[k]);
+            if (htmlDepth < 0) htmlDepth = 0;
+            units.push({ start: i, span: admSpan, kind: 'admonition' });
+            i += admSpan;
+            continue;
+        }
+        var d = tokenTagDelta(tokens[i]);
+        units.push({ start: i, span: 1, kind: d > 0 ? 'html-container' : 'block' });
+        htmlDepth += d;
+        if (htmlDepth < 0) htmlDepth = 0;
+        i++;
+    }
+    return units;
+}
+
+/* Fenced code tokens never open/close real HTML structure. */
+function tokenTagDelta(t) {
+    if (!t || t.type === 'code') return 0;
+    return htmlTagDelta(t.raw || '');
+}
+
+function unitIndexOf(units, tokenIdx) {
+    for (var i = 0; i < units.length; i++) {
+        if (tokenIdx >= units[i].start && tokenIdx < units[i].start + units[i].span) return i;
+    }
+    return -1;
+}
+
+function joinTokenRaws(tokens, start, span) {
+    var out = '';
+    for (var i = start; i < start + span && i < tokens.length; i++) out += tokens[i].raw || '';
+    return out;
+}
+
+/* marked's lexer swallows some constructs without emitting a token —
+   reference-link definitions ("[id]: url") register into tokens.links and
+   simply vanish from the token list. Since every commit rebuilds the file
+   by joining token raws, that text would be silently DELETED. Walk the
+   source alongside the token raws and re-insert any skipped segment as an
+   inert space token so join(raws) === source always holds. */
+function lexPreservingSource(text) {
+    // marked normalizes \r\n → \n before tokenizing; align with that so
+    // raw offsets match (a pre-existing property: edits save LF).
+    var src = String(text).replace(/\r\n|\r/g, '\n');
+    var tokens = marked.lexer(src);
+    var out = [];
+    var pos = 0;
+    for (var i = 0; i < tokens.length; i++) {
+        var raw = tokens[i].raw || '';
+        var at = raw ? src.indexOf(raw, pos) : pos;
+        if (at < 0) return tokens;   // unexpected mismatch — don't guess
+        if (at > pos) out.push({ type: 'space', raw: src.slice(pos, at) });
+        out.push(tokens[i]);
+        pos = at + raw.length;
+    }
+    if (pos < src.length) out.push({ type: 'space', raw: src.slice(pos) });
+    return out;
+}
+
 function renderMarkdown(text) {
-    var tokens = marked.lexer(text);
+    var tokens = lexPreservingSource(text);
     _currentTokens = tokens;
+    var fns = collectFootnotes(tokens);
+    var tocHtml = null;
+    function getTocHtml() {
+        if (tocHtml === null) tocHtml = buildTocHtml(tokens);
+        return tocHtml;
+    }
     // Editable blocks that can be individually wrapped.
     var EDITABLE_TYPES = {
         heading: 1, paragraph: 1, blockquote: 1, list: 1, code: 1, hr: 1, table: 1, html: 1
     };
     var parts = [];
-    // Track running HTML tag balance across tokens. If a preceding html
-    // token opens tags without closing them (e.g. "<table><tr><td>"),
-    // subsequent tokens are structurally inside that container and must
-    // not be individually wrapped with our .md-block div — that would
-    // interleave block elements inside <td>/<tr> and browsers would
-    // rewrite the structure or leak our wrappers into the source on save.
-    var htmlDepth = 0;
-    for (var i = 0; i < tokens.length; i++) {
-        var token = tokens[i];
-        var depthBefore = htmlDepth;
-        htmlDepth += htmlTagDelta(token.raw || '');
+    var units = computeBlockUnits(tokens);
+    units.forEach(function (u) {
+        var token = tokens[u.start];
+
+        if (u.kind === 'admonition') {
+            // Rendered from the pristine raws each time — the token raws
+            // (and therefore the saved source) keep the ::: syntax.
+            var groupRaw = joinTokenRaws(tokens, u.start, u.span);
+            var groupHtml;
+            try { groupHtml = marked.parser(marked.lexer(admonitionToHtml(groupRaw))); }
+            catch (_) { groupHtml = ''; }
+            groupHtml = renderFootnoteRefs(groupHtml, fns);
+            parts.push('<div class="md-block" data-block-idx="' + u.start +
+                '" data-block-span="' + u.span + '">' + groupHtml + '</div>');
+            return;
+        }
+
+        if (u.kind === 'html-container') {
+            for (var k = u.start; k < u.start + u.span; k++) {
+                try { parts.push(marked.parser([tokens[k]])); } catch (_) {}
+            }
+            return;
+        }
 
         var blockHtml;
         try { blockHtml = marked.parser([token]); }
         catch (_) { blockHtml = ''; }
 
-        // Only wrap when we're at top level (depthBefore === 0) AND this
-        // token doesn't itself leave us inside an open structure.
-        if (EDITABLE_TYPES[token.type] && depthBefore === 0 && htmlDepth <= 0) {
-            parts.push('<div class="md-block" data-block-idx="' + i + '">' + blockHtml + '</div>');
+        if (fns && fns.defTokens[u.start] != null) {
+            // A token made entirely of "[^id]: …" definitions renders as the
+            // footnote list (first such token) or disappears — its raw keeps
+            // the definition syntax for the saved source.
+            blockHtml = fns.defTokens[u.start] ? renderFootnoteSection(fns) : '';
+        } else if (token.type !== 'code') {
+            blockHtml = renderFootnoteRefs(blockHtml, fns);
+            if (/\[\[(TOC|목차)\]\]/i.test(blockHtml)) {
+                // A headingless doc renders an empty (but .md-toc-classed)
+                // shell — never '' — so the block stays visible/attributable
+                // and WYSIWYG falls back to the raw editor instead of
+                // committing '' over the [[TOC]] marker.
+                var tocOut = getTocHtml() ||
+                    '<div class="md-toc md-toc-empty"><div class="md-toc-title">목차 / Table of Contents</div></div>';
+                if (token.type === 'paragraph' && /^\[\[(TOC|목차)\]\]$/i.test((token.raw || '').trim())) {
+                    blockHtml = tocOut;   // standalone marker → replace whole <p>
+                } else {
+                    blockHtml = replaceInRenderedText(blockHtml, function (text) {
+                        return text.replace(/\[\[(TOC|목차)\]\]/gi, tocOut);
+                    });
+                }
+            }
+        }
+
+        if (EDITABLE_TYPES[token.type]) {
+            parts.push('<div class="md-block" data-block-idx="' + u.start + '">' + blockHtml + '</div>');
         } else {
             parts.push(blockHtml);
         }
-    }
+    });
+    // Referenced footnotes whose definitions never formed a standalone token
+    // still need a list to link to.
+    if (fns && fns.order.length && !fns.hasSection) parts.push(renderFootnoteSection(fns));
     return sanitizeHtml(parts.join(''));
 }
 
@@ -420,12 +572,23 @@ function getTurndown() {
 
 function bindBlockEditing(container) {
     if (!container) return;
+    bindBlockDnD();
     container.querySelectorAll('.md-block').forEach(function (blockEl) {
         if (blockEl.dataset.editBound === '1') return;
         blockEl.dataset.editBound = '1';
 
         var blockIdx = parseInt(blockEl.dataset.blockIdx, 10);
         var token = _currentTokens && _currentTokens[blockIdx];
+        var isTable = !!(token && (token.type === 'table' ||
+            (token.type === 'html' && blockEl.querySelector('table'))));
+
+        // Every block gets the left-gutter handles: ＋ (insert below),
+        // ⠿ (menu / drag to reorder) and — for non-table blocks — the
+        // ✎ block editor. Keeping the pencil in the gutter means no
+        // floating chrome ever covers the block's own content. Tables
+        // skip ✎ (they edit per-cell) but keep move/delete.
+        addBlockHandles(blockEl, blockIdx,
+            isTable ? null : function () { openBlockEditor(blockEl); });
 
         // Tables get cell-level WYSIWYG editing — preserves the table
         // structure and only swaps the touched cell. Two flavors:
@@ -439,12 +602,575 @@ function bindBlockEditing(container) {
             bindTableCellEditing(blockEl, blockIdx, token, 'html');
             return;
         }
-
-        // ✏ pencil icon in the top-right corner on hover — the only way to
-        // open the inline editor. (Double-click no longer opens editing; it
-        // still bubbles up to the preview pane's Preview↔Edit mode toggle.)
-        addEditIcon(blockEl, function () { openBlockEditor(blockEl); });
     });
+}
+
+/* ───────────────────────────────────────────
+   Block structure editing (v1.0.26)
+   ＋ insert · ⠿ drag/menu · WYSIWYG slash
+   ─────────────────────────────────────────── */
+
+// Block templates shared by the ＋ insert menu and the WYSIWYG slash menu.
+var INSERT_BLOCKS = [
+    { key: 'text',   label: '텍스트',       raw: '내용' },
+    { key: 'h1',     label: '제목 1',       raw: '# 제목' },
+    { key: 'h2',     label: '제목 2',       raw: '## 제목' },
+    { key: 'h3',     label: '제목 3',       raw: '### 제목' },
+    { key: 'bullet', label: '리스트',       raw: '- 항목' },
+    { key: 'number', label: '번호 리스트',  raw: '1. 항목' },
+    { key: 'check',  label: '체크박스',     raw: '- [ ] 할 일' },
+    { key: 'quote',  label: '인용',         raw: '> 인용문' },
+    { key: 'code',   label: '코드 블록',    raw: '```\ncode\n```' },
+    { key: 'table',  label: '표',           raw: '| 제목 | 제목 |\n| --- | --- |\n| 내용 | 내용 |' },
+    { key: 'hr',     label: '구분선',       raw: '---' }
+];
+
+/* Rebuild currentContent from a mutated raw-array, push undo history,
+   persist, and re-render. All structural operations funnel through here. */
+function applyRawsUpdate(raws) {
+    var kept = [];
+    raws.forEach(function (r) {
+        if (r == null) return;
+        // A whitespace-only separator right after a raw we normalized to
+        // end in \n\n is redundant — dropping it stops blank lines from
+        // accumulating on every structural operation. (ASCII whitespace
+        // only: U+00A0 spacer paragraphs are content.)
+        if (/^[ \t\r\n]+$/.test(r) && kept.length && /\n\n$/.test(kept[kept.length - 1])) return;
+        kept.push(r);
+    });
+    // Leading blank lines at file start carry no meaning in markdown but
+    // accumulate when the first block is moved away — trim them. Same for
+    // extra trailing newlines a moved/deleted block leaves at EOF.
+    var updated = kept.join('').replace(/^\n+/, '').replace(/\n+$/, '\n');
+    if (updated === '\n') updated = '';
+    if (updated === currentContent) { renderPreview(); return; }
+    pushEditHistory(currentContent);
+    currentContent = updated;
+    if (editorEl) editorEl.value = updated;
+    saveToDocument(updated);
+    updateStats();
+    renderPreview();
+}
+
+function currentRaws() {
+    return (_currentTokens || []).map(function (t) { return t.raw || ''; });
+}
+function ensureBlockSep(s) {
+    return String(s == null ? '' : s).replace(/\n*$/, '') + '\n\n';
+}
+
+/* Per-unit raw strings for the current token list. Structural operations
+   mutate this array (units move as one) and hand it to applyRawsUpdate. */
+function unitRawsOf(units, raws) {
+    return units.map(function (u) {
+        return raws.slice(u.start, u.start + u.span).join('');
+    });
+}
+/* ASCII whitespace only — a paragraph made of U+00A0 spacer lines is real
+   content, not a separator, and must never be skipped or dropped. */
+function isBlankUnitRaw(r) { return /^[ \t\r\n]*$/.test(r || ''); }
+
+/* Structural ops capture their blockIdx when the handles are bound, but
+   committing a still-open editor re-lexes the document and can shift every
+   index — acting on the bound index then corrupts the wrong block. Commit
+   first, then re-locate the same block in the fresh token list. Returns -1
+   when it can no longer be found (caller must abort). */
+function resolveIdxAfterCommit(blockIdx) {
+    if (!_currentTokens || !_currentTokens[blockIdx]) return -1;
+    if (!_activeBlockEdit) return blockIdx;
+    var editIdx = _activeBlockEdit.blockIdx;
+    var targetRaw = _currentTokens[blockIdx].raw || '';
+    var oldLen = _currentTokens.length;
+    closeBlockEditor(true);
+    var toks = _currentTokens || [];
+    if (blockIdx === editIdx) {
+        // The edited block keeps its starting index (earlier tokens are untouched)
+        return toks[blockIdx] ? blockIdx : -1;
+    }
+    if (blockIdx < editIdx && toks[blockIdx] && (toks[blockIdx].raw || '') === targetRaw) {
+        return blockIdx;
+    }
+    // Tokens after the edited block shift uniformly by the commit's token
+    // delta — anchor the search there so duplicate-raw documents resolve
+    // to the RIGHT copy, not merely the nearest one.
+    var expected = blockIdx > editIdx ? blockIdx + (toks.length - oldLen) : blockIdx;
+    var best = -1, bestDist = Infinity;
+    for (var i = 0; i < toks.length; i++) {
+        if ((toks[i].raw || '') === targetRaw) {
+            var d = Math.abs(i - expected);
+            if (d < bestDist) { best = i; bestDist = d; }
+        }
+    }
+    return best;
+}
+
+function addBlockHandles(blockEl, blockIdx, onEdit) {
+    if (!blockEl || blockEl.querySelector(':scope > .md-block-handles')) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'md-block-handles';
+    wrap.dataset.mdChrome = '1';
+    wrap.contentEditable = 'false';
+
+    var addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'md-handle-add';
+    addBtn.setAttribute('aria-label', '아래에 블록 추가');
+    addBtn.textContent = '＋';
+    addBtn.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    addBtn.addEventListener('click', function (e) {
+        e.preventDefault(); e.stopPropagation();
+        openBlockPopup('insert', blockIdx, addBtn);
+    });
+
+    var dragBtn = document.createElement('button');
+    dragBtn.type = 'button';
+    dragBtn.className = 'md-handle-drag';
+    dragBtn.setAttribute('aria-label', '블록 메뉴 · 드래그로 이동');
+    dragBtn.textContent = '⠿';
+    dragBtn.draggable = true;
+    dragBtn.addEventListener('click', function (e) {
+        e.preventDefault(); e.stopPropagation();
+        openBlockPopup('menu', blockIdx, dragBtn);
+    });
+    dragBtn.addEventListener('dragstart', function (e) { onBlockDragStart(e, blockEl, blockIdx); });
+    dragBtn.addEventListener('dragend', onBlockDragEnd);
+
+    wrap.appendChild(addBtn);
+    wrap.appendChild(dragBtn);
+
+    if (onEdit) {
+        var editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'md-handle-edit';
+        editBtn.setAttribute('aria-label', '블록 편집');
+        editBtn.textContent = '✎';
+        editBtn.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        editBtn.addEventListener('click', function (e) {
+            e.preventDefault(); e.stopPropagation();
+            onEdit();
+        });
+        wrap.appendChild(editBtn);
+    }
+
+    blockEl.appendChild(wrap);
+}
+
+/* Singleton popup used for both the insert menu (＋) and the block menu (⠿). */
+var _blockPopupEl = null;
+function closeBlockPopup() {
+    if (_blockPopupEl && _blockPopupEl.parentNode) _blockPopupEl.parentNode.removeChild(_blockPopupEl);
+    _blockPopupEl = null;
+    document.removeEventListener('mousedown', _blockPopupOutside, true);
+}
+function _blockPopupOutside(e) {
+    if (_blockPopupEl && !_blockPopupEl.contains(e.target)) closeBlockPopup();
+}
+function openBlockPopup(kind, blockIdx, anchorEl) {
+    closeBlockPopup();
+    var p = document.createElement('div');
+    p.className = 'md-block-popup';
+    p.dataset.mdChrome = '1';
+
+    if (kind === 'insert') {
+        INSERT_BLOCKS.forEach(function (item) {
+            var el = document.createElement('button');
+            el.type = 'button';
+            el.className = 'md-popup-item';
+            el.textContent = item.label;
+            el.addEventListener('mousedown', function (e) { e.preventDefault(); });
+            el.addEventListener('click', function () {
+                closeBlockPopup();
+                insertBlockAfter(blockIdx, item.raw);
+            });
+            p.appendChild(el);
+        });
+    } else {
+        var ACTIONS = [
+            { key: 'up',     label: '↑ 위로 이동',   fn: function () { moveBlockStep(blockIdx, -1); } },
+            { key: 'down',   label: '↓ 아래로 이동', fn: function () { moveBlockStep(blockIdx, +1); } },
+            { key: 'dup',    label: '⧉ 복제',        fn: function () { duplicateBlock(blockIdx); } },
+            { key: 'delete', label: '🗑 삭제',        fn: function () { deleteBlock(blockIdx); }, danger: true }
+        ];
+        ACTIONS.forEach(function (item) {
+            var el = document.createElement('button');
+            el.type = 'button';
+            el.className = 'md-popup-item' + (item.danger ? ' md-popup-danger' : '');
+            el.textContent = item.label;
+            el.addEventListener('mousedown', function (e) { e.preventDefault(); });
+            el.addEventListener('click', function () {
+                closeBlockPopup();
+                item.fn();
+            });
+            p.appendChild(el);
+        });
+    }
+
+    document.body.appendChild(p);
+    _blockPopupEl = p;
+    // Position next to the anchor button, clamped to the viewport
+    var r = anchorEl.getBoundingClientRect();
+    var pr = p.getBoundingClientRect();
+    var x = Math.max(8, Math.min(window.innerWidth - pr.width - 8, r.left));
+    var y = r.bottom + 4;
+    if (y + pr.height > window.innerHeight - 8) y = r.top - pr.height - 4;
+    p.style.left = Math.round(x) + 'px';
+    p.style.top = Math.round(y) + 'px';
+    setTimeout(function () {
+        document.addEventListener('mousedown', _blockPopupOutside, true);
+    }, 0);
+}
+
+function insertBlockAfter(blockIdx, rawTemplate) {
+    blockIdx = resolveIdxAfterCommit(blockIdx);
+    if (blockIdx < 0) { showToast('문서가 바뀌어 블록을 찾지 못했습니다'); return; }
+    var units = computeBlockUnits(_currentTokens);
+    var ui = unitIndexOf(units, blockIdx);
+    if (ui < 0) return;
+    var uraws = unitRawsOf(units, currentRaws());
+    uraws[ui] = ensureBlockSep(uraws[ui]);
+    uraws.splice(ui + 1, 0, ensureBlockSep(rawTemplate));
+    applyRawsUpdate(uraws);
+    // Open the editor on the freshly inserted block so the user can type
+    // immediately. Match on the trimmed raw — marked keeps trailing blank
+    // lines in separate space tokens, so an exact-raw match never fires.
+    var want = String(rawTemplate).replace(/\n+$/, '');
+    var gen = _externalGen;
+    setTimeout(function () {
+        if (gen !== _externalGen) return;   // document replaced externally
+        if (!_currentTokens) return;
+        for (var i = blockIdx; i < _currentTokens.length; i++) {
+            if ((_currentTokens[i].raw || '').replace(/\n+$/, '') !== want) continue;
+            var t = _currentTokens[i];
+            if (t.type === 'table' || t.type === 'code' || t.type === 'hr') return;
+            var nb = previewEl && previewEl.querySelector('.md-block[data-block-idx="' + i + '"]');
+            if (nb) openBlockEditor(nb);
+            return;
+        }
+    }, 40);
+}
+
+function moveBlockStep(blockIdx, dir) {
+    blockIdx = resolveIdxAfterCommit(blockIdx);
+    if (blockIdx < 0) { showToast('문서가 바뀌어 블록을 찾지 못했습니다'); return; }
+    var units = computeBlockUnits(_currentTokens);
+    var ui = unitIndexOf(units, blockIdx);
+    if (ui < 0) return;
+    var uraws = unitRawsOf(units, currentRaws());
+    var uj = ui + dir;
+    while (uj >= 0 && uj < uraws.length && isBlankUnitRaw(uraws[uj])) uj += dir;
+    if (uj < 0 || uj >= uraws.length) {
+        showToast(dir < 0 ? '맨 위 블록입니다' : '맨 아래 블록입니다');
+        return;
+    }
+    var a = ensureBlockSep(uraws[ui]);
+    uraws[ui] = ensureBlockSep(uraws[uj]);
+    uraws[uj] = a;
+    // The block above the swapped pair may end without a blank line (marked
+    // lets headings/fences interrupt a paragraph) — keep it separated from
+    // whatever now sits below it, or the two would re-lex as one paragraph.
+    var first = Math.min(ui, uj);
+    if (first > 0 && !/\n\n$/.test(uraws[first - 1])) {
+        uraws[first - 1] = ensureBlockSep(uraws[first - 1]);
+    }
+    applyRawsUpdate(uraws);
+}
+
+function duplicateBlock(blockIdx) {
+    blockIdx = resolveIdxAfterCommit(blockIdx);
+    if (blockIdx < 0) { showToast('문서가 바뀌어 블록을 찾지 못했습니다'); return; }
+    var units = computeBlockUnits(_currentTokens);
+    var ui = unitIndexOf(units, blockIdx);
+    if (ui < 0) return;
+    var uraws = unitRawsOf(units, currentRaws());
+    var norm = ensureBlockSep(uraws[ui]);
+    uraws[ui] = norm;
+    uraws.splice(ui + 1, 0, norm);
+    applyRawsUpdate(uraws);
+    showToast('블록 복제됨');
+}
+
+function deleteBlock(blockIdx) {
+    blockIdx = resolveIdxAfterCommit(blockIdx);
+    if (blockIdx < 0) { showToast('문서가 바뀌어 블록을 찾지 못했습니다'); return; }
+    var units = computeBlockUnits(_currentTokens);
+    var ui = unitIndexOf(units, blockIdx);
+    if (ui < 0) return;
+    var uraws = unitRawsOf(units, currentRaws());
+    uraws.splice(ui, 1);
+    // Newly-adjacent neighbors must stay separated — deleting a heading
+    // that interrupted a paragraph would otherwise fuse the paragraphs
+    // above and below it into one.
+    if (ui > 0 && ui < uraws.length && !/\n\n$/.test(uraws[ui - 1])) {
+        uraws[ui - 1] = ensureBlockSep(uraws[ui - 1]);
+    }
+    applyRawsUpdate(uraws);
+    showToast('블록 삭제됨 · Cmd/Ctrl+Z로 복구');
+}
+
+/* ── Drag & drop reorder ── */
+var _dragState = null;
+var _dropIndicatorEl = null;
+
+function onBlockDragStart(e, blockEl, blockIdx) {
+    closeBlockPopup();
+    if (_activeBlockEdit) {
+        // Committing here would re-render and detach the drag source —
+        // Chromium then cancels the drag without ever firing dragend,
+        // leaking _dragState with a stale index. Finish the edit and abort
+        // this gesture; the next drag starts from a fresh DOM. (If the
+        // slash menu is open, closeBlockEditor discards the "/cmd" text.)
+        closeBlockEditor(true);
+        e.preventDefault();
+        return;
+    }
+    _dragState = { srcIdx: blockIdx };
+    try {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(blockIdx));
+        e.dataTransfer.setDragImage(blockEl, 24, 16);
+    } catch (_) {}
+    blockEl.classList.add('md-block-dragging');
+}
+function onBlockDragEnd() {
+    document.querySelectorAll('.md-block-dragging').forEach(function (el) {
+        el.classList.remove('md-block-dragging');
+    });
+    hideDropIndicator();
+    _dragState = null;
+}
+function showDropIndicator(blockEl, before) {
+    if (!_dropIndicatorEl) {
+        _dropIndicatorEl = document.createElement('div');
+        _dropIndicatorEl.className = 'md-drop-indicator';
+        _dropIndicatorEl.dataset.mdChrome = '1';
+        document.body.appendChild(_dropIndicatorEl);
+    }
+    var r = blockEl.getBoundingClientRect();
+    _dropIndicatorEl.style.left = r.left + 'px';
+    _dropIndicatorEl.style.width = r.width + 'px';
+    _dropIndicatorEl.style.top = (before ? r.top - 2 : r.bottom) + 'px';
+    _dropIndicatorEl.style.display = 'block';
+}
+function hideDropIndicator() {
+    if (_dropIndicatorEl) _dropIndicatorEl.style.display = 'none';
+}
+
+function bindBlockDnD() {
+    if (!previewEl || previewEl.dataset.dndBound === '1') return;
+    previewEl.dataset.dndBound = '1';
+    previewEl.addEventListener('dragover', function (e) {
+        if (!_dragState) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        var target = e.target && e.target.closest ? e.target.closest('.md-block') : null;
+        if (!target) { hideDropIndicator(); return; }
+        var rect = target.getBoundingClientRect();
+        showDropIndicator(target, (e.clientY - rect.top) < rect.height / 2);
+    });
+    previewEl.addEventListener('drop', function (e) {
+        if (!_dragState) return;
+        e.preventDefault();
+        var src = _dragState.srcIdx;
+        hideDropIndicator();
+        var target = e.target && e.target.closest ? e.target.closest('.md-block') : null;
+        _dragState = null;
+        if (!target) return;
+        var rect = target.getBoundingClientRect();
+        var before = (e.clientY - rect.top) < rect.height / 2;
+        var tgt = parseInt(target.dataset.blockIdx, 10);
+        performBlockMove(src, tgt, before);
+    });
+}
+
+function performBlockMove(srcIdx, tgtIdx, before) {
+    if (isNaN(srcIdx) || isNaN(tgtIdx) || srcIdx === tgtIdx) return;
+    var units = computeBlockUnits(_currentTokens);
+    var us = unitIndexOf(units, srcIdx);
+    var ut = unitIndexOf(units, tgtIdx);
+    if (us < 0 || ut < 0 || us === ut) return;
+    var uraws = unitRawsOf(units, currentRaws());
+    var moved = ensureBlockSep(uraws.splice(us, 1)[0]);
+    // Keep the vacated spot's new neighbors separated (see deleteBlock).
+    if (us > 0 && us < uraws.length && !/\n\n$/.test(uraws[us - 1])) {
+        uraws[us - 1] = ensureBlockSep(uraws[us - 1]);
+    }
+    var insertAt = ut;
+    if (us < ut) insertAt--;
+    if (!before) insertAt++;
+    insertAt = Math.max(0, Math.min(uraws.length, insertAt));
+    if (insertAt > 0 && uraws[insertAt - 1] != null && !/\n\n$/.test(uraws[insertAt - 1])) {
+        uraws[insertAt - 1] = ensureBlockSep(uraws[insertAt - 1]);
+    }
+    uraws.splice(insertAt, 0, moved);
+    applyRawsUpdate(uraws);
+    showToast('블록 이동됨');
+}
+
+/* Close every piece of floating chrome that anchors to block indexes —
+   called at the top of renderPreview so nothing survives a re-render
+   (external updates included) with a stale index. */
+function resetBlockChrome() {
+    closeBlockPopup();
+    closeWysiwygSlash();
+    hideDropIndicator();
+    _dragState = null;
+}
+
+/* ── WYSIWYG slash menu ──
+   Typing "/" as the only content of a block being WYSIWYG-edited pops a
+   block-type conversion menu, filtered live as the user keeps typing. */
+var _wSlashEl = null;
+var _wSlashCtx = null;   // { blockIdx }
+function editableTextOf(blockEl) {
+    var clone = blockEl.cloneNode(true);
+    clone.querySelectorAll('[data-md-chrome="1"]').forEach(function (n) { n.remove(); });
+    return (clone.textContent || '').replace(/[​ ]/g, ' ');
+}
+var _wSlashDismissed = false;    // ESC pressed — stay closed for this "/" run
+var _wSlashOutsideBound = false;
+function checkWysiwygSlash(blockEl, blockIdx) {
+    var text = editableTextOf(blockEl).trim();
+    var m = text.match(/^\/(\S*)$/);
+    if (!m) {
+        _wSlashDismissed = false;   // trigger run ended — ESC no longer sticks
+        closeWysiwygSlash();
+        return;
+    }
+    if (_wSlashDismissed) return;
+    openWysiwygSlash(blockEl, blockIdx, m[1]);
+}
+/* Clicking anywhere outside the menu AND outside the edited block must not
+   leave a phantom editor behind (the blur handler skips closing while the
+   menu is open) — close the menu and cancel the edit: the "/cmd" filter
+   text is a command, not content. */
+function _wSlashOutside(e) {
+    if (!wysiwygSlashIsOpen()) return;
+    if (_wSlashEl && _wSlashEl.contains(e.target)) return;
+    var ed = _activeBlockEdit;
+    if (ed && ed.blockEl && ed.blockEl.contains(e.target)) return;
+    closeWysiwygSlash();
+    if (ed) closeBlockEditor(false);
+}
+function openWysiwygSlash(blockEl, blockIdx, filter) {
+    var f = (filter || '').toLowerCase();
+    var items = INSERT_BLOCKS.filter(function (c) {
+        return c.key.indexOf(f) >= 0 || c.label.toLowerCase().indexOf(f) >= 0;
+    });
+    if (!items.length) { closeWysiwygSlash(); return; }
+    if (!_wSlashEl) {
+        _wSlashEl = document.createElement('div');
+        _wSlashEl.className = 'md-block-popup md-wslash';
+        _wSlashEl.dataset.mdChrome = '1';
+        document.body.appendChild(_wSlashEl);
+    }
+    _wSlashCtx = { blockIdx: blockIdx };
+    _wSlashEl.innerHTML = '';
+    items.forEach(function (item, i) {
+        var el = document.createElement('button');
+        el.type = 'button';
+        el.className = 'md-popup-item' + (i === 0 ? ' active' : '');
+        el.textContent = item.label;
+        el.dataset.key = item.key;
+        el.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        el.addEventListener('click', function () { applyWysiwygSlash(item); });
+        el.addEventListener('mouseenter', function () {
+            _wSlashEl.querySelectorAll('.md-popup-item').forEach(function (x) { x.classList.remove('active'); });
+            el.classList.add('active');
+        });
+        _wSlashEl.appendChild(el);
+    });
+    // Position under the caret (fallback: under the block)
+    var rect = null;
+    try {
+        var sel = window.getSelection();
+        if (sel && sel.rangeCount) rect = sel.getRangeAt(0).getBoundingClientRect();
+    } catch (_) {}
+    if (!rect || (rect.width === 0 && rect.height === 0 && rect.top === 0)) {
+        rect = blockEl.getBoundingClientRect();
+    }
+    _wSlashEl.style.display = 'block';
+    var pr = _wSlashEl.getBoundingClientRect();
+    var x = Math.max(8, Math.min(window.innerWidth - pr.width - 8, rect.left));
+    var y = rect.bottom + 6;
+    if (y + pr.height > window.innerHeight - 8) y = rect.top - pr.height - 6;
+    _wSlashEl.style.left = Math.round(x) + 'px';
+    _wSlashEl.style.top = Math.round(y) + 'px';
+    if (!_wSlashOutsideBound) {
+        document.addEventListener('mousedown', _wSlashOutside, true);
+        _wSlashOutsideBound = true;
+    }
+}
+function closeWysiwygSlash() {
+    if (_wSlashEl) _wSlashEl.style.display = 'none';
+    _wSlashCtx = null;
+    if (_wSlashOutsideBound) {
+        document.removeEventListener('mousedown', _wSlashOutside, true);
+        _wSlashOutsideBound = false;
+    }
+}
+function wysiwygSlashIsOpen() {
+    return !!(_wSlashEl && _wSlashEl.style.display !== 'none' && _wSlashCtx);
+}
+function wysiwygSlashHandleKey(ev) {
+    if (!wysiwygSlashIsOpen()) return false;
+    if (ev.key === 'Escape') {
+        ev.preventDefault();
+        _wSlashDismissed = true;   // don't re-open on the very next keystroke
+        closeWysiwygSlash();
+        return true;
+    }
+    if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+        ev.preventDefault();
+        var items = _wSlashEl.querySelectorAll('.md-popup-item');
+        if (!items.length) return true;
+        var idx = 0;
+        items.forEach(function (it, i) { if (it.classList.contains('active')) idx = i; });
+        items[idx].classList.remove('active');
+        idx = (idx + (ev.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+        items[idx].classList.add('active');
+        items[idx].scrollIntoView({ block: 'nearest' });
+        return true;
+    }
+    if (ev.key === 'Enter') {
+        ev.preventDefault();
+        var active = _wSlashEl.querySelector('.md-popup-item.active');
+        if (active) {
+            var item = INSERT_BLOCKS.find(function (c) { return c.key === active.dataset.key; });
+            if (item) applyWysiwygSlash(item);
+        }
+        return true;
+    }
+    return false;
+}
+function applyWysiwygSlash(item) {
+    if (!_wSlashCtx) return;
+    var blockIdx = _wSlashCtx.blockIdx;
+    closeWysiwygSlash();
+    // Tear down the active editor WITHOUT committing — the "/xxx" filter
+    // text is a command, not content.
+    if (_activeBlockEdit) {
+        var ed = _activeBlockEdit;
+        _activeBlockEdit = null;
+        if (ed.teardown) ed.teardown();
+        hideFormatToolbar();
+    }
+    var raws = currentRaws();
+    if (raws[blockIdx] == null) return;
+    var trailing = (raws[blockIdx].match(/\n*$/) || ['\n\n'])[0] || '\n\n';
+    if (trailing.length < 2) trailing = '\n\n';
+    raws[blockIdx] = item.raw.replace(/\n*$/, '') + trailing;
+    applyRawsUpdate(raws);
+    // Re-open the editor on the converted block for immediate typing
+    var gen = _externalGen;
+    setTimeout(function () {
+        if (gen !== _externalGen) return;   // document replaced externally
+        var nb = previewEl && previewEl.querySelector('.md-block[data-block-idx="' + blockIdx + '"]');
+        if (nb && _currentTokens && _currentTokens[blockIdx] &&
+            _currentTokens[blockIdx].type !== 'table' && _currentTokens[blockIdx].type !== 'code' &&
+            _currentTokens[blockIdx].type !== 'hr') {
+            openBlockEditor(nb);
+        }
+    }, 40);
 }
 
 /* Small floating pencil that appears in the corner of a hovered block or cell.
@@ -474,6 +1200,30 @@ function addEditIcon(host, onClick) {
 function cleanEditAffordances(root) {
     if (!root) return;
     root.querySelectorAll('[data-md-chrome="1"]').forEach(function (n) { n.remove(); });
+}
+
+/* Rendered footnote refs and TOC boxes back to their source syntax before
+   any HTML→markdown capture — otherwise an untouched cell/block commit
+   would bake "[1](#fn-1)" or the whole TOC list into the file. The syntax
+   is wrapped in  sentinels because turndown escapes brackets in
+   plain text ("[^1]" → "\[^1\]"); restoreDerenderedSyntax() swaps them
+   back AFTER capture. */
+function derenderGeneratedChrome(root) {
+    if (!root) return;
+    root.querySelectorAll('sup.footnote-ref').forEach(function (n) {
+        var m = (n.id || '').match(/^fnref-(.+)-\d+$/);
+        n.replaceWith(document.createTextNode(m ? '^' + m[1] + '' : (n.textContent || '')));
+    });
+    root.querySelectorAll('.md-toc').forEach(function (n) {
+        n.replaceWith(document.createTextNode('TOC'));
+    });
+    root.querySelectorAll('section.footnotes').forEach(function (n) { n.remove(); });
+}
+function restoreDerenderedSyntax(md) {
+    return String(md)
+        .replace(/\^(.*?)/g, function (_, id) { return '[^' + id + ']'; })
+        .replace(/TOC/g, '[[TOC]]')
+        .replace(//g, '');
 }
 
 /* Floating format toolbar (v1.0.24) — shown above a text selection inside
@@ -635,9 +1385,11 @@ function openCellEditor(cell, blockIdx, kind) {
     }
 
     if (_activeBlockEdit) {
-        closeBlockEditor(true);
-        // Re-find the target cell in the freshly rendered DOM using the
-        // coordinates we captured a moment ago.
+        // Committing the other editor can shift token indexes — resolve the
+        // table's NEW index, then re-find the target cell in the fresh DOM
+        // using the coordinates we captured a moment ago.
+        blockIdx = resolveIdxAfterCommit(blockIdx);
+        if (blockIdx < 0) return;
         var freshBlock = previewEl && previewEl.querySelector('.md-block[data-block-idx="' + blockIdx + '"]');
         if (!freshBlock) return;
         var freshTable = freshBlock.querySelector('table');
@@ -783,7 +1535,9 @@ function moveToCellByOffset(blockIdx, kind, isHeader, rowIdx, colIdx, delta, axi
     // renderPreview runs synchronously inside closeBlockEditor, so the fresh
     // DOM is already in place — one microtask is enough to let commit-side
     // effects settle before we open the next cell.
+    var gen = _externalGen;
     setTimeout(function () {
+        if (gen !== _externalGen) return;   // document replaced externally
         var next = findCellByCoords(blockIdx, destIsHeader, destRow, destCol);
         if (!next && axis === 'col' && destCol > 0) {
             // Wrapping past end of row → try first cell of next row
@@ -820,9 +1574,11 @@ function isWysiwygSafe(token, blockEl) {
     if (!simple[token.type]) return false;
     // Only block-level complex content forces raw fallback. Inline <code>
     // is safe — turndown wraps it back in backticks correctly. We exclude
-    // <pre> (fenced code blocks), KaTeX math nodes, Mermaid diagrams, and
-    // admonition boxes whose round-trip is lossy.
-    if (blockEl.querySelector('pre, .katex, .katex-display, .mermaid-diagram, .md-admonition')) return false;
+    // <pre> (fenced code blocks), KaTeX math nodes, Mermaid diagrams,
+    // admonition boxes, and rendered TOC/footnote chrome — turndown would
+    // serialize their generated HTML instead of the original [[TOC]] /
+    // [^n] / ::: syntax the raw editor shows.
+    if (blockEl.querySelector('pre, .katex, .katex-display, .mermaid-diagram, .md-admonition, .md-toc, .footnotes, .footnote-ref')) return false;
     // HTML tokens that contain their own structural layout (tables, details,
     // multiple sibling divs) are safer to keep as raw-source editing so we
     // don't collapse the layout to plain markdown.
@@ -839,19 +1595,25 @@ function openBlockEditor(blockEl) {
     var blockIdx = parseInt(blockEl.dataset.blockIdx, 10);
     if (isNaN(blockIdx)) return;
     if (_activeBlockEdit) {
-        closeBlockEditor(true);
-        // Re-find the same block in the freshly rendered DOM
+        // Committing the other editor can shift every token index — resolve
+        // the clicked block's NEW index, then re-find it in the fresh DOM.
+        blockIdx = resolveIdxAfterCommit(blockIdx);
+        if (blockIdx < 0) return;
         blockEl = previewEl && previewEl.querySelector('.md-block[data-block-idx="' + blockIdx + '"]');
         if (!blockEl) return;
     }
     if (!_currentTokens || !_currentTokens[blockIdx]) return;
     var token = _currentTokens[blockIdx];
-    var trailingBlanks = (token.raw || '').match(/\n*$/)[0];
+    // Multi-token blocks (admonition groups) edit their JOINED raw so the
+    // whole ::: … ::: construct is visible in the editor.
+    var span = parseInt(blockEl.dataset.blockSpan || '1', 10) || 1;
+    var rawText = span > 1 ? joinTokenRaws(_currentTokens, blockIdx, span) : (token.raw || '');
+    var trailingBlanks = rawText.match(/\n*$/)[0];
 
-    if (isWysiwygSafe(token, blockEl) && getTurndown()) {
+    if (span === 1 && isWysiwygSafe(token, blockEl) && getTurndown()) {
         openWysiwygEditor(blockEl, blockIdx, token, trailingBlanks);
     } else {
-        openRawEditor(blockEl, blockIdx, token, trailingBlanks);
+        openRawEditor(blockEl, blockIdx, rawText, trailingBlanks, span);
     }
 }
 
@@ -882,13 +1644,16 @@ function openWysiwygEditor(blockEl, blockIdx, token, trailingBlanks) {
     } catch (_) {}
 
     addDoneButton(blockEl);
+    _wSlashDismissed = false;
 
     _activeBlockEdit = {
         blockEl: blockEl, blockIdx: blockIdx, originalRaw: token.raw,
-        trailingBlanks: trailingBlanks, mode: 'wysiwyg'
+        trailingBlanks: trailingBlanks, mode: 'wysiwyg', span: 1
     };
 
     var keyHandler = function (ev) {
+        // Slash menu owns arrows / Enter / ESC while it's open
+        if (wysiwygSlashHandleKey(ev)) return;
         if (ev.key === 'Escape') { ev.preventDefault(); closeBlockEditor(false); }
         else if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) {
             ev.preventDefault();
@@ -897,27 +1662,33 @@ function openWysiwygEditor(blockEl, blockIdx, token, trailingBlanks) {
     };
     var blurHandler = function () {
         setTimeout(function () {
+            // Keep the editor open while the slash menu has focus-stealing UI
+            if (wysiwygSlashIsOpen()) return;
             if (_activeBlockEdit && _activeBlockEdit.blockEl === blockEl) closeBlockEditor(true);
         }, 0);
     };
     var pasteHandler = function (ev) { handleEditorImageEvent(ev, 'paste'); };
     var dropHandler = function (ev) { handleEditorImageEvent(ev, 'drop'); };
     var dragoverHandler = function (ev) { ev.preventDefault(); ev.dataTransfer.dropEffect = 'copy'; };
+    var slashHandler = function () { checkWysiwygSlash(blockEl, blockIdx); };
 
     blockEl.addEventListener('keydown', keyHandler);
     blockEl.addEventListener('blur', blurHandler);
     blockEl.addEventListener('paste', pasteHandler);
     blockEl.addEventListener('drop', dropHandler);
     blockEl.addEventListener('dragover', dragoverHandler);
+    blockEl.addEventListener('input', slashHandler);
     _activeBlockEdit.teardown = function () {
         blockEl.removeEventListener('keydown', keyHandler);
         blockEl.removeEventListener('blur', blurHandler);
         blockEl.removeEventListener('paste', pasteHandler);
         blockEl.removeEventListener('drop', dropHandler);
         blockEl.removeEventListener('dragover', dragoverHandler);
+        blockEl.removeEventListener('input', slashHandler);
         blockEl.removeAttribute('contenteditable');
         blockEl.removeAttribute('spellcheck');
         blockEl.classList.remove('md-block-editing', 'md-block-wysiwyg');
+        closeWysiwygSlash();
     };
 }
 
@@ -1005,8 +1776,8 @@ function applyInlineMarkdownShortcuts(host) {
     }
 }
 
-function openRawEditor(blockEl, blockIdx, token, trailingBlanks) {
-    var raw = (token.raw || '').replace(/\n+$/, '');
+function openRawEditor(blockEl, blockIdx, rawText, trailingBlanks, span) {
+    var raw = String(rawText || '').replace(/\n+$/, '');
     var textarea = document.createElement('textarea');
     textarea.className = 'md-block-editor';
     textarea.value = raw;
@@ -1024,8 +1795,9 @@ function openRawEditor(blockEl, blockIdx, token, trailingBlanks) {
     addDoneButton(blockEl);
 
     _activeBlockEdit = {
-        blockEl: blockEl, blockIdx: blockIdx, originalRaw: token.raw,
-        trailingBlanks: trailingBlanks, mode: 'raw', textarea: textarea
+        blockEl: blockEl, blockIdx: blockIdx, originalRaw: rawText,
+        trailingBlanks: trailingBlanks, mode: 'raw', textarea: textarea,
+        span: span || 1
     };
 
     textarea.addEventListener('input', function () { autoResizeTextarea(textarea); });
@@ -1048,6 +1820,13 @@ function autoResizeTextarea(ta) {
 
 function closeBlockEditor(commit) {
     if (!_activeBlockEdit) return;
+    // While the slash menu is open the block's visible text is a command
+    // ("/표"), not content — committing would overwrite the block with it.
+    if (commit && wysiwygSlashIsOpen() && _activeBlockEdit.mode === 'wysiwyg' &&
+        /^\/\S*$/.test(editableTextOf(_activeBlockEdit.blockEl).trim())) {
+        commit = false;
+    }
+    closeWysiwygSlash();
     var ed = _activeBlockEdit;
     _activeBlockEdit = null;
     hideFormatToolbar();
@@ -1067,8 +1846,10 @@ function closeBlockEditor(commit) {
         // the whole table markdown, keep all other cells/rows intact.
         // Strip UI chrome (✓ 완료 button, any residual edit icon) before
         // capturing the cell content so their text doesn't sneak into the
-        // markdown as literal characters.
+        // markdown as literal characters. Rendered footnote/TOC chrome must
+        // also revert to its source syntax first.
         cleanEditAffordances(ed.cell);
+        derenderGeneratedChrome(ed.cell);
         var td = getTurndown();
         var cellText;
         if (td) {
@@ -1077,6 +1858,7 @@ function closeBlockEditor(commit) {
         } else {
             cellText = ed.cell.innerText.trim();
         }
+        cellText = restoreDerenderedSyntax(cellText);
         if (ed.isHeader) {
             if (token.header && token.header[ed.colIdx]) token.header[ed.colIdx].text = cellText;
         } else {
@@ -1095,7 +1877,8 @@ function closeBlockEditor(commit) {
         // swap just its innerHTML with the edited version. Everything else
         // in the source markup is preserved byte-for-byte.
         cleanEditAffordances(ed.cell);
-        var editedInnerHtml = ed.cell.innerHTML;
+        derenderGeneratedChrome(ed.cell);
+        var editedInnerHtml = restoreDerenderedSyntax(ed.cell.innerHTML);
         if (ed.teardown) ed.teardown();
         var scratch = document.createElement('div');
         scratch.innerHTML = ed.originalRaw || '';
@@ -1130,10 +1913,11 @@ function closeBlockEditor(commit) {
         }
     } else if (ed.mode === 'wysiwyg') {
         cleanEditAffordances(ed.blockEl);
+        derenderGeneratedChrome(ed.blockEl);
         var td2 = getTurndown();
         if (!td2) { renderPreview(); return; }
         try {
-            newRaw = td2.turndown(ed.blockEl.innerHTML).trim();
+            newRaw = restoreDerenderedSyntax(td2.turndown(ed.blockEl.innerHTML)).trim();
         } catch (e) {
             console.warn('MD Pretty Viewer: turndown failed', e);
             renderPreview();
@@ -1150,18 +1934,25 @@ function closeBlockEditor(commit) {
         return;
     }
     var newRawWithTrailing = newRaw.replace(/\n+$/, '') + (ed.trailingBlanks || '\n\n');
+    // The edited block may span several tokens (e.g. an admonition whose
+    // body contains blank lines) — replace the whole span with the new raw.
+    var span = ed.span || 1;
     var parts = [];
     for (var i = 0; i < _currentTokens.length; i++) {
-        parts.push(i === ed.blockIdx ? newRawWithTrailing : (_currentTokens[i].raw || ''));
+        if (i === ed.blockIdx) parts.push(newRawWithTrailing);
+        if (i >= ed.blockIdx && i < ed.blockIdx + span) continue;
+        parts.push(_currentTokens[i].raw || '');
     }
-    var updated = parts.join('');
-    pushEditHistory(currentContent);
-    currentContent = updated;
-    if (editorEl) editorEl.value = updated;
-    saveToDocument(updated);
-    updateStats();
-    renderPreview();
+    // Same funnel as structural ops: collapses the redundant separator the
+    // forced '\n\n' trailing would otherwise stack onto an existing space
+    // token, pushes undo history, saves, re-renders.
+    applyRawsUpdate(parts);
 }
+
+/* Bumped whenever an external 'update' replaces the document — deferred
+   editor-open timers (insert auto-open, slash reopen, cell navigation)
+   capture it and bail if the document changed underneath them. */
+var _externalGen = 0;
 
 /* Inline-edit undo (v1.0.25) — every commit pushes the pre-change content
    onto a bounded stack. Cmd/Ctrl+Z in Preview mode pops the stack and
@@ -1408,11 +2199,16 @@ function renderPreview() {
     if (_isRendering) return;       // re-entrancy guard
     _isRendering = true;
     try {
-        var processed = currentContent;
-        processed = injectTOC(processed);
-        processed = preprocessAdmonitions(processed);
-        processed = preprocessFootnotes(processed);
-        var html = renderMarkdown(processed);
+        // Any floating chrome anchored to the old DOM (block popup, slash
+        // menu, drop indicator, in-flight drag) is now pointing at token
+        // indexes that are about to change — acting on it afterwards would
+        // hit the wrong block. Close it all before swapping the DOM.
+        resetBlockChrome();
+        // IMPORTANT: lex from currentContent directly — token raws are the
+        // single source of truth that every edit/structural op writes back
+        // to the file. TOC/admonitions/footnotes render per-token inside
+        // renderMarkdown so their original syntax survives round-trips.
+        var html = renderMarkdown(currentContent);
         previewEl.innerHTML = html;
         highlightCodeBlocks(previewEl);
         addHeadingIds();
@@ -1507,39 +2303,105 @@ var ADMONITION_ICONS = {
     warning: { icon: '⚠', label: 'Warning' }, caution: { icon: '⚠', label: 'Caution' },
     danger: { icon: '✕', label: 'Danger' }, error: { icon: '✕', label: 'Error' }
 };
-function preprocessAdmonitions(md) {
-    return md.replace(/^:::(\w+)(?:\s+(.+))?\n([\s\S]*?)\n:::\s*$/gm, function (_, type, title, body) {
-        type = type.toLowerCase();
-        var spec = ADMONITION_ICONS[type] || ADMONITION_ICONS.note;
-        var t = (title && title.trim()) || spec.label;
-        var safeTitle = t.replace(/[<>&"']/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]; });
-        return '<div class="md-admonition md-admonition-' + type + '"><div class="md-admonition-title"><span class="md-admonition-icon">' + spec.icon + '</span>' + safeTitle + '</div><div class="md-admonition-body">\n\n' + body + '\n\n</div></div>\n';
-    });
+/* Turn a ":::type … :::" group raw into the admonition div + markdown body.
+   Line-walker (not a lazy regex) so a bare ":::" INSIDE a code fence in the
+   body can't terminate the box early. Falls back to the input unchanged if
+   the group doesn't parse. */
+function admonitionToHtml(groupRaw) {
+    var lines = String(groupRaw).split('\n');
+    var head = lines[0].match(/^:::(\w+)(?:\s+(.+))?\s*$/);
+    if (!head) return groupRaw;
+    var inFence = false, close = -1;
+    for (var i = 1; i < lines.length; i++) {
+        if (/^\s*(```|~~~)/.test(lines[i])) { inFence = !inFence; continue; }
+        if (!inFence && /^:::[ \t]*$/.test(lines[i])) { close = i; break; }
+    }
+    if (close < 0) return groupRaw;
+    var type = head[1].toLowerCase();
+    var spec = ADMONITION_ICONS[type] || ADMONITION_ICONS.note;
+    var t = (head[2] && head[2].trim()) || spec.label;
+    var safeTitle = t.replace(/[<>&"']/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]; });
+    var body = lines.slice(1, close).join('\n');
+    var tail = lines.slice(close + 1).join('\n');
+    return '<div class="md-admonition md-admonition-' + type + '"><div class="md-admonition-title"><span class="md-admonition-icon">' + spec.icon + '</span>' + safeTitle + '</div><div class="md-admonition-body">\n\n' + body + '\n\n</div></div>\n' + tail;
 }
 
-/* Footnotes (v0.9.0) */
-function preprocessFootnotes(md) {
-    var defs = {}, order = [], refCount = {};
-    md = md.replace(/^\[\^([^\]]+)\]:\s*(.+(?:\n[ \t]+.+)*)$/gm, function (_, id, content) {
-        defs[id] = content.replace(/\n[ \t]+/g, ' ').trim();
-        return '';
+/* Footnotes (v0.9.0, token-based since v1.0.26) — refs and definitions are
+   resolved from the pristine token raws at render time, so the saved source
+   keeps the [^id] syntax. */
+var FOOTNOTE_DEF_RE = /^\[\^([^\]]+)\]:\s*(.+(?:\n[ \t]+.+)*)$/gm;
+function collectFootnotes(tokens) {
+    var defs = {};
+    var pureDefTokens = [];
+    tokens.forEach(function (t, i) {
+        // 'space' included: a single-word def like "[^1]: Note." parses as
+        // a link REFERENCE definition and marked swallows it — it reaches
+        // us as a synthetic source-preserving space token.
+        if (t.type !== 'paragraph' && t.type !== 'text' && t.type !== 'space') return;
+        var raw = t.raw || '';
+        var found = false;
+        var stripped = raw.replace(FOOTNOTE_DEF_RE, function (_, id, content) {
+            defs[id] = content.replace(/\n[ \t]+/g, ' ').trim();
+            found = true;
+            return '';
+        });
+        if (found && stripped.trim() === '') pureDefTokens.push(i);
     });
-    if (Object.keys(defs).length === 0) return md;
-    md = md.replace(/\[\^([^\]]+)\]/g, function (match, id) {
-        if (!defs[id]) return match;
-        if (order.indexOf(id) < 0) order.push(id);
-        refCount[id] = (refCount[id] || 0) + 1;
-        var num = order.indexOf(id) + 1;
-        return '<sup class="footnote-ref" id="fnref-' + id + '-' + refCount[id] + '"><a href="#fn-' + id + '">' + num + '</a></sup>';
+    if (Object.keys(defs).length === 0) return null;
+    // Reference order + total count per id, scanning raws in document order
+    // (skipping code fences and the definition lines themselves).
+    var order = [], refCount = {};
+    tokens.forEach(function (t) {
+        if (t.type === 'code') return;
+        var raw = (t.raw || '').replace(FOOTNOTE_DEF_RE, '');
+        raw.replace(/\[\^([^\]]+)\]/g, function (m, id) {
+            if (!defs[id]) return m;
+            if (order.indexOf(id) < 0) order.push(id);
+            refCount[id] = (refCount[id] || 0) + 1;
+            return m;
+        });
     });
-    if (order.length === 0) return md;
-    var html = '\n\n<hr/>\n<section class="footnotes"><ol>';
-    order.forEach(function (id) {
-        var c = refCount[id] || 1, backlinks = '';
+    var defTokens = {};
+    pureDefTokens.forEach(function (idx, n) { defTokens[idx] = (n === 0); });
+    return {
+        defs: defs, order: order, refCount: refCount,
+        defTokens: defTokens, hasSection: pureDefTokens.length > 0,
+        seen: {}    // running per-render occurrence counters for ref ids
+    };
+}
+/* Run `replace` only on rendered TEXT — skipping <pre>/<code> spans and the
+   inside of tags (attributes like alt="…[^1]…" must never be rewritten). */
+function replaceInRenderedText(html, replace) {
+    var segs = String(html).split(/(<(?:pre|code)\b[\s\S]*?<\/(?:pre|code)>)/i);
+    for (var s = 0; s < segs.length; s += 2) {
+        var parts = segs[s].split(/(<[^>]*>)/);
+        for (var t = 0; t < parts.length; t += 2) parts[t] = replace(parts[t]);
+        segs[s] = parts.join('');
+    }
+    return segs.join('');
+}
+
+function renderFootnoteRefs(html, fns) {
+    if (!fns || !fns.order.length) return html;
+    return replaceInRenderedText(html, function (text) {
+        return text.replace(/\[\^([^\]]+)\]/g, function (m, id) {
+            if (!fns.defs[id] || fns.order.indexOf(id) < 0) return m;
+            fns.seen[id] = (fns.seen[id] || 0) + 1;
+            var num = fns.order.indexOf(id) + 1;
+            return '<sup class="footnote-ref" id="fnref-' + id + '-' + fns.seen[id] +
+                '"><a href="#fn-' + id + '">' + num + '</a></sup>';
+        });
+    });
+}
+function renderFootnoteSection(fns) {
+    if (!fns || !fns.order.length) return '';
+    var html = '<hr/><section class="footnotes"><ol>';
+    fns.order.forEach(function (id) {
+        var c = fns.refCount[id] || 1, backlinks = '';
         for (var k = 1; k <= c; k++) backlinks += ' <a class="footnote-backref" href="#fnref-' + id + '-' + k + '">↩</a>';
-        html += '<li id="fn-' + id + '">' + defs[id] + backlinks + '</li>';
+        html += '<li id="fn-' + id + '">' + fns.defs[id] + backlinks + '</li>';
     });
-    return md + html + '</ol></section>\n';
+    return html + '</ol></section>';
 }
 
 function renderMath(container) {
@@ -1558,7 +2420,7 @@ function renderMath(container) {
     } catch (e) { /* katex unavailable */ }
 }
 
-// Unified slugify (preserves Hangul). Used by both injectTOC and addHeadingIds.
+// Unified slugify (preserves Hangul). Used by both buildTocHtml and addHeadingIds.
 function slugify(text) {
     return 'heading-' + String(text || '').toLowerCase()
         .replace(/[`*_~]/g, '')
@@ -1567,39 +2429,31 @@ function slugify(text) {
         .substring(0, 60);
 }
 
-function injectTOC(md) {
-    // Replace [[TOC]] or [[목차]] markers with a generated table of contents
-    if (!/\[\[(TOC|목차)\]\]/i.test(md)) return md;
-    var lines = md.split('\n');
-    var inCode = false;
-    var headings = [];
-    var seen = {};
-    lines.forEach(function (line) {
-        if (/^```/.test(line)) { inCode = !inCode; return; }
-        if (inCode) return;
-        var m = line.match(/^(#{1,4})\s+(.+?)\s*$/);
-        if (m) {
-            if (/\[\[(TOC|목차)\]\]/i.test(m[2])) return;
-            var level = m[1].length;
-            var text = m[2].replace(/[`*_~]/g, '').trim();
-            var slug = slugify(text);
-            // Deduplicate: append -2, -3, ... if collision
-            if (seen[slug] != null) {
-                seen[slug]++;
-                slug = slug + '-' + seen[slug];
-            } else {
-                seen[slug] = 1;
-            }
-            headings.push({ level: level, text: text, slug: slug });
+/* [[TOC]] / [[목차]] table of contents (token-based since v1.0.26) —
+   built from the heading tokens at render time; the marker stays in the
+   token raw and therefore in the saved source. */
+function buildTocHtml(tokens) {
+    var headings = [], seen = {};
+    (tokens || []).forEach(function (t) {
+        if (t.type !== 'heading' || t.depth > 4) return;
+        var text = String(t.text || '').replace(/[`*_~]/g, '').trim();
+        if (!text || /\[\[(TOC|목차)\]\]/i.test(text)) return;
+        var slug = slugify(text);
+        if (seen[slug] != null) {
+            seen[slug]++;
+            slug = slug + '-' + seen[slug];
+        } else {
+            seen[slug] = 1;
         }
+        headings.push({ level: t.depth, text: text, slug: slug });
     });
-    if (headings.length === 0) return md.replace(/\[\[(TOC|목차)\]\]/gi, '');
+    if (headings.length === 0) return '';
     var toc = ['<div class="md-toc"><div class="md-toc-title">목차 / Table of Contents</div><ul>'];
     headings.forEach(function (h) {
         toc.push('<li class="md-toc-level-' + h.level + '"><a href="#' + h.slug + '">' + h.text + '</a></li>');
     });
     toc.push('</ul></div>');
-    return md.replace(/\[\[(TOC|목차)\]\]/gi, toc.join(''));
+    return toc.join('');
 }
 
 function makeCheckboxesClickable() {
@@ -1636,6 +2490,10 @@ function toggleCheckboxInSource(index, checked) {
     }
     currentContent = lines.join('\n');
     if (editorEl) editorEl.value = currentContent;
+    // Keep the token raws in sync without a full re-render (the checkbox
+    // DOM is already correct) — a later commit would otherwise join STALE
+    // raws and silently revert this toggle in the saved file.
+    _currentTokens = lexPreservingSource(currentContent);
     saveToDocument(currentContent);
     updateLineNumbers();
 }
@@ -2395,12 +3253,13 @@ function setupScrollSync() {
 function setupKeyboardShortcuts() {
     document.addEventListener('keydown', function (e) {
         var mod = e.metaKey || e.ctrlKey;
-        // ESC closes lightbox / preview search before anything else
+        // ESC closes lightbox / preview search / block popup before anything else
         if (e.key === 'Escape') {
             if (_lightboxEl) { e.preventDefault(); closeLightbox(); return; }
             if (_previewSearchPanel && _previewSearchPanel.style.display !== 'none') {
                 e.preventDefault(); closePreviewSearch(); return;
             }
+            if (_blockPopupEl) { e.preventDefault(); closeBlockPopup(); return; }
         }
         // Cmd/Ctrl+F: preview-mode search; edit/split → existing Find&Replace
         if (mod && (e.key === 'f' || e.key === 'F')) {
@@ -3133,10 +3992,10 @@ function buildUI(fileName) {
     previewEl.id = 'preview';
     previewPane.appendChild(previewEl);
 
-    // Double-click hint
+    // Editing hint — pencil edits in place, double-click jumps to source
     var hint = document.createElement('div');
     hint.className = 'dblclick-hint';
-    hint.textContent = 'Double-click to edit';
+    hint.textContent = '✎ 블록 편집 · 더블클릭 시 소스 편집';
     previewPane.appendChild(hint);
 
     // Double-click to switch to edit mode
@@ -3209,6 +4068,20 @@ function setupMessageListener() {
     window.addEventListener('message', function (e) {
         var msg = e.data;
         if (msg.type === 'update') {
+            // The document changed underneath us — a still-open inline
+            // editor now points at stale tokens; committing it would write
+            // old content into the wrong block. Discard it (external
+            // content wins), then render the new state. A pending debounced
+            // save or queued editor-open timer would likewise replay stale
+            // webview state over the external edit — cancel them. Undo
+            // snapshots predate the external content, so popping one would
+            // clobber it: drop the stack (the text document's own undo
+            // still covers those edits).
+            if (_activeBlockEdit) closeBlockEditor(false);
+            clearTimeout(window._saveTimer);
+            setSaveState('saved');
+            _externalGen++;
+            _editHistory.length = 0;
             currentContent = msg.content;
             if (editorEl && document.activeElement !== editorEl) {
                 editorEl.value = currentContent;

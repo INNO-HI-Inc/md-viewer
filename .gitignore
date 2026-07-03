@@ -4,3 +4,4 @@ node_modules/
 .claude/
 tests/evidence/
 __pycache__/
+.claude-resume-plan.md

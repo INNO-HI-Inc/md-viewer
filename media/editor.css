@@ -2991,6 +2991,18 @@ body.mode-preview .markdown-body td:hover > .md-edit-icon,
     to   { transform: scale(1);   opacity: 1; }
 }
 
+/* Block-level ✓/✕ live in the RIGHT gutter outside the block, stacked
+   vertically, so they never cover the text being edited (the 3rem right
+   padding of .markdown-body gives them room). */
+.markdown-body .md-block-editing > .md-done-btn {
+    top: 0;
+    right: -38px;
+}
+.markdown-body .md-block-editing > .md-cancel-btn {
+    top: 34px;                                    /* below ✓: 28 + 6 gap */
+    right: -38px;
+}
+
 /* In cells, done button matches the smaller pencil size */
 .markdown-body th.md-cell-editing > .md-done-btn,
 .markdown-body td.md-cell-editing > .md-done-btn {
@@ -3000,6 +3012,14 @@ body.mode-preview .markdown-body td:hover > .md-edit-icon,
     height: 22px;
     font-size: 12px;
     border-radius: 5px;
+}
+
+/* Body-row cells push ✓/✕ ABOVE the cell so they don't cover the value
+   being typed. Header cells keep the in-cell corner position — above a
+   <th> is outside the .table-scroll clip box and would be cut off. */
+.markdown-body td.md-cell-editing > .md-done-btn {
+    top: -26px;
+    right: 0;
 }
 
 /* ✕ Cancel button — sits immediately to the LEFT of ✓ so they read as
@@ -3043,6 +3063,10 @@ body.mode-preview .markdown-body td:hover > .md-edit-icon,
     height: 22px;
     font-size: 11px;
     border-radius: 5px;
+}
+.markdown-body td.md-cell-editing > .md-cancel-btn {
+    top: -26px;
+    right: 26px;                                  /* left of ✓: 22 + 4 gap */
 }
 
 /* Saving state — done button flashes to a neutral ⋯ while commit is pending */
@@ -3117,3 +3141,127 @@ body.vscode-light .md-fmt-toolbar button:hover {
     background: color-mix(in srgb, var(--md-accent) 15%, transparent);
     color: var(--md-accent);
 }
+
+/* ══════════════════════════════════════════════════════════════
+   BLOCK STRUCTURE EDITING (v1.0.26)
+   ＋ insert · ⠿ drag/menu · drop indicator · popups
+   ══════════════════════════════════════════════════════════════ */
+/* Preview mode gets a wider left gutter so the 3-button handle group
+   (＋ ⠿ ✎) lives entirely OUTSIDE the text column — floating chrome must
+   never cover the block's own content. */
+body.mode-preview .markdown-body {
+    padding-left: 5.25rem;       /* 84px: 70px handle group + 14px breathing room */
+}
+
+/* Left-gutter handle group, hidden until block hover (Preview mode only) */
+.markdown-body .md-block-handles {
+    position: absolute;
+    top: 4px;
+    left: -76px;                 /* fits inside the 5.25rem preview gutter */
+    display: inline-flex;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+    z-index: 6;
+    user-select: none;
+}
+body.mode-preview .markdown-body .md-block:hover > .md-block-handles {
+    opacity: 1;
+}
+.markdown-body .md-block-handles button {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    background: var(--md-bg-elevated, var(--md-bg, #fff));
+    border: 1px solid var(--md-border, #d0d7de);
+    border-radius: 5px;
+    color: var(--md-text-muted, #6b7280);
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.markdown-body .md-block-handles button:hover {
+    background: var(--md-accent);
+    color: #fff;
+    border-color: var(--md-accent);
+}
+.markdown-body .md-handle-drag { cursor: grab; font-size: 11px; letter-spacing: -1px; }
+.markdown-body .md-handle-drag:active { cursor: grabbing; }
+/* ✎ block editor entry lives in the same gutter group — accent-tinted so
+   it reads as the primary action of the three. */
+.markdown-body .md-handle-edit {
+    color: var(--md-accent);
+    font-weight: 600;
+}
+
+/* Block being dragged */
+.markdown-body .md-block-dragging { opacity: 0.35; }
+
+/* Drop position indicator — accent line between blocks */
+.md-drop-indicator {
+    position: fixed;
+    height: 3px;
+    background: var(--md-accent, #448CFF);
+    border-radius: 2px;
+    z-index: 9000;
+    pointer-events: none;
+    display: none;
+    box-shadow: 0 0 6px color-mix(in srgb, var(--md-accent) 50%, transparent);
+}
+
+/* Popup shared by ＋ insert menu, ⠿ block menu, and WYSIWYG slash menu */
+.md-block-popup {
+    position: fixed;
+    z-index: 9600;
+    min-width: 150px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 4px;
+    background: var(--md-bg-elevated, #fff);
+    border: 1px solid var(--md-border, #d0d7de);
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    animation: md-fmt-fade 0.1s ease-out;
+}
+.md-popup-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 7px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--md-text, #1a1a1a);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+.md-popup-item:hover,
+.md-popup-item.active {
+    background: color-mix(in srgb, var(--md-accent) 12%, transparent);
+    color: var(--md-accent);
+}
+.md-popup-danger { color: #e5484d; }
+.md-popup-danger:hover { background: rgba(229, 72, 77, 0.1); color: #e5484d; }
+
+body.vscode-dark .md-block-popup {
+    background: #252830;
+    border-color: #3a3f4a;
+}
+body.vscode-dark .md-popup-item { color: #e8e8e8; }
+
+/* Edit/Split modes + PDF export: no structural chrome */
+body.mode-edit .markdown-body .md-block-handles,
+body.mode-split .markdown-body .md-block-handles { display: none; }
+body.exporting-pdf .markdown-body .md-block-handles,
+body.exporting-pdf .md-drop-indicator,
+body.exporting-pdf .md-block-popup { display: none !important; }
