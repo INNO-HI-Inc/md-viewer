@@ -3259,9 +3259,188 @@ body.vscode-dark .md-block-popup {
 }
 body.vscode-dark .md-popup-item { color: #e8e8e8; }
 
+/* Menu item icon prefix (＋ insert / slash menus) */
+.md-popup-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 18px;
+    margin-right: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--md-text-muted, #6b7280);
+    background: color-mix(in srgb, currentColor 8%, transparent);
+    border-radius: 4px;
+    vertical-align: -3px;
+}
+.md-popup-item:hover .md-popup-icon,
+.md-popup-item.active .md-popup-icon { color: var(--md-accent); }
+
+/* Non-interactive hint footer inside popups */
+.md-popup-hint {
+    padding: 5px 12px 3px;
+    margin-top: 2px;
+    border-top: 1px solid var(--md-border, #e5e7eb);
+    font-size: 10.5px;
+    color: var(--md-text-muted, #9ca3af);
+    user-select: none;
+}
+
+/* Empty-document affordance */
+.md-empty-doc {
+    padding: 48px 0;
+    text-align: center;
+}
+.md-empty-add {
+    padding: 10px 22px;
+    background: var(--md-bg-elevated, var(--md-bg, #fff));
+    border: 1.5px dashed var(--md-border, #d0d7de);
+    border-radius: 10px;
+    color: var(--md-text-muted, #6b7280);
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+.md-empty-add:hover {
+    border-color: var(--md-accent);
+    color: var(--md-accent);
+    background: color-mix(in srgb, var(--md-accent) 5%, transparent);
+}
+.md-empty-hint {
+    margin-top: 12px;
+    font-size: 12.5px;
+    color: var(--md-text-muted, #9ca3af);
+}
+
+/* YAML frontmatter metadata card */
+.markdown-body .md-frontmatter {
+    margin: 0 0 20px;
+    padding: 12px 16px;
+    background: color-mix(in srgb, var(--md-accent) 4%, transparent);
+    border: 1px solid var(--md-border, #e5e7eb);
+    border-radius: 10px;
+    font-size: 13px;
+}
+.markdown-body .md-fm-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--md-text-muted, #9ca3af);
+    margin-bottom: 6px;
+}
+.markdown-body .md-fm-row { display: flex; gap: 10px; padding: 2px 0; }
+.markdown-body .md-fm-key {
+    flex: 0 0 auto;
+    min-width: 88px;
+    font-weight: 600;
+    color: var(--md-accent);
+}
+.markdown-body .md-fm-val { color: var(--md-text); overflow-wrap: anywhere; }
+.markdown-body .md-fm-plain { color: var(--md-text-muted, #6b7280); }
+
+/* Keyboard shortcut help overlay */
+.md-help-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9700;
+    background: rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: md-fmt-fade 0.12s ease-out;
+}
+.md-help-card {
+    width: min(520px, calc(100vw - 48px));
+    max-height: min(640px, calc(100vh - 48px));
+    overflow-y: auto;
+    padding: 20px 24px;
+    background: var(--md-bg-elevated, #fff);
+    border: 1px solid var(--md-border, #d0d7de);
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+body.vscode-dark .md-help-card { background: #22252c; border-color: #3a3f4a; }
+.md-help-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--md-text);
+}
+.md-help-row {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    padding: 5px 0;
+    font-size: 12.5px;
+    color: var(--md-text);
+}
+.md-help-row kbd {
+    flex: 0 0 172px;
+    padding: 2px 8px;
+    background: color-mix(in srgb, currentColor 7%, transparent);
+    border: 1px solid var(--md-border, #d0d7de);
+    border-radius: 5px;
+    font-size: 11px;
+    font-family: inherit;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.md-help-hint {
+    margin-top: 12px;
+    font-size: 11px;
+    color: var(--md-text-muted, #9ca3af);
+    text-align: center;
+}
+
+/* Outline empty state */
+.outline-empty {
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--md-text-muted, #9ca3af);
+}
+
+/* Keyboard accessibility — handles/popup items get a visible focus ring */
+.markdown-body .md-block-handles button:focus-visible,
+.md-popup-item:focus-visible,
+.md-empty-add:focus-visible,
+.markdown-body .md-done-btn:focus-visible,
+.markdown-body .md-cancel-btn:focus-visible {
+    outline: 2px solid var(--md-accent);
+    outline-offset: 2px;
+}
+body.mode-preview .markdown-body .md-block-handles:focus-within { opacity: 1; }
+
+/* Reduced motion: kill decorative animations, keep instant state changes */
+@media (prefers-reduced-motion: reduce) {
+    .md-block-popup,
+    .md-fmt-toolbar,
+    .md-help-overlay,
+    .markdown-body .md-done-btn,
+    .markdown-body .md-cancel-btn,
+    .markdown-body { animation: none !important; }
+    .markdown-body .md-block-handles,
+    .markdown-body .md-edit-icon,
+    .md-toast { transition: none !important; }
+}
+
+/* High-contrast themes: hover tints vanish — keep chrome discoverable */
+body.vscode-high-contrast .md-block-popup,
+body.vscode-high-contrast .md-help-card { border-width: 2px; }
+body.vscode-high-contrast .markdown-body .md-block-handles button,
+body.vscode-high-contrast .markdown-body .md-done-btn,
+body.vscode-high-contrast .markdown-body .md-cancel-btn { border-width: 2px; }
+
 /* Edit/Split modes + PDF export: no structural chrome */
 body.mode-edit .markdown-body .md-block-handles,
 body.mode-split .markdown-body .md-block-handles { display: none; }
+body.mode-edit .markdown-body .md-empty-doc,
+body.mode-split .markdown-body .md-empty-doc { display: none; }
 body.exporting-pdf .markdown-body .md-block-handles,
 body.exporting-pdf .md-drop-indicator,
+body.exporting-pdf .markdown-body .md-empty-doc,
+body.exporting-pdf .md-help-overlay,
 body.exporting-pdf .md-block-popup { display: none !important; }

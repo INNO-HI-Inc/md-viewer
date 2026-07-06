@@ -112,13 +112,15 @@ function sanitizeElement(el) {
         portal: true, audio: true, video: true, source: true, track: true
     };
     var allowedTags = {
-        a: true, abbr: true, blockquote: true, br: true, code: true, dd: true,
-        del: true, details: true, div: true, dl: true, dt: true, em: true,
-        h1: true, h2: true, h3: true, h4: true, h5: true, h6: true,
-        hr: true, img: true, input: true, kbd: true, li: true, ol: true,
-        p: true, pre: true, s: true, section: true, span: true, strong: true,
+        a: true, abbr: true, blockquote: true, br: true, caption: true,
+        code: true, col: true, colgroup: true, dd: true, del: true,
+        details: true, div: true, dl: true, dt: true, em: true,
+        figcaption: true, figure: true, h1: true, h2: true, h3: true,
+        h4: true, h5: true, h6: true, hr: true, img: true, input: true,
+        ins: true, kbd: true, li: true, mark: true, ol: true, p: true,
+        pre: true, s: true, section: true, span: true, strong: true,
         sub: true, summary: true, sup: true, table: true, tbody: true,
-        td: true, th: true, thead: true, tr: true, ul: true
+        td: true, tfoot: true, th: true, thead: true, tr: true, ul: true
     };
     if (!allowedTags[tag]) {
         if (dropWithContent[tag]) { el.remove(); return; }
@@ -244,11 +246,57 @@ function admonitionSpanAt(tokens, i) {
     return 0;   // unclosed — not an admonition
 }
 
+/* YAML frontmatter at the very top of the document ("---\nkey: v\n---").
+   marked lexes it as hr + setext-heading garbage — detect it on the raw
+   source and return how many leading tokens it spans (0 if none/misaligned)
+   so it can render as one metadata card while the raws stay pristine. */
+var FRONTMATTER_RE = /^---[ \t]*\n([\s\S]*?)\n---[ \t]*(?:\n|$)/;
+function frontmatterSpanAt(tokens) {
+    if (!tokens.length) return 0;
+    if (!/^---[ \t]*\n/.test(tokens[0].raw || '')) return 0;
+    var joined = '';
+    for (var i = 0; i < tokens.length; i++) {
+        joined += tokens[i].raw || '';
+        var m = joined.match(FRONTMATTER_RE);
+        // Clean boundary: the joined raws are exactly the frontmatter
+        // (tokens may absorb the trailing blank line — that's still ours).
+        if (m && /^\n*$/.test(joined.slice(m[0].length))) return i + 1;
+        if (joined.length > 4000) break;   // not frontmatter — stop scanning
+    }
+    return 0;
+}
+function renderFrontmatterCard(fmRaw) {
+    var m = fmRaw.match(FRONTMATTER_RE);
+    if (!m) return '';
+    var esc = function (s) {
+        return String(s).replace(/[<>&"]/g, function (c) {
+            return { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c];
+        });
+    };
+    var rows = [];
+    m[1].split('\n').forEach(function (line) {
+        if (!line.trim()) return;
+        var kv = line.match(/^([A-Za-z0-9_가-힣-]+)\s*:\s*(.*)$/);
+        if (kv) {
+            rows.push('<div class="md-fm-row"><span class="md-fm-key">' + esc(kv[1]) +
+                '</span><span class="md-fm-val">' + esc(kv[2]) + '</span></div>');
+        } else {
+            rows.push('<div class="md-fm-row md-fm-plain">' + esc(line) + '</div>');
+        }
+    });
+    return '<div class="md-frontmatter"><div class="md-fm-title">문서 정보</div>' + rows.join('') + '</div>';
+}
+
 function computeBlockUnits(tokens) {
     tokens = tokens || _currentTokens || [];
     var units = [];
     var htmlDepth = 0;
     var i = 0;
+    var fmSpan = frontmatterSpanAt(tokens);
+    if (fmSpan > 0) {
+        units.push({ start: 0, span: fmSpan, kind: 'frontmatter' });
+        i = fmSpan;
+    }
     while (i < tokens.length) {
         if (htmlDepth > 0 && units.length) {
             var last = units[units.length - 1];
@@ -350,6 +398,13 @@ function renderMarkdown(text) {
             return;
         }
 
+        if (u.kind === 'frontmatter') {
+            parts.push('<div class="md-block" data-block-idx="' + u.start +
+                '" data-block-span="' + u.span + '">' +
+                renderFrontmatterCard(joinTokenRaws(tokens, u.start, u.span)) + '</div>');
+            return;
+        }
+
         if (u.kind === 'html-container') {
             for (var k = u.start; k < u.start + u.span; k++) {
                 try { parts.push(marked.parser([tokens[k]])); } catch (_) {}
@@ -397,8 +452,17 @@ function renderMarkdown(text) {
     return sanitizeHtml(parts.join(''));
 }
 
+var _bigDocNoticeShown = false;
 function highlightCodeBlocks(container) {
-    if (typeof hljs !== 'undefined') {
+    // Very large documents: syntax highlighting is the single most
+    // expensive render step and re-runs on every commit — skip it past
+    // 800KB so editing stays responsive (code still renders, unstyled).
+    var skipHighlight = currentContent.length > 800 * 1024;
+    if (skipHighlight && !_bigDocNoticeShown) {
+        _bigDocNoticeShown = true;
+        showToast('대용량 문서 — 코드 하이라이트를 생략해 속도를 유지합니다');
+    }
+    if (typeof hljs !== 'undefined' && !skipHighlight) {
         container.querySelectorAll('pre code').forEach(function (block) {
             hljs.highlightElement(block);
         });
@@ -574,6 +638,7 @@ function bindBlockEditing(container) {
     if (!container) return;
     bindBlockDnD();
     container.querySelectorAll('.md-block').forEach(function (blockEl) {
+        try {
         if (blockEl.dataset.editBound === '1') return;
         blockEl.dataset.editBound = '1';
 
@@ -602,6 +667,10 @@ function bindBlockEditing(container) {
             bindTableCellEditing(blockEl, blockIdx, token, 'html');
             return;
         }
+        } catch (err) {
+            // One malformed block must not kill editing for the whole doc.
+            console.warn('MD Pretty Viewer: block bind failed', err);
+        }
     });
 }
 
@@ -612,17 +681,19 @@ function bindBlockEditing(container) {
 
 // Block templates shared by the ＋ insert menu and the WYSIWYG slash menu.
 var INSERT_BLOCKS = [
-    { key: 'text',   label: '텍스트',       raw: '내용' },
-    { key: 'h1',     label: '제목 1',       raw: '# 제목' },
-    { key: 'h2',     label: '제목 2',       raw: '## 제목' },
-    { key: 'h3',     label: '제목 3',       raw: '### 제목' },
-    { key: 'bullet', label: '리스트',       raw: '- 항목' },
-    { key: 'number', label: '번호 리스트',  raw: '1. 항목' },
-    { key: 'check',  label: '체크박스',     raw: '- [ ] 할 일' },
-    { key: 'quote',  label: '인용',         raw: '> 인용문' },
-    { key: 'code',   label: '코드 블록',    raw: '```\ncode\n```' },
-    { key: 'table',  label: '표',           raw: '| 제목 | 제목 |\n| --- | --- |\n| 내용 | 내용 |' },
-    { key: 'hr',     label: '구분선',       raw: '---' }
+    { key: 'text',   label: '텍스트',       icon: '¶',  raw: '내용' },
+    { key: 'h1',     label: '제목 1',       icon: 'H1', raw: '# 제목' },
+    { key: 'h2',     label: '제목 2',       icon: 'H2', raw: '## 제목' },
+    { key: 'h3',     label: '제목 3',       icon: 'H3', raw: '### 제목' },
+    { key: 'bullet', label: '리스트',       icon: '•',  raw: '- 항목' },
+    { key: 'number', label: '번호 리스트',  icon: '1.', raw: '1. 항목' },
+    { key: 'check',  label: '체크박스',     icon: '☑',  raw: '- [ ] 할 일' },
+    { key: 'quote',  label: '인용',         icon: '❝',  raw: '> 인용문' },
+    { key: 'code',   label: '코드 블록',    icon: '{}', raw: '```\ncode\n```' },
+    { key: 'table',  label: '표',           icon: '▦',  raw: '| 제목 | 제목 |\n| --- | --- |\n| 내용 | 내용 |' },
+    { key: 'image',  label: '이미지',       icon: '🖼', raw: '![설명](https://)' },
+    { key: 'link',   label: '링크',         icon: '🔗', raw: '[링크 제목](https://)' },
+    { key: 'hr',     label: '구분선',       icon: '—',  raw: '---' }
 ];
 
 /* Rebuild currentContent from a mutated raw-array, push undo history,
@@ -728,6 +799,28 @@ function addBlockHandles(blockEl, blockIdx, onEdit) {
     dragBtn.setAttribute('aria-label', '블록 메뉴 · 드래그로 이동');
     dragBtn.textContent = '⠿';
     dragBtn.draggable = true;
+    dragBtn.addEventListener('mousedown', function () {
+        // While another editor is open, this mousedown blurs it → commit →
+        // re-render detaches this very button, so its click never fires and
+        // the first ⠿ press appears dead. Queue the menu to reopen on the
+        // block's FRESH button after the commit settles.
+        if (!_activeBlockEdit) return;
+        var targetRaw = _currentTokens && _currentTokens[blockIdx] ? (_currentTokens[blockIdx].raw || '') : null;
+        var gen = _externalGen;
+        setTimeout(function () {
+            if (gen !== _externalGen || _activeBlockEdit || targetRaw == null || !_currentTokens) return;
+            var best = -1, bestDist = Infinity;
+            for (var i = 0; i < _currentTokens.length; i++) {
+                if ((_currentTokens[i].raw || '') === targetRaw) {
+                    var d = Math.abs(i - blockIdx);
+                    if (d < bestDist) { best = i; bestDist = d; }
+                }
+            }
+            if (best < 0) return;
+            var nb = previewEl && previewEl.querySelector('.md-block[data-block-idx="' + best + '"] .md-handle-drag');
+            if (nb) openBlockPopup('menu', best, nb);
+        }, 60);
+    });
     dragBtn.addEventListener('click', function (e) {
         e.preventDefault(); e.stopPropagation();
         openBlockPopup('menu', blockIdx, dragBtn);
@@ -761,48 +854,77 @@ function closeBlockPopup() {
     if (_blockPopupEl && _blockPopupEl.parentNode) _blockPopupEl.parentNode.removeChild(_blockPopupEl);
     _blockPopupEl = null;
     document.removeEventListener('mousedown', _blockPopupOutside, true);
+    document.removeEventListener('keydown', _blockPopupKeys, true);
+    window.removeEventListener('scroll', _blockPopupDismiss, true);
+    window.removeEventListener('resize', _blockPopupDismiss);
 }
 function _blockPopupOutside(e) {
     if (_blockPopupEl && !_blockPopupEl.contains(e.target)) closeBlockPopup();
+}
+/* position:fixed popups drift off their anchor when the pane scrolls or the
+   window resizes — close instead of floating detached. */
+function _blockPopupDismiss() {
+    closeBlockPopup();
+}
+function _blockPopupKeys(e) {
+    if (!_blockPopupEl) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        e.stopPropagation();
+        var items = _blockPopupEl.querySelectorAll('.md-popup-item');
+        if (!items.length) return;
+        var idx = -1;
+        items.forEach(function (it, i) { if (it.classList.contains('active')) idx = i; });
+        if (idx >= 0) items[idx].classList.remove('active');
+        idx = idx < 0 ? (e.key === 'ArrowDown' ? 0 : items.length - 1)
+                      : (idx + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+        items[idx].classList.add('active');
+        items[idx].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
+        var active = _blockPopupEl.querySelector('.md-popup-item.active');
+        if (active) {
+            e.preventDefault();
+            e.stopPropagation();
+            active.click();
+        }
+    }
 }
 function openBlockPopup(kind, blockIdx, anchorEl) {
     closeBlockPopup();
     var p = document.createElement('div');
     p.className = 'md-block-popup';
     p.dataset.mdChrome = '1';
+    p.setAttribute('role', 'menu');
+
+    function addItem(label, icon, danger, onPick) {
+        var el = document.createElement('button');
+        el.type = 'button';
+        el.className = 'md-popup-item' + (danger ? ' md-popup-danger' : '');
+        el.setAttribute('role', 'menuitem');
+        if (icon) {
+            var ic = document.createElement('span');
+            ic.className = 'md-popup-icon';
+            ic.textContent = icon;
+            el.appendChild(ic);
+        }
+        el.appendChild(document.createTextNode(label));
+        el.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        el.addEventListener('click', function () {
+            closeBlockPopup();
+            onPick();
+        });
+        p.appendChild(el);
+    }
 
     if (kind === 'insert') {
         INSERT_BLOCKS.forEach(function (item) {
-            var el = document.createElement('button');
-            el.type = 'button';
-            el.className = 'md-popup-item';
-            el.textContent = item.label;
-            el.addEventListener('mousedown', function (e) { e.preventDefault(); });
-            el.addEventListener('click', function () {
-                closeBlockPopup();
-                insertBlockAfter(blockIdx, item.raw);
-            });
-            p.appendChild(el);
+            addItem(item.label, item.icon, false, function () { insertBlockAfter(blockIdx, item.raw); });
         });
     } else {
-        var ACTIONS = [
-            { key: 'up',     label: '↑ 위로 이동',   fn: function () { moveBlockStep(blockIdx, -1); } },
-            { key: 'down',   label: '↓ 아래로 이동', fn: function () { moveBlockStep(blockIdx, +1); } },
-            { key: 'dup',    label: '⧉ 복제',        fn: function () { duplicateBlock(blockIdx); } },
-            { key: 'delete', label: '🗑 삭제',        fn: function () { deleteBlock(blockIdx); }, danger: true }
-        ];
-        ACTIONS.forEach(function (item) {
-            var el = document.createElement('button');
-            el.type = 'button';
-            el.className = 'md-popup-item' + (item.danger ? ' md-popup-danger' : '');
-            el.textContent = item.label;
-            el.addEventListener('mousedown', function (e) { e.preventDefault(); });
-            el.addEventListener('click', function () {
-                closeBlockPopup();
-                item.fn();
-            });
-            p.appendChild(el);
-        });
+        addItem('↑ 위로 이동',   null, false, function () { moveBlockStep(blockIdx, -1); });
+        addItem('↓ 아래로 이동', null, false, function () { moveBlockStep(blockIdx, +1); });
+        addItem('⧉ 복제',        null, false, function () { duplicateBlock(blockIdx); });
+        addItem('🗑 삭제',        null, true,  function () { deleteBlock(blockIdx); });
     }
 
     document.body.appendChild(p);
@@ -817,19 +939,28 @@ function openBlockPopup(kind, blockIdx, anchorEl) {
     p.style.top = Math.round(y) + 'px';
     setTimeout(function () {
         document.addEventListener('mousedown', _blockPopupOutside, true);
+        document.addEventListener('keydown', _blockPopupKeys, true);
+        window.addEventListener('scroll', _blockPopupDismiss, true);
+        window.addEventListener('resize', _blockPopupDismiss);
     }, 0);
 }
 
 function insertBlockAfter(blockIdx, rawTemplate) {
-    blockIdx = resolveIdxAfterCommit(blockIdx);
-    if (blockIdx < 0) { showToast('문서가 바뀌어 블록을 찾지 못했습니다'); return; }
-    var units = computeBlockUnits(_currentTokens);
-    var ui = unitIndexOf(units, blockIdx);
-    if (ui < 0) return;
-    var uraws = unitRawsOf(units, currentRaws());
-    uraws[ui] = ensureBlockSep(uraws[ui]);
-    uraws.splice(ui + 1, 0, ensureBlockSep(rawTemplate));
-    applyRawsUpdate(uraws);
+    if (blockIdx === -1) {
+        // Empty-document bootstrap (＋ placeholder) — nothing to resolve.
+        if (_activeBlockEdit) closeBlockEditor(true);
+        applyRawsUpdate([ensureBlockSep(rawTemplate)]);
+    } else {
+        blockIdx = resolveIdxAfterCommit(blockIdx);
+        if (blockIdx < 0) { showToast('문서가 바뀌어 블록을 찾지 못했습니다'); return; }
+        var units = computeBlockUnits(_currentTokens);
+        var ui = unitIndexOf(units, blockIdx);
+        if (ui < 0) return;
+        var uraws = unitRawsOf(units, currentRaws());
+        uraws[ui] = ensureBlockSep(uraws[ui]);
+        uraws.splice(ui + 1, 0, ensureBlockSep(rawTemplate));
+        applyRawsUpdate(uraws);
+    }
     // Open the editor on the freshly inserted block so the user can type
     // immediately. Match on the trimmed raw — marked keeps trailing blank
     // lines in separate space tokens, so an exact-raw match never fires.
@@ -838,7 +969,7 @@ function insertBlockAfter(blockIdx, rawTemplate) {
     setTimeout(function () {
         if (gen !== _externalGen) return;   // document replaced externally
         if (!_currentTokens) return;
-        for (var i = blockIdx; i < _currentTokens.length; i++) {
+        for (var i = Math.max(0, blockIdx); i < _currentTokens.length; i++) {
             if ((_currentTokens[i].raw || '').replace(/\n+$/, '') !== want) continue;
             var t = _currentTokens[i];
             if (t.type === 'table' || t.type === 'code' || t.type === 'hr') return;
@@ -962,6 +1093,13 @@ function bindBlockDnD() {
         if (!_dragState) return;
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
+        // Auto-scroll while dragging near the pane's top/bottom edge so
+        // long documents can be reordered without dropping midway.
+        var scroller = previewEl.closest('.preview-pane') || previewEl.parentElement;
+        if (scroller) {
+            if (e.clientY < 70) scroller.scrollTop -= 14;
+            else if (e.clientY > window.innerHeight - 70) scroller.scrollTop += 14;
+        }
         var target = e.target && e.target.closest ? e.target.closest('.md-block') : null;
         if (!target) { hideDropIndicator(); return; }
         var rect = target.getBoundingClientRect();
@@ -1016,6 +1154,33 @@ function resetBlockChrome() {
     _dragState = null;
 }
 
+/* Empty document (or every block deleted): the ＋/⠿ handles live on blocks,
+   so there'd be no way to start writing from the preview. Render a visible
+   "add a block" affordance instead. */
+function renderEmptyPlaceholder() {
+    if (!previewEl) return;
+    if (previewEl.querySelector('.md-block')) return;
+    if (currentContent.trim() !== '') return;   // content exists but isn't block-wrapped — don't cover it
+    var wrap = document.createElement('div');
+    wrap.className = 'md-empty-doc';
+    wrap.dataset.mdChrome = '1';
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'md-empty-add';
+    btn.textContent = '＋ 블록 추가';
+    btn.setAttribute('aria-label', '블록 추가');
+    btn.addEventListener('click', function (e) {
+        e.preventDefault(); e.stopPropagation();
+        openBlockPopup('insert', -1, btn);
+    });
+    var hint = document.createElement('div');
+    hint.className = 'md-empty-hint';
+    hint.textContent = '빈 문서입니다 — 블록을 추가해 시작하세요';
+    wrap.appendChild(btn);
+    wrap.appendChild(hint);
+    previewEl.appendChild(wrap);
+}
+
 /* ── WYSIWYG slash menu ──
    Typing "/" as the only content of a block being WYSIWYG-edited pops a
    block-type conversion menu, filtered live as the user keeps typing. */
@@ -1065,11 +1230,19 @@ function openWysiwygSlash(blockEl, blockIdx, filter) {
     }
     _wSlashCtx = { blockIdx: blockIdx };
     _wSlashEl.innerHTML = '';
+    _wSlashEl.setAttribute('role', 'menu');
     items.forEach(function (item, i) {
         var el = document.createElement('button');
         el.type = 'button';
         el.className = 'md-popup-item' + (i === 0 ? ' active' : '');
-        el.textContent = item.label;
+        el.setAttribute('role', 'menuitem');
+        if (item.icon) {
+            var ic = document.createElement('span');
+            ic.className = 'md-popup-icon';
+            ic.textContent = item.icon;
+            el.appendChild(ic);
+        }
+        el.appendChild(document.createTextNode(item.label));
         el.dataset.key = item.key;
         el.addEventListener('mousedown', function (e) { e.preventDefault(); });
         el.addEventListener('click', function () { applyWysiwygSlash(item); });
@@ -1079,6 +1252,10 @@ function openWysiwygSlash(blockEl, blockIdx, filter) {
         });
         _wSlashEl.appendChild(el);
     });
+    var hintEl = document.createElement('div');
+    hintEl.className = 'md-popup-hint';
+    hintEl.textContent = '↑↓ 이동 · Enter 선택 · Esc 닫기';
+    _wSlashEl.appendChild(hintEl);
     // Position under the caret (fallback: under the block)
     var rect = null;
     try {
@@ -1441,6 +1618,16 @@ function openCellEditor(cell, blockIdx, kind) {
         trailingBlanks: (token.raw || '').match(/\n*$/)[0]
     };
 
+    var pastePlainHandler = function (ev) {
+        // Rich-text paste injects styled spans that leak into the saved
+        // source (especially the html-cell innerHTML path) — coerce to text.
+        if (!ev.clipboardData) return;
+        var text = ev.clipboardData.getData('text/plain');
+        ev.preventDefault();
+        if (text) {
+            try { document.execCommand('insertText', false, text.replace(/[\r\n]+/g, ' ')); } catch (_) {}
+        }
+    };
     var keyHandler = function (ev) {
         if (ev.key === 'Escape') { ev.preventDefault(); closeBlockEditor(false); }
         else if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) {
@@ -1467,9 +1654,11 @@ function openCellEditor(cell, blockIdx, kind) {
     };
     cell.addEventListener('keydown', keyHandler);
     cell.addEventListener('blur', blurHandler);
+    cell.addEventListener('paste', pastePlainHandler);
     _activeBlockEdit.teardown = function () {
         cell.removeEventListener('keydown', keyHandler);
         cell.removeEventListener('blur', blurHandler);
+        cell.removeEventListener('paste', pastePlainHandler);
         cell.removeAttribute('contenteditable');
         cell.removeAttribute('spellcheck');
         cell.classList.remove('md-cell-editing');
@@ -1578,7 +1767,7 @@ function isWysiwygSafe(token, blockEl) {
     // admonition boxes, and rendered TOC/footnote chrome — turndown would
     // serialize their generated HTML instead of the original [[TOC]] /
     // [^n] / ::: syntax the raw editor shows.
-    if (blockEl.querySelector('pre, .katex, .katex-display, .mermaid-diagram, .md-admonition, .md-toc, .footnotes, .footnote-ref')) return false;
+    if (blockEl.querySelector('pre, .katex, .katex-display, .mermaid-diagram, .md-admonition, .md-toc, .footnotes, .footnote-ref, .md-frontmatter')) return false;
     // HTML tokens that contain their own structural layout (tables, details,
     // multiple sibling divs) are safer to keep as raw-source editing so we
     // don't collapse the layout to plain markdown.
@@ -1703,6 +1892,15 @@ function handleEditorImageEvent(ev, kind) {
             var file = item.getAsFile();
             if (!file) continue;
             ev.preventDefault();
+            // base64 inflates ~33% and lands in the markdown source — a huge
+            // image would freeze rendering and bloat the file permanently.
+            if (file.size > 8 * 1024 * 1024) {
+                showToast('이미지가 너무 큽니다 (8MB 초과) — 파일로 저장 후 링크하세요');
+                return;
+            }
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('큰 이미지(' + (file.size / 1024 / 1024).toFixed(1) + 'MB) — 문서 용량이 커집니다');
+            }
             var reader = new FileReader();
             reader.onload = function (e) {
                 var dataUrl = e.target.result;
@@ -1958,22 +2156,39 @@ var _externalGen = 0;
    onto a bounded stack. Cmd/Ctrl+Z in Preview mode pops the stack and
    restores the previous content. */
 var _editHistory = [];
+var _redoHistory = [];
 var _EDIT_HISTORY_LIMIT = 30;
 function pushEditHistory(prev) {
     if (typeof prev !== 'string') return;
     _editHistory.push(prev);
     if (_editHistory.length > _EDIT_HISTORY_LIMIT) _editHistory.shift();
+    _redoHistory.length = 0;   // a new edit forks history — redo is gone
 }
 function undoInlineEdit() {
     if (_activeBlockEdit) return false;    // ignore while a block is being edited
     if (!_editHistory.length) return false;
     var prev = _editHistory.pop();
+    _redoHistory.push(currentContent);
     currentContent = prev;
     if (editorEl) editorEl.value = prev;
     saveToDocument(prev);
     updateStats();
     renderPreview();
     showToast('편집 되돌림');
+    return true;
+}
+function redoInlineEdit() {
+    if (_activeBlockEdit) return false;
+    if (!_redoHistory.length) return false;
+    var next = _redoHistory.pop();
+    _editHistory.push(currentContent);   // direct push — must NOT clear redo
+    if (_editHistory.length > _EDIT_HISTORY_LIMIT) _editHistory.shift();
+    currentContent = next;
+    if (editorEl) editorEl.value = next;
+    saveToDocument(next);
+    updateStats();
+    renderPreview();
+    showToast('편집 다시 실행');
     return true;
 }
 
@@ -2097,6 +2312,13 @@ function buildOutline(html) {
     if (!outlineListEl) return;
     outlineListEl.innerHTML = '';
     var headings = extractHeadings(html);
+    if (!headings.length) {
+        var empty = document.createElement('div');
+        empty.className = 'outline-empty';
+        empty.textContent = '헤딩이 없습니다';
+        outlineListEl.appendChild(empty);
+        return;
+    }
     headings.forEach(function (h, idx) {
         var item = document.createElement('div');
         item.className = 'outline-item level-' + h.level;
@@ -2209,7 +2431,19 @@ function renderPreview() {
         // to the file. TOC/admonitions/footnotes render per-token inside
         // renderMarkdown so their original syntax survives round-trips.
         var html = renderMarkdown(currentContent);
+        // The innerHTML swap resets the pane's scroll position — losing the
+        // reading spot on every commit. Capture and restore it.
+        var scroller = previewEl.closest('.preview-pane') || previewEl.parentElement;
+        var scrollTop = scroller ? scroller.scrollTop : 0;
         previewEl.innerHTML = html;
+        if (scroller && scrollTop) {
+            // The pane uses scroll-behavior:smooth — restoring through it
+            // would ANIMATE back from the top on every commit. Snap instead.
+            var prevBehavior = scroller.style.scrollBehavior;
+            scroller.style.scrollBehavior = 'auto';
+            scroller.scrollTop = scrollTop;
+            scroller.style.scrollBehavior = prevBehavior;
+        }
         highlightCodeBlocks(previewEl);
         addHeadingIds();
         buildOutline(html);
@@ -2217,12 +2451,28 @@ function renderPreview() {
         wrapTablesScrollable(previewEl);
         bindImageLightbox(previewEl);
         bindBlockEditing(previewEl);
+        renderEmptyPlaceholder();
         renderMath(previewEl);
         renderMermaid(previewEl);
         // Rebuild scroll-sync anchors after each render so heading offsets stay accurate
         buildScrollAnchors();
+        // An open preview-search lost its <mark> highlights in the swap —
+        // re-run the query (without stealing scroll) so the panel stays live.
+        if (_previewSearchPanel && _previewSearchPanel.style.display !== 'none' && _previewSearchQuery) {
+            highlightPreviewMatches(_previewSearchQuery);
+            if (_previewMatches.length) {
+                _previewMatchIdx = 0;
+                _previewMatches[0].classList.add('preview-search-active');
+                _previewMatches[0].classList.remove('preview-search-hit');
+            }
+            updatePreviewSearchCount();
+        }
     } catch (err) {
         console.error('MD Pretty Viewer: render failed', err);
+        // Stale tokens must not feed the next commit — better to disable
+        // block ops than to write outdated raws over the document.
+        _currentTokens = null;
+        showToast('렌더링 오류가 발생했습니다 — 원본은 안전합니다');
     } finally {
         _isRendering = false;
     }
@@ -2434,7 +2684,9 @@ function slugify(text) {
    token raw and therefore in the saved source. */
 function buildTocHtml(tokens) {
     var headings = [], seen = {};
-    (tokens || []).forEach(function (t) {
+    var fmSpan = frontmatterSpanAt(tokens || []);
+    (tokens || []).forEach(function (t, ti) {
+        if (ti < fmSpan) return;   // "title: x\n---" in frontmatter lexes as a phantom setext heading
         if (t.type !== 'heading' || t.depth > 4) return;
         var text = String(t.text || '').replace(/[`*_~]/g, '').trim();
         if (!text || /\[\[(TOC|목차)\]\]/i.test(text)) return;
@@ -2978,18 +3230,28 @@ function _runPdfExport(userOpts) {
     }, 150);
 }
 
+var _toastTimers = [];
 function showToast(message) {
     var existing = document.querySelector('.md-toast');
-    if (existing) existing.remove();
-    var toast = document.createElement('div');
-    toast.className = 'md-toast';
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    setTimeout(function () { toast.classList.add('show'); }, 10);
-    setTimeout(function () {
-        toast.classList.remove('show');
-        setTimeout(function () { toast.remove(); }, 200);
-    }, 1500);
+    // Same message re-fired while visible: extend its life instead of
+    // flicker-recreating (repeated ops spam the same toast).
+    if (existing && existing.textContent === message) {
+        _toastTimers.forEach(clearTimeout);
+        existing.classList.add('show');
+    } else {
+        if (existing) existing.remove();
+        existing = document.createElement('div');
+        existing.className = 'md-toast';
+        existing.textContent = message;
+        document.body.appendChild(existing);
+        _toastTimers.forEach(clearTimeout);
+        _toastTimers = [setTimeout(function () { existing.classList.add('show'); }, 10)];
+    }
+    var el = existing;
+    _toastTimers.push(setTimeout(function () {
+        el.classList.remove('show');
+        setTimeout(function () { el.remove(); }, 200);
+    }, 1500));
 }
 
 /* ───────────────────────────────────────────
@@ -3041,13 +3303,33 @@ function updateLineNumbers() {
 /* ───────────────────────────────────────────
    VS Code communication
    ─────────────────────────────────────────── */
+var _pendingSaveContent = null;
 function saveToDocument(content) {
     clearTimeout(window._saveTimer);
     setSaveState('saving');
+    _pendingSaveContent = content;
     window._saveTimer = setTimeout(function () {
+        _pendingSaveContent = null;
         vscodeApi.postMessage({ type: 'edit', content: content });
         setSaveState('saved');
     }, 300);
+}
+/* Send any debounced-but-unsent edit NOW — the webview may be about to be
+   hidden or torn down, and a 300ms timer wouldn't survive that. */
+function flushPendingSave() {
+    if (_pendingSaveContent == null) return false;
+    clearTimeout(window._saveTimer);
+    var content = _pendingSaveContent;
+    _pendingSaveContent = null;
+    vscodeApi.postMessage({ type: 'edit', content: content });
+    setSaveState('saved');
+    return true;
+}
+if (typeof window !== 'undefined') {
+    window.addEventListener('pagehide', flushPendingSave);
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'hidden') flushPendingSave();
+    });
 }
 
 /* ───────────────────────────────────────────
@@ -3250,11 +3532,74 @@ function setupScrollSync() {
 /* ───────────────────────────────────────────
    Keyboard shortcuts
    ─────────────────────────────────────────── */
+function isTypingTarget(el) {
+    if (!el) return false;
+    var tag = (el.tagName || '').toLowerCase();
+    return tag === 'input' || tag === 'textarea' || tag === 'select' || el.isContentEditable;
+}
+
+/* Keyboard shortcut help overlay — toggled with "?" */
+var _helpOverlayEl = null;
+function toggleShortcutHelp() {
+    if (_helpOverlayEl) { closeShortcutHelp(); return; }
+    var ROWS = [
+        ['✎ / ＋ / ⠿', '블록 편집 · 삽입 · 이동 메뉴 (블록에 마우스 올리면 왼쪽에 표시)'],
+        ['/', '빈 블록 편집 중 블록 타입 변환 메뉴'],
+        ['Cmd/Ctrl + Enter', '편집 저장'],
+        ['ESC', '편집 취소 · 메뉴/검색/도움말 닫기'],
+        ['Cmd/Ctrl + Z', '편집 되돌리기 (Preview)'],
+        ['Cmd/Ctrl + Shift + Z', '다시 실행 (Preview)'],
+        ['Cmd/Ctrl + S', '즉시 저장'],
+        ['Cmd/Ctrl + F', '찾기 (Preview 검색 / 편집 찾기·바꾸기)'],
+        ['Cmd/Ctrl + E', 'Preview ↔ Edit 전환'],
+        ['Enter / Shift+Enter', '표 셀: 아래/위 셀로 이동'],
+        ['Tab / Shift+Tab', '표 셀: 다음/이전 셀로 이동'],
+        ['?', '이 도움말']
+    ];
+    var overlay = document.createElement('div');
+    overlay.className = 'md-help-overlay';
+    overlay.dataset.mdChrome = '1';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-label', '키보드 단축키');
+    var card = document.createElement('div');
+    card.className = 'md-help-card';
+    var title = document.createElement('div');
+    title.className = 'md-help-title';
+    title.textContent = '⌨️ 키보드 단축키';
+    card.appendChild(title);
+    ROWS.forEach(function (r) {
+        var row = document.createElement('div');
+        row.className = 'md-help-row';
+        var k = document.createElement('kbd');
+        k.textContent = r[0];
+        var d = document.createElement('span');
+        d.textContent = r[1];
+        row.appendChild(k);
+        row.appendChild(d);
+        card.appendChild(row);
+    });
+    var hint = document.createElement('div');
+    hint.className = 'md-help-hint';
+    hint.textContent = 'ESC 또는 바깥 클릭으로 닫기';
+    card.appendChild(hint);
+    overlay.appendChild(card);
+    overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) closeShortcutHelp();
+    });
+    document.body.appendChild(overlay);
+    _helpOverlayEl = overlay;
+}
+function closeShortcutHelp() {
+    if (_helpOverlayEl && _helpOverlayEl.parentNode) _helpOverlayEl.parentNode.removeChild(_helpOverlayEl);
+    _helpOverlayEl = null;
+}
+
 function setupKeyboardShortcuts() {
     document.addEventListener('keydown', function (e) {
         var mod = e.metaKey || e.ctrlKey;
         // ESC closes lightbox / preview search / block popup before anything else
         if (e.key === 'Escape') {
+            if (_helpOverlayEl) { e.preventDefault(); closeShortcutHelp(); return; }
             if (_lightboxEl) { e.preventDefault(); closeLightbox(); return; }
             if (_previewSearchPanel && _previewSearchPanel.style.display !== 'none') {
                 e.preventDefault(); closePreviewSearch(); return;
@@ -3271,6 +3616,24 @@ function setupKeyboardShortcuts() {
         // Cmd/Ctrl+Z in Preview → undo last inline edit
         if (mod && !e.shiftKey && (e.key === 'z' || e.key === 'Z') && currentMode === 'preview' && !_activeBlockEdit) {
             if (undoInlineEdit()) { e.preventDefault(); return; }
+        }
+        // Cmd/Ctrl+Shift+Z or Ctrl+Y in Preview → redo
+        if (((mod && e.shiftKey && (e.key === 'z' || e.key === 'Z')) ||
+             (e.ctrlKey && !e.metaKey && (e.key === 'y' || e.key === 'Y'))) &&
+            currentMode === 'preview' && !_activeBlockEdit) {
+            if (redoInlineEdit()) { e.preventDefault(); return; }
+        }
+        // Cmd/Ctrl+S → flush the debounced save immediately, everywhere
+        if (mod && (e.key === 's' || e.key === 'S')) {
+            e.preventDefault();
+            if (flushPendingSave()) showToast('저장됨');
+            return;
+        }
+        // ? → keyboard shortcut help (only when not typing anywhere)
+        if (e.key === '?' && !mod && !_activeBlockEdit && !isTypingTarget(document.activeElement)) {
+            e.preventDefault();
+            toggleShortcutHelp();
+            return;
         }
         if (mod && (e.key === 'h' || e.key === 'H')) { e.preventDefault(); openFindReplace(); return; }
         if (mod && e.key === 'e') {
@@ -4064,6 +4427,7 @@ function getToolbarIcon(name) {
 /* ───────────────────────────────────────────
    Message handling from extension
    ─────────────────────────────────────────── */
+var _lastUpdateRenderAt = 0;
 function setupMessageListener() {
     window.addEventListener('message', function (e) {
         var msg = e.data;
@@ -4079,15 +4443,35 @@ function setupMessageListener() {
             // still covers those edits).
             if (_activeBlockEdit) closeBlockEditor(false);
             clearTimeout(window._saveTimer);
+            _pendingSaveContent = null;   // a later flush must not replay stale content
             setSaveState('saved');
             _externalGen++;
             _editHistory.length = 0;
+            _redoHistory.length = 0;
+            resetBlockChrome();   // popups anchored to old indexes die NOW, not at render time
             currentContent = msg.content;
             if (editorEl && document.activeElement !== editorEl) {
                 editorEl.value = currentContent;
             }
             if (currentMode === 'preview' || currentMode === 'split') {
-                renderPreview();
+                // Typing in a split source tab streams one update per
+                // keystroke — a full preview rebuild each time janks. Render
+                // the first one immediately, coalesce a storm into one
+                // trailing render (tokens are nulled meanwhile so no
+                // structural op can commit stale raws).
+                var now = Date.now();
+                if (now - _lastUpdateRenderAt > 250 && !window._updateRenderTimer) {
+                    _lastUpdateRenderAt = now;
+                    renderPreview();
+                } else {
+                    _currentTokens = null;
+                    clearTimeout(window._updateRenderTimer);
+                    window._updateRenderTimer = setTimeout(function () {
+                        window._updateRenderTimer = null;
+                        _lastUpdateRenderAt = Date.now();
+                        renderPreview();
+                    }, 160);
+                }
             }
             updateStats();
         } else if (msg.type === 'command') {

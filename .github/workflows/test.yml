@@ -13,7 +13,7 @@ jobs:
   webview-verify:
     name: Webview verify (Playwright)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
@@ -33,8 +33,8 @@ jobs:
           node -c media/editor.js
           node -c extension.js
 
-      - name: Run webview verification
-        run: python3 tests/verify.py
+      - name: Run all verification suites
+        run: python3 tests/run_suites.py
 
       - name: Upload evidence on failure
         if: failure()
