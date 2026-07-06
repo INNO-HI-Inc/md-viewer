@@ -1150,6 +1150,7 @@ function performBlockMove(srcIdx, tgtIdx, before) {
 function resetBlockChrome() {
     closeBlockPopup();
     closeWysiwygSlash();
+    closeLinkPopover();
     hideDropIndicator();
     _dragState = null;
 }
@@ -1350,6 +1351,111 @@ function applyWysiwygSlash(item) {
     }, 40);
 }
 
+/* ── Link edit popover (v1.0.28) ──
+   VS Code webviews don't support window.prompt, so the old toolbar link
+   flow silently did nothing. This popover edits an <a>'s text/URL in place
+   while a WYSIWYG editor is open (click the link, or 🔗 on a selection). */
+var _linkPopEl = null;
+var _linkPopAnchor = null;
+function linkPopoverIsOpen() { return !!_linkPopEl; }
+function closeLinkPopover() {
+    if (_linkPopEl && _linkPopEl.parentNode) _linkPopEl.parentNode.removeChild(_linkPopEl);
+    _linkPopEl = null;
+    _linkPopAnchor = null;
+    document.removeEventListener('mousedown', _linkPopOutside, true);
+}
+function _linkPopOutside(e) {
+    if (!_linkPopEl || _linkPopEl.contains(e.target)) return;
+    closeLinkPopover();
+}
+function openLinkPopover(anchorEl, focusUrl) {
+    closeLinkPopover();
+    if (!anchorEl) return;
+    _linkPopAnchor = anchorEl;
+
+    var pop = document.createElement('div');
+    pop.className = 'md-link-popover';
+    pop.dataset.mdChrome = '1';
+    pop.setAttribute('role', 'dialog');
+    pop.setAttribute('aria-label', '링크 편집');
+
+    function field(labelText, value, placeholder) {
+        var row = document.createElement('label');
+        row.className = 'md-link-row';
+        var lab = document.createElement('span');
+        lab.textContent = labelText;
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.value = value;
+        input.placeholder = placeholder;
+        input.spellcheck = false;
+        row.appendChild(lab);
+        row.appendChild(input);
+        pop.appendChild(row);
+        return input;
+    }
+    var textInput = field('텍스트', anchorEl.textContent || '', '표시할 텍스트');
+    var urlInput = field('URL', anchorEl.getAttribute('href') || '', 'https://…');
+
+    var actions = document.createElement('div');
+    actions.className = 'md-link-actions';
+    function actionBtn(label, cls, fn) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = label;
+        b.className = cls;
+        b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        b.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); fn(); });
+        actions.appendChild(b);
+        return b;
+    }
+    function applyLink() {
+        var a = _linkPopAnchor;
+        if (a && a.isConnected) {
+            var url = urlInput.value.trim();
+            var text = textInput.value;
+            if (text && text !== a.textContent) a.textContent = text;
+            if (url) a.setAttribute('href', url);
+        }
+        closeLinkPopover();
+        refocusEditor();
+    }
+    function removeLink() {
+        var a = _linkPopAnchor;
+        if (a && a.isConnected) a.replaceWith(document.createTextNode(a.textContent || ''));
+        closeLinkPopover();
+        refocusEditor();
+    }
+    function refocusEditor() {
+        if (_activeBlockEdit && _activeBlockEdit.blockEl && _activeBlockEdit.blockEl.focus) {
+            _activeBlockEdit.blockEl.focus();
+        }
+    }
+    actionBtn('적용', 'md-link-apply', applyLink);
+    actionBtn('링크 제거', 'md-link-remove', removeLink);
+    pop.appendChild(actions);
+
+    pop.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter') { ev.preventDefault(); ev.stopPropagation(); applyLink(); }
+        else if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); closeLinkPopover(); refocusEditor(); }
+    });
+
+    document.body.appendChild(pop);
+    _linkPopEl = pop;
+    var r = anchorEl.getBoundingClientRect();
+    var pr = pop.getBoundingClientRect();
+    var x = Math.max(8, Math.min(window.innerWidth - pr.width - 8, r.left));
+    var y = r.bottom + 6;
+    if (y + pr.height > window.innerHeight - 8) y = r.top - pr.height - 6;
+    pop.style.left = Math.round(x) + 'px';
+    pop.style.top = Math.round(y) + 'px';
+    (focusUrl ? urlInput : textInput).focus();
+    (focusUrl ? urlInput : textInput).select();
+    setTimeout(function () {
+        document.addEventListener('mousedown', _linkPopOutside, true);
+    }, 0);
+}
+
 /* Small floating pencil that appears in the corner of a hovered block or cell.
    Click to open the editor. Stored under the block/cell but not part of the
    saved source — stripped by cleanEditAffordances() before every commit. */
@@ -1466,9 +1572,15 @@ function applyFormatCommand(cmd) {
     var sel = window.getSelection();
     if (!sel || sel.isCollapsed) return;
     if (cmd === 'link') {
-        var url = window.prompt('링크 URL', 'https://');
-        if (!url) return;
-        try { document.execCommand('createLink', false, url); } catch (_) {}
+        // window.prompt doesn't exist in VS Code webviews — create the link
+        // with a placeholder href and edit it in the popover.
+        var host0 = _activeBlockEdit.cell || _activeBlockEdit.blockEl;
+        try { document.execCommand('createLink', false, 'https://'); } catch (_) {}
+        var node = sel.anchorNode;
+        var a = node && node.parentElement ? node.parentElement.closest('a') : null;
+        if (!a && host0) a = host0.querySelector('a[href="https://"]');
+        if (a) openLinkPopover(a, true);
+        return;
     } else if (cmd === 'code') {
         // Wrap in <code> manually — execCommand doesn't cover it
         var range = sel.getRangeAt(0);
@@ -1605,6 +1717,8 @@ function openCellEditor(cell, blockIdx, kind) {
     } catch (_) {}
 
     addDoneButton(cell);
+    // Markdown tables get structural controls (row/col/align) while editing
+    if (kind !== 'html') showTableToolbar(cell.closest('.md-block'));
 
     _activeBlockEdit = {
         mode: kind === 'html' ? 'html-cell' : 'cell',
@@ -1732,9 +1846,138 @@ function moveToCellByOffset(blockIdx, kind, isHeader, rowIdx, colIdx, delta, axi
             // Wrapping past end of row → try first cell of next row
             var trialRow = destRow + 1;
             next = findCellByCoords(blockIdx, false, trialRow, 0);
+            if (!next && delta > 0 && kind !== 'html') {
+                // Tab past the very last cell — spreadsheet muscle memory:
+                // grow the table by one row and keep typing.
+                var token = _currentTokens && _currentTokens[blockIdx];
+                if (token && token.type === 'table') {
+                    tableMutate(blockIdx, function (t) {
+                        t.rows.push(t.header.map(emptyTableCell));
+                    });
+                    var newRowIdx = token.rows.length - 1;
+                    setTimeout(function () {
+                        if (gen !== _externalGen) return;
+                        var c = findCellByCoords(blockIdx, false, newRowIdx, 0);
+                        if (c) openCellEditor(c, blockIdx, kind);
+                    }, 20);
+                    return;
+                }
+            }
         }
         if (next) openCellEditor(next, blockIdx, kind);
     }, 20);
+}
+
+/* ── Table structure editing (v1.0.28) ──
+   Row/column insert·delete and column alignment for MARKDOWN tables,
+   mutating the parsed token and regenerating the table source. HTML
+   tables keep raw-source editing (their layout is user-authored). */
+function tableMutate(blockIdx, mutate) {
+    var token = _currentTokens && _currentTokens[blockIdx];
+    if (!token || token.type !== 'table') return false;
+    mutate(token);
+    var trailing = ((token.raw || '').match(/\n*$/) || ['\n'])[0] || '\n';
+    var newRaw = regenerateTableMarkdown(token).replace(/\n+$/, '') + trailing;
+    var parts = [];
+    for (var i = 0; i < _currentTokens.length; i++) {
+        parts.push(i === blockIdx ? newRaw : (_currentTokens[i].raw || ''));
+    }
+    applyRawsUpdate(parts);
+    return true;
+}
+function emptyTableCell() { return { text: '' }; }
+
+/* Toolbar action while a markdown-table cell editor is open. Commits the
+   cell text first, then applies the structural change, then re-opens the
+   editor on the logical cell so the flow never breaks. */
+function tableToolbarAction(action) {
+    if (!_activeBlockEdit || _activeBlockEdit.mode !== 'cell') return;
+    var ed = _activeBlockEdit;
+    var blockIdx = ed.blockIdx, rowIdx = ed.rowIdx, colIdx = ed.colIdx, isHeader = ed.isHeader;
+    var token = _currentTokens && _currentTokens[blockIdx];
+    if (!token || token.type !== 'table') return;
+    var cols = token.header.length;
+    var rows = token.rows.length;
+
+    // Validate before touching anything
+    if (action === 'row-' && (isHeader || rows <= 1)) { showToast(isHeader ? '제목 행은 삭제할 수 없습니다' : '마지막 행입니다'); return; }
+    if (action === 'col-' && cols <= 1) { showToast('마지막 열입니다'); return; }
+
+    closeBlockEditor(true);   // single-token swap — blockIdx stays stable
+
+    var reopen = { header: isHeader, row: rowIdx, col: colIdx };
+    var ok = tableMutate(blockIdx, function (t) {
+        switch (action) {
+            case 'row+': {
+                var at = isHeader ? 0 : rowIdx + 1;
+                t.rows.splice(at, 0, t.header.map(emptyTableCell));
+                reopen = { header: false, row: at, col: colIdx };
+                break;
+            }
+            case 'row-': {
+                t.rows.splice(rowIdx, 1);
+                reopen = { header: false, row: Math.min(rowIdx, t.rows.length - 1), col: colIdx };
+                break;
+            }
+            case 'col+': {
+                t.header.splice(colIdx + 1, 0, { text: '제목' });
+                t.align.splice(colIdx + 1, 0, null);
+                t.rows.forEach(function (r) { r.splice(colIdx + 1, 0, emptyTableCell()); });
+                reopen = { header: isHeader, row: rowIdx, col: colIdx + 1 };
+                break;
+            }
+            case 'col-': {
+                t.header.splice(colIdx, 1);
+                t.align.splice(colIdx, 1);
+                t.rows.forEach(function (r) { r.splice(colIdx, 1); });
+                reopen = { header: isHeader, row: rowIdx, col: Math.min(colIdx, t.header.length - 1) };
+                break;
+            }
+            case 'align': {
+                var CYCLE = [null, 'left', 'center', 'right'];
+                var cur = CYCLE.indexOf(t.align[colIdx] || null);
+                t.align[colIdx] = CYCLE[(cur + 1) % CYCLE.length];
+                showToast('열 정렬: ' + (t.align[colIdx] || '기본'));
+                break;
+            }
+        }
+    });
+    if (!ok) return;
+    var gen = _externalGen;
+    setTimeout(function () {
+        if (gen !== _externalGen) return;
+        var cell = findCellByCoords(blockIdx, reopen.header, reopen.row, reopen.col);
+        if (cell) openCellEditor(cell, blockIdx, 'markdown');
+    }, 30);
+}
+
+/* Small toolbar above the table while one of its cells is being edited. */
+function showTableToolbar(blockEl) {
+    if (!blockEl || blockEl.querySelector(':scope > .md-table-toolbar')) return;
+    var bar = document.createElement('div');
+    bar.className = 'md-table-toolbar';
+    bar.dataset.mdChrome = '1';
+    bar.contentEditable = 'false';
+    var BUTTONS = [
+        { key: 'row+',  label: '＋행', aria: '아래에 행 추가' },
+        { key: 'row-',  label: '－행', aria: '현재 행 삭제' },
+        { key: 'col+',  label: '＋열', aria: '오른쪽에 열 추가' },
+        { key: 'col-',  label: '－열', aria: '현재 열 삭제' },
+        { key: 'align', label: '⇤⇥',  aria: '열 정렬 전환' }
+    ];
+    BUTTONS.forEach(function (b) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = b.label;
+        btn.setAttribute('aria-label', b.aria);
+        btn.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        btn.addEventListener('click', function (e) {
+            e.preventDefault(); e.stopPropagation();
+            tableToolbarAction(b.key);
+        });
+        bar.appendChild(btn);
+    });
+    blockEl.appendChild(bar);
 }
 
 function alignToDelim(a) {
@@ -1799,11 +2042,88 @@ function openBlockEditor(blockEl) {
     var rawText = span > 1 ? joinTokenRaws(_currentTokens, blockIdx, span) : (token.raw || '');
     var trailingBlanks = rawText.match(/\n*$/)[0];
 
-    if (span === 1 && isWysiwygSafe(token, blockEl) && getTurndown()) {
+    if (span === 1 && token.type === 'code' && /^(`{3,}|~{3,})/.test(token.raw || '')) {
+        // Fenced code gets a dedicated editor: code text without the fences
+        // plus a language field — no risk of breaking the fence syntax.
+        openCodeEditor(blockEl, blockIdx, token, trailingBlanks);
+    } else if (span === 1 && isWysiwygSafe(token, blockEl) && getTurndown()) {
         openWysiwygEditor(blockEl, blockIdx, token, trailingBlanks);
     } else {
         openRawEditor(blockEl, blockIdx, rawText, trailingBlanks, span);
     }
+}
+
+function openCodeEditor(blockEl, blockIdx, token, trailingBlanks) {
+    var fence = ((token.raw || '').match(/^(`{3,}|~{3,})/) || ['```'])[0];
+
+    blockEl.classList.add('md-block-editing', 'md-code-editing');
+    blockEl.innerHTML = '';
+
+    var head = document.createElement('div');
+    head.className = 'md-code-edit-head';
+    head.dataset.mdChrome = '1';
+    var langLabel = document.createElement('span');
+    langLabel.className = 'md-code-lang-label';
+    langLabel.textContent = '언어';
+    var langInput = document.createElement('input');
+    langInput.type = 'text';
+    langInput.className = 'md-code-lang';
+    langInput.placeholder = 'js, python, …';
+    langInput.value = token.lang || '';
+    langInput.spellcheck = false;
+    head.appendChild(langLabel);
+    head.appendChild(langInput);
+    blockEl.appendChild(head);
+
+    var textarea = document.createElement('textarea');
+    textarea.className = 'md-block-editor md-code-editor';
+    textarea.value = token.text || '';
+    textarea.spellcheck = false;
+    blockEl.appendChild(textarea);
+    autoResizeTextarea(textarea);
+    textarea.focus();
+    textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+
+    addDoneButton(blockEl);
+
+    _activeBlockEdit = {
+        blockEl: blockEl, blockIdx: blockIdx, originalRaw: token.raw,
+        trailingBlanks: trailingBlanks, mode: 'code',
+        textarea: textarea, langInput: langInput, fence: fence, span: 1
+    };
+
+    var keyHandler = function (ev) {
+        if (ev.key === 'Escape') { ev.preventDefault(); closeBlockEditor(false); }
+        else if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) {
+            ev.preventDefault();
+            closeBlockEditor(true);
+        } else if (ev.key === 'Tab' && ev.target === textarea) {
+            // Tab belongs to the code, not focus traversal
+            ev.preventDefault();
+            var s = textarea.selectionStart, e2 = textarea.selectionEnd;
+            textarea.value = textarea.value.slice(0, s) + '  ' + textarea.value.slice(e2);
+            textarea.selectionStart = textarea.selectionEnd = s + 2;
+        }
+    };
+    var inputHandler = function () { autoResizeTextarea(textarea); };
+    // Two focusables (language + code) — only commit when focus leaves the block
+    var focusOutHandler = function () {
+        setTimeout(function () {
+            if (!_activeBlockEdit || _activeBlockEdit.blockEl !== blockEl) return;
+            var ae = document.activeElement;
+            if (ae && blockEl.contains(ae)) return;
+            closeBlockEditor(true);
+        }, 0);
+    };
+    blockEl.addEventListener('keydown', keyHandler);
+    blockEl.addEventListener('focusout', focusOutHandler);
+    textarea.addEventListener('input', inputHandler);
+    _activeBlockEdit.teardown = function () {
+        blockEl.removeEventListener('keydown', keyHandler);
+        blockEl.removeEventListener('focusout', focusOutHandler);
+        textarea.removeEventListener('input', inputHandler);
+        blockEl.classList.remove('md-block-editing', 'md-code-editing');
+    };
 }
 
 function openWysiwygEditor(blockEl, blockIdx, token, trailingBlanks) {
@@ -1851,10 +2171,19 @@ function openWysiwygEditor(blockEl, blockIdx, token, trailingBlanks) {
     };
     var blurHandler = function () {
         setTimeout(function () {
-            // Keep the editor open while the slash menu has focus-stealing UI
-            if (wysiwygSlashIsOpen()) return;
+            // Keep the editor open while the slash menu / link popover has
+            // focus-stealing UI
+            if (wysiwygSlashIsOpen() || linkPopoverIsOpen()) return;
             if (_activeBlockEdit && _activeBlockEdit.blockEl === blockEl) closeBlockEditor(true);
         }, 0);
+    };
+    var linkClickHandler = function (ev) {
+        var a = ev.target && ev.target.closest ? ev.target.closest('a') : null;
+        if (!a || !blockEl.contains(a)) return;
+        // Inside the editor a link click means "edit this link", not navigate
+        ev.preventDefault();
+        ev.stopPropagation();
+        openLinkPopover(a, false);
     };
     var pasteHandler = function (ev) { handleEditorImageEvent(ev, 'paste'); };
     var dropHandler = function (ev) { handleEditorImageEvent(ev, 'drop'); };
@@ -1863,6 +2192,7 @@ function openWysiwygEditor(blockEl, blockIdx, token, trailingBlanks) {
 
     blockEl.addEventListener('keydown', keyHandler);
     blockEl.addEventListener('blur', blurHandler);
+    blockEl.addEventListener('click', linkClickHandler);
     blockEl.addEventListener('paste', pasteHandler);
     blockEl.addEventListener('drop', dropHandler);
     blockEl.addEventListener('dragover', dragoverHandler);
@@ -1870,6 +2200,7 @@ function openWysiwygEditor(blockEl, blockIdx, token, trailingBlanks) {
     _activeBlockEdit.teardown = function () {
         blockEl.removeEventListener('keydown', keyHandler);
         blockEl.removeEventListener('blur', blurHandler);
+        blockEl.removeEventListener('click', linkClickHandler);
         blockEl.removeEventListener('paste', pasteHandler);
         blockEl.removeEventListener('drop', dropHandler);
         blockEl.removeEventListener('dragover', dragoverHandler);
@@ -1878,6 +2209,7 @@ function openWysiwygEditor(blockEl, blockIdx, token, trailingBlanks) {
         blockEl.removeAttribute('spellcheck');
         blockEl.classList.remove('md-block-editing', 'md-block-wysiwyg');
         closeWysiwygSlash();
+        closeLinkPopover();
     };
 }
 
@@ -2121,6 +2453,30 @@ function closeBlockEditor(commit) {
             renderPreview();
             return;
         }
+        // Blank blockquote separators come back as "> " — normalize the
+        // trailing space so quote round-trips stay byte-stable.
+        newRaw = newRaw.replace(/^((?:>[ \t]*)+)$/gm, function (m) {
+            return m.replace(/[ \t]+$/, '').replace(/>[ \t]+(?=>)/g, '> ');
+        });
+        // Turndown often reformats without changing MEANING (quote marker
+        // spacing, added blank quote lines). If the new markdown renders to
+        // the same HTML as the original, keep the original bytes.
+        try {
+            var oldTrim = (ed.originalRaw || '').replace(/\n+$/, '');
+            if (newRaw !== oldTrim &&
+                marked.parser(marked.lexer(newRaw)) === marked.parser(marked.lexer(oldTrim))) {
+                newRaw = oldTrim;
+            }
+        } catch (_) {}
+        if (ed.teardown) ed.teardown();
+    } else if (ed.mode === 'code') {
+        var codeLang = (ed.langInput.value || '').trim().replace(/[`\s]/g, '');
+        var codeBody = ed.textarea.value.replace(/\n+$/, '');
+        var codeFence = ed.fence || '```';
+        // Code containing the fence sequence would terminate it early —
+        // grow the fence until it can't collide.
+        while (codeBody.indexOf(codeFence) >= 0) codeFence += codeFence.charAt(0);
+        newRaw = codeFence + codeLang + '\n' + codeBody + '\n' + codeFence;
         if (ed.teardown) ed.teardown();
     } else {
         newRaw = ed.textarea.value;

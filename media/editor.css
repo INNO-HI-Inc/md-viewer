@@ -3259,6 +3259,150 @@ body.vscode-dark .md-block-popup {
 }
 body.vscode-dark .md-popup-item { color: #e8e8e8; }
 
+/* ══════════════════════════════════════════════════════════════
+   BLOCK-TYPE EDITORS (v1.0.28) — table toolbar · code editor · link popover
+   ══════════════════════════════════════════════════════════════ */
+/* Table structure toolbar — floats above the table while a cell is edited */
+.markdown-body .md-table-toolbar {
+    position: absolute;
+    top: -36px;
+    left: 0;
+    display: inline-flex;
+    gap: 3px;
+    padding: 3px;
+    background: var(--md-bg-elevated, #fff);
+    border: 1px solid var(--md-border, #d0d7de);
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    z-index: 9;
+    user-select: none;
+}
+body.vscode-dark .markdown-body .md-table-toolbar { background: #252830; border-color: #3a3f4a; }
+.markdown-body .md-table-toolbar button {
+    padding: 3px 8px;
+    background: transparent;
+    border: none;
+    border-radius: 5px;
+    color: var(--md-text, #1a1a1a);
+    font-size: 11.5px;
+    font-family: inherit;
+    line-height: 1.3;
+    cursor: pointer;
+    transition: background 0.1s, color 0.1s;
+}
+body.vscode-dark .markdown-body .md-table-toolbar button { color: #e8e8e8; }
+.markdown-body .md-table-toolbar button:hover {
+    background: color-mix(in srgb, var(--md-accent) 14%, transparent);
+    color: var(--md-accent);
+}
+
+/* Code block editor — language field header + monospace body */
+.markdown-body .md-code-edit-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: color-mix(in srgb, var(--md-accent) 5%, transparent);
+    border: 1px solid var(--md-border, #d0d7de);
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+}
+.markdown-body .md-code-lang-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--md-text-muted, #6b7280);
+}
+.markdown-body .md-code-lang {
+    width: 140px;
+    padding: 3px 8px;
+    background: var(--md-bg, #fff);
+    border: 1px solid var(--md-border, #d0d7de);
+    border-radius: 5px;
+    color: var(--md-text);
+    font-size: 12px;
+    font-family: var(--md-code-font, ui-monospace, SFMono-Regular, Menlo, monospace);
+}
+body.vscode-dark .markdown-body .md-code-lang { background: #1a1c22; }
+.markdown-body .md-code-editing .md-block-editor.md-code-editor {
+    margin-top: 0;
+    border-radius: 0 0 8px 8px;
+    font-family: var(--md-code-font, ui-monospace, SFMono-Regular, Menlo, monospace);
+    font-size: 13px;
+    line-height: 1.6;
+    tab-size: 2;
+}
+
+/* Link edit popover */
+.md-link-popover {
+    position: fixed;
+    z-index: 9600;
+    width: min(340px, calc(100vw - 24px));
+    padding: 10px 12px;
+    background: var(--md-bg-elevated, #fff);
+    border: 1px solid var(--md-border, #d0d7de);
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    animation: md-fmt-fade 0.1s ease-out;
+}
+body.vscode-dark .md-link-popover { background: #252830; border-color: #3a3f4a; }
+.md-link-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.md-link-row span {
+    flex: 0 0 44px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--md-text-muted, #6b7280);
+}
+.md-link-row input {
+    flex: 1;
+    min-width: 0;
+    padding: 4px 8px;
+    background: var(--md-bg, #fff);
+    border: 1px solid var(--md-border, #d0d7de);
+    border-radius: 5px;
+    color: var(--md-text);
+    font-size: 12.5px;
+    font-family: inherit;
+}
+body.vscode-dark .md-link-row input { background: #1a1c22; color: #e8e8e8; }
+.md-link-row input:focus {
+    outline: none;
+    border-color: var(--md-accent);
+}
+.md-link-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+.md-link-actions button {
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: filter 0.1s, background 0.1s;
+}
+.md-link-apply {
+    background: var(--md-accent);
+    border: 1px solid var(--md-accent);
+    color: #fff;
+}
+.md-link-apply:hover { filter: brightness(1.08); }
+.md-link-remove {
+    background: transparent;
+    border: 1px solid var(--md-border, #d0d7de);
+    color: var(--md-text-muted, #6b7280);
+}
+.md-link-remove:hover { color: #e5484d; border-color: #e5484d; }
+
+body.exporting-pdf .md-link-popover,
+body.exporting-pdf .markdown-body .md-table-toolbar { display: none !important; }
+
 /* Menu item icon prefix (＋ insert / slash menus) */
 .md-popup-icon {
     display: inline-flex;
