@@ -240,6 +240,36 @@ with sync_playwright() as p:
     page.wait_for_timeout(100)
     check('link: popover killed by external update', page.evaluate("!document.querySelector('.md-link-popover')"))
 
+    # ── 체크박스: 모든 변형이 올바른 소스 줄을 토글 ──
+    CHK_DOC = "# 목록\n\n> - [ ] 인용 속 할 일\n\n1. [ ] 번호 할 일\n\n- [ ] 보통 할 일\n- 그냥 항목\n  - [ ] 중첩 할 일\n"
+    page.evaluate("window.__test.setContent(%r)" % CHK_DOC)
+    check('checkbox: 4 boxes rendered', page.evaluate(
+        "document.querySelectorAll('#preview input[type=checkbox]').length") == 4)
+    for k, expect in [(0, '> - [x] 인용 속 할 일'), (1, '1. [x] 번호 할 일'),
+                      (2, '- [x] 보통 할 일'), (3, '- [x] 중첩 할 일')]:
+        r = page.evaluate("""(function(k){
+            var box = document.querySelectorAll('#preview input[type=checkbox]')[k];
+            var rc = box.getBoundingClientRect(); return {x: rc.left+8, y: rc.top+8};
+        })(%d)""" % k)
+        page.mouse.click(r['x'], r['y'])
+        page.wait_for_timeout(80)
+        check('checkbox: click #%d toggles right line' % k,
+              expect in page.evaluate('currentContent'))
+    r = page.evaluate("""(function(){
+        var box = document.querySelectorAll('#preview input[type=checkbox]')[0];
+        var rc = box.getBoundingClientRect(); return {x: rc.left+8, y: rc.top+8};
+    })()""")
+    page.mouse.click(r['x'], r['y'])
+    page.wait_for_timeout(80)
+    check('checkbox: uncheck restores [ ]', '> - [ ] 인용 속 할 일' in page.evaluate('currentContent'))
+    # 체크박스 토글 후 구조 연산에도 상태 유지 (토큰 동기화)
+    page.evaluate("""(function(){
+        for (var i=0;i<_currentTokens.length;i++)
+            if ((_currentTokens[i].raw||'').indexOf('# 목록') === 0) { duplicateBlock(i); return; }
+    })()""")
+    page.wait_for_timeout(80)
+    check('checkbox: state survives structural op', '1. [x] 번호 할 일' in page.evaluate('currentContent'))
+
     # 크롬 누출 종합
     leaks = page.evaluate("""(function(){
         var bad = ['md-table-toolbar', 'md-code-lang', 'md-link-popover', 'data-md-chrome'];

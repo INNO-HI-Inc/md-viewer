@@ -3064,14 +3064,24 @@ function buildTocHtml(tokens) {
     return toc.join('');
 }
 
+/* A source line that marked renders as a task-list checkbox. Must accept
+   every variant the renderer accepts — blockquoted ("> - [ ]"), numbered
+   ("1. [ ]"), nested — or the DOM order and the source order drift apart
+   and clicking a box toggles the WRONG line (or silently nothing). */
+var TASK_LINE_RE = /^((?:\s*>\s*)*\s*(?:[-*+]|\d+[.)])\s+)\[([ xX])\](\s)/;
+
 function makeCheckboxesClickable() {
     if (!previewEl) return;
     var idx = 0;
-    previewEl.querySelectorAll('input[type="checkbox"]').forEach(function (box, i) {
+    previewEl.querySelectorAll('input[type="checkbox"]').forEach(function (box) {
+        // Only task-list boxes map to a source line. Raw-HTML checkboxes
+        // (outside <li>) stay read-only so they can't shift the mapping.
+        if (!box.closest('li')) return;
+        var myIdx = idx++;
         box.disabled = false;
         box.style.cursor = 'pointer';
         box.addEventListener('change', function () {
-            toggleCheckboxInSource(i, box.checked);
+            toggleCheckboxInSource(myIdx, box.checked);
         });
     });
 }
@@ -3082,19 +3092,28 @@ function toggleCheckboxInSource(index, checked) {
     var lines = currentContent.split('\n');
     var found = 0;
     var inFence = false;
+    var applied = false;
     for (var i = 0; i < lines.length; i++) {
-        // Track fenced code blocks (```)
-        if (/^\s*```/.test(lines[i])) { inFence = !inFence; continue; }
+        // Track fenced code blocks (``` / ~~~)
+        if (/^\s*(```|~~~)/.test(lines[i])) { inFence = !inFence; continue; }
         if (inFence) continue;
-        var m = lines[i].match(/^(\s*[-*+]\s+)\[([ xX])\](\s)/);
+        var m = lines[i].match(TASK_LINE_RE);
         if (m) {
             if (found === index) {
-                var replacement = m[1] + '[' + (checked ? 'x' : ' ') + ']' + m[3];
-                lines[i] = lines[i].replace(/^(\s*[-*+]\s+)\[([ xX])\](\s)/, replacement);
+                lines[i] = lines[i].replace(TASK_LINE_RE, function (_, pre, _mark, post) {
+                    return pre + '[' + (checked ? 'x' : ' ') + ']' + post;
+                });
+                applied = true;
                 break;
             }
             found++;
         }
+    }
+    if (!applied) {
+        // Mapping drifted (shouldn't happen) — re-render so the DOM box
+        // never lies about what's in the file.
+        renderPreview();
+        return;
     }
     currentContent = lines.join('\n');
     if (editorEl) editorEl.value = currentContent;
