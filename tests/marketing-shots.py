@@ -72,19 +72,30 @@ async def main():
         page = await ctx.new_page()
         frame = await boot(page)
 
-        # ── HERO — light, blue, preview, outline ────────────────────
-        print("HERO")
+        # ── HERO — the flagship: editing in the preview. Insert menu open on
+        # an early block (kept near the top so all 13 block types show), with
+        # the ＋ ⠿ ✎ gutter handles revealed. This is the main README/homepage
+        # hero because it shows at a glance WHAT the extension does. ─────────
+        print("HERO (editing)")
         await backdrop(page, "light")
         await call(frame, "setVscodeTheme", "vscode-light")
         await call(frame, "setTheme", "blue")
         await call(frame, "setMode", "preview")
         await call(frame, "setOutline", True)
-        await call(frame, "scrollTop")
-        await page.wait_for_timeout(700)
-        await shoot(page, "01-hero-light-blue.png")
-        # also the README/homepage hero
+        await page.wait_for_timeout(400)
+        await call(frame, "openInsertMenuHero", "회의록")
+        await page.wait_for_timeout(500)
+        await shoot(page, "00-hero-editing.png")
         await page.screenshot(path=str(REPO / "docs" / "screenshot.png"), full_page=False)
         print("  → ../screenshot.png")
+        await call(frame, "closeOverlays")
+
+        # ── Beautiful reading view (secondary showcase) ─────────────
+        print("PREVIEW")
+        await call(frame, "setOutline", True)
+        await call(frame, "scrollTop")
+        await page.wait_for_timeout(500)
+        await shoot(page, "01-hero-light-blue.png")
 
         # ── DARK HERO — orchid ──────────────────────────────────────
         print("DARK HERO")
@@ -94,8 +105,7 @@ async def main():
         await page.wait_for_timeout(500)
         await shoot(page, "02-hero-dark-orchid.png")
 
-        # ── BLOCK EDITING (the headline feature) ────────────────────
-        # Insert-menu open + handles revealed on a heading block
+        # ── BLOCK EDITING (secondary) — insert menu mid-document ────
         print("BLOCK EDITING")
         await backdrop(page, "light")
         await call(frame, "setVscodeTheme", "vscode-light")

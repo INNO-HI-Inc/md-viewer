@@ -33,8 +33,8 @@ LaTeX math · Mermaid · clipboard image paste · auto TOC · Korean-first typog
 <table>
 <tr>
   <td width="50%" valign="top" align="center">
-    <a href="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/marketing/15-block-insert.png"><img src="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/marketing/15-block-insert.png" alt="Notion-style block editing — insert menu and drag handles in the preview" width="100%"></a>
-    <sub><b>Edit in the preview</b> — ＋ insert · ⠿ drag/reorder · ✎ in-place WYSIWYG · <code>/</code> convert</sub>
+    <a href="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/marketing/01-hero-light-blue.png"><img src="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/marketing/01-hero-light-blue.png" alt="Beautiful reading view with outline sidebar" width="100%"></a>
+    <sub><b>Beautiful reading view</b> — clean typography, live outline, checkboxes &amp; tables</sub>
   </td>
   <td width="50%" valign="top" align="center">
     <a href="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/marketing/02-hero-dark-orchid.png"><img src="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/marketing/02-hero-dark-orchid.png" alt="Dark mode with the Orchid theme and outline sidebar" width="100%"></a>

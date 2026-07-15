@@ -246,6 +246,22 @@ window.__mkt = {
         if (typeof openBlockPopup === 'function' && btn) { openBlockPopup('insert', idx, btn); return true; }
         return false;
     },
+    // Hero variant: keep the anchor block near the TOP so the full 13-item
+    // insert menu drops into open space (no truncation), and reveal that
+    // block's ＋ ⠿ ✎ handles for context.
+    openInsertMenuHero: function (txt) {
+        var b = blockByText(txt);
+        if (!b) return false;
+        var pane = document.querySelector('.preview-pane');
+        // Put the block ~90px below the toolbar so the menu has full height below.
+        var top = b.offsetTop - 90;
+        if (pane) pane.scrollTo({ top: top < 0 ? 0 : top });
+        b.setAttribute('data-shot-hover', '1');
+        var idx = parseInt(b.dataset.blockIdx, 10);
+        var btn = b.querySelector('.md-handle-add');
+        if (typeof openBlockPopup === 'function' && btn) { openBlockPopup('insert', idx, btn); return true; }
+        return false;
+    },
     // Put a paragraph block into in-place WYSIWYG edit state
     editBlock: function (txt) {
         var b = blockByText(txt);
