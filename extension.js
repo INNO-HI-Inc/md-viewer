@@ -1,10 +1,19 @@
 const vscode = require('vscode');
 const path = require('path');
 
-// uri string -> WebviewPanel (one panel per file)
-const openPanels = new Map();
-// All active webviews (for command broadcasting)
-const activeWebviews = new Set();
+// The webview panel of the currently-focused pretty editor. Toolbar commands
+// (bold/italic/code/toggleMode) route here ONLY — broadcasting to every open
+// editor would run the command in unfocused documents and, with auto-save,
+// silently corrupt files the user never touched.
+let activePanel = null;
+
+function postToActive(type, payload) {
+    if (!activePanel) return;
+    try {
+        const p = activePanel.webview.postMessage({ type, ...payload });
+        if (p && typeof p.then === 'function') p.then(undefined, () => {});
+    } catch (_) { /* panel disposed */ }
+}
 
 function getNonce() {
     let text = '';
@@ -59,144 +68,153 @@ function getHtml(webview, nonce, context, document, docBaseUri, settings) {
 </html>`;
 }
 
-async function openPrettyView(context, uri, viewColumn) {
-    const uriKey = uri.toString();
-
-    // If already open, reveal it
-    if (openPanels.has(uriKey)) {
-        const existing = openPanels.get(uriKey);
-        existing.reveal(viewColumn || vscode.ViewColumn.Active);
-        return existing;
-    }
-
-    // Open the document
-    const document = await vscode.workspace.openTextDocument(uri);
-
-    // Determine target column (use active column)
-    const targetColumn = viewColumn || vscode.ViewColumn.Active;
-
-    // Create webview panel in the target column
-    const panel = vscode.window.createWebviewPanel(
-        'mdPrettyViewer.editor',
-        path.basename(uri.fsPath),
-        targetColumn,
-        {
-            enableScripts: true,
-            retainContextWhenHidden: true,
-            enableFindWidget: true,
-            localResourceRoots: [
-                vscode.Uri.joinPath(context.extensionUri, 'media'),
-                vscode.Uri.joinPath(uri, '..'),
-                ...(vscode.workspace.workspaceFolders || []).map(f => f.uri)
-            ]
-        }
-    );
-
-    openPanels.set(uriKey, panel);
-    // Capture webview ref so we can use it inside onDidDispose without
-    // re-accessing `panel.webview` — that getter throws once the panel is
-    // disposed, which is exactly when onDidDispose fires.
-    const webview = panel.webview;
-    activeWebviews.add(webview);
-
-    const docDir = vscode.Uri.joinPath(uri, '..');
-    const docBaseUri = webview.asWebviewUri(docDir);
-    const nonce = getNonce();
-
+function readSettings() {
     const config = vscode.workspace.getConfiguration('mdPrettyViewer');
-    const initialSettings = {
+    return {
         defaultTheme: config.get('defaultTheme', 'blue'),
         defaultFontSize: config.get('defaultFontSize', 16),
         defaultMode: config.get('defaultMode', 'preview'),
         showOutline: config.get('showOutline', false)
     };
+}
 
-    webview.html = getHtml(webview, nonce, context, document, docBaseUri, initialSettings);
+/* ───────────────────────────────────────────
+   Custom text editor — VS Code resolves .md files straight into this
+   webview (no raw-text flicker, no tab-swap timing race). Because it is
+   backed by the real TextDocument, VS Code owns the tab lifecycle; we only
+   render the webview and keep it in sync with the document both ways.
+   ─────────────────────────────────────────── */
+const VIEW_TYPE = 'mdPrettyViewer.editor';
 
-    // Track if panel has been disposed to avoid postMessage after dispose
-    let isDisposed = false;
-    // safePost: never reject after dispose, always swallow errors
-    const safePost = (msg) => {
-        if (isDisposed) return;
-        try {
-            const p = webview.postMessage(msg);
-            if (p && typeof p.then === 'function') p.then(undefined, () => {});
-        } catch (_) { /* panel disposed mid-call */ }
-    };
+class MdPrettyEditorProvider {
+    constructor(context) {
+        this.context = context;
+    }
 
-    // Sync document changes → webview
-    // Use content comparison instead of boolean flag to avoid race when
-    // multiple edits land between webview→doc and doc→webview cycles.
-    const changeDocSub = vscode.workspace.onDidChangeTextDocument(e => {
-        if (e.document.uri.toString() !== uri.toString()) return;
-        const text = e.document.getText();
-        // Skip if we just applied this exact content from the webview
-        if (text === lastAppliedContent) return;
-        safePost({ type: 'update', content: text });
-    });
+    resolveCustomTextEditor(document, webviewPanel, _token) {
+        const context = this.context;
+        const webview = webviewPanel.webview;
+        const uri = document.uri;
+        const docDir = vscode.Uri.joinPath(uri, '..');
 
-    // Tracks the most recent content the webview applied to the doc
-    let lastAppliedContent = null;
+        webview.options = {
+            enableScripts: true,
+            localResourceRoots: [
+                vscode.Uri.joinPath(context.extensionUri, 'media'),
+                docDir,
+                ...(vscode.workspace.workspaceFolders || []).map(f => f.uri)
+            ]
+        };
 
-    // Sync settings changes → webview
-    const configSub = vscode.workspace.onDidChangeConfiguration(e => {
-        if (!e.affectsConfiguration('mdPrettyViewer')) return;
-        const cfg = vscode.workspace.getConfiguration('mdPrettyViewer');
-        safePost({
-            type: 'configChange',
-            settings: {
-                defaultTheme: cfg.get('defaultTheme'),
-                defaultFontSize: cfg.get('defaultFontSize'),
-                defaultMode: cfg.get('defaultMode'),
-                showOutline: cfg.get('showOutline')
-            }
+        // Track focus so toolbar commands hit only this editor when it's active.
+        if (webviewPanel.active) activePanel = webviewPanel;
+        const viewStateSub = webviewPanel.onDidChangeViewState(() => {
+            if (webviewPanel.active) activePanel = webviewPanel;
+            else if (activePanel === webviewPanel) activePanel = null;
         });
-    });
 
-    // Handle webview → document edits
-    webview.onDidReceiveMessage(async msg => {
-        if (msg.type === 'edit') {
+        const docBaseUri = webview.asWebviewUri(docDir);
+        const nonce = getNonce();
+        webview.html = getHtml(webview, nonce, context, document, docBaseUri, readSettings());
+
+        let isDisposed = false;
+        // Provenance guard: while we apply a webview edit AND persist it, VS
+        // Code fires onDidChangeTextDocument for our own change — plus, if
+        // files.insertFinalNewline / trimTrailingWhitespace is on, a save
+        // participant fires ANOTHER change with normalized text. Content
+        // comparison can't recognize the normalized one, so gate on
+        // provenance (a depth counter, robust to overlapping edits) instead:
+        // ignore every change event that lands inside our own apply+save.
+        let applyingDepth = 0;
+
+        const safePost = (msg) => {
             if (isDisposed) return;
             try {
-                const doc = await vscode.workspace.openTextDocument(uri);
-                if (doc.getText() === msg.content) return; // no-op
-                lastAppliedContent = msg.content;
-                const fullRange = new vscode.Range(
-                    new vscode.Position(0, 0),
-                    new vscode.Position(doc.lineCount, 0)
-                );
-                const edit = new vscode.WorkspaceEdit();
-                edit.replace(uri, fullRange, msg.content);
-                await vscode.workspace.applyEdit(edit);
-                await doc.save();
+                const p = webview.postMessage(msg);
+                if (p && typeof p.then === 'function') p.then(undefined, () => {});
+            } catch (_) { /* webview disposed mid-call */ }
+        };
+
+        // Document → webview (external edits: split-view typing, git checkout,
+        // formatter, another window). Never bounce our own apply/save back.
+        const changeDocSub = vscode.workspace.onDidChangeTextDocument(e => {
+            if (e.document.uri.toString() !== uri.toString()) return;
+            if (applyingDepth > 0) return;
+            safePost({ type: 'update', content: e.document.getText() });
+        });
+
+        // Settings → webview
+        const configSub = vscode.workspace.onDidChangeConfiguration(e => {
+            if (!e.affectsConfiguration('mdPrettyViewer')) return;
+            const cfg = vscode.workspace.getConfiguration('mdPrettyViewer');
+            safePost({
+                type: 'configChange',
+                settings: {
+                    defaultTheme: cfg.get('defaultTheme'),
+                    defaultFontSize: cfg.get('defaultFontSize'),
+                    defaultMode: cfg.get('defaultMode'),
+                    showOutline: cfg.get('showOutline')
+                }
+            });
+        });
+
+        // Webview → document. Apply as a WorkspaceEdit so VS Code records it on
+        // the native undo stack, then persist (preserving the extension's
+        // long-standing auto-save behaviour).
+        const msgSub = webview.onDidReceiveMessage(async msg => {
+            if (msg.type !== 'edit' || isDisposed) return;
+            if (document.getText() === msg.content) return;   // no-op
+            const fullRange = new vscode.Range(
+                new vscode.Position(0, 0),
+                new vscode.Position(document.lineCount, 0)
+            );
+            const edit = new vscode.WorkspaceEdit();
+            edit.replace(uri, fullRange, msg.content);
+            applyingDepth++;
+            try {
+                const ok = await vscode.workspace.applyEdit(edit);
+                if (ok && !isDisposed) {
+                    await document.save();
+                } else if (!ok && !isDisposed) {
+                    // applyEdit signals rejection by resolving false (stale
+                    // version / conflicting edit), not by throwing — re-sync
+                    // the webview so it doesn't keep diverged phantom content.
+                    safePost({ type: 'update', content: document.getText() });
+                }
             } catch (err) {
                 console.error('MD Pretty Viewer: edit apply failed', err);
+                // Persisting failed — re-sync the webview to what's really on
+                // disk so it doesn't keep showing an unsaved phantom state.
+                if (!isDisposed) safePost({ type: 'update', content: document.getText() });
+            } finally {
+                applyingDepth--;
             }
-        }
-    });
+        });
 
-    panel.onDidDispose(() => {
-        isDisposed = true;
-        openPanels.delete(uriKey);
-        activeWebviews.delete(webview);  // captured ref — never throws
-        changeDocSub.dispose();
-        configSub.dispose();
-    });
-
-    return panel;
+        webviewPanel.onDidDispose(() => {
+            isDisposed = true;
+            if (activePanel === webviewPanel) activePanel = null;
+            viewStateSub.dispose();
+            changeDocSub.dispose();
+            configSub.dispose();
+            msgSub.dispose();
+        });
+    }
 }
 
 function isMarkdownFile(uri) {
     return /\.(md|markdown|mdown|mkd)$/i.test(uri.fsPath);
 }
 
-function broadcast(type, payload) {
-    activeWebviews.forEach(wv => {
-        try {
-            const p = wv.postMessage({ type, ...payload });
-            if (p && typeof p.then === 'function') p.then(undefined, () => {});
-        } catch (_) { /* disposed webview */ }
-    });
+/* The uri of the markdown file in the active tab — works for both our custom
+   editor tabs (TabInputCustom) and plain text tabs (TabInputText). */
+function activeMarkdownUri() {
+    const group = vscode.window.tabGroups.activeTabGroup;
+    const input = group && group.activeTab && group.activeTab.input;
+    if (input && input.uri && isMarkdownFile(input.uri)) return input.uri;
+    const ed = vscode.window.activeTextEditor;
+    if (ed && isMarkdownFile(ed.document.uri)) return ed.document.uri;
+    return undefined;
 }
 
 function showUpdateNotification(context) {
@@ -204,7 +222,6 @@ function showUpdateNotification(context) {
     const previousVersion = context.globalState.get('mdPrettyViewer.lastVersion');
 
     if (previousVersion && previousVersion !== currentVersion) {
-        // Extension was updated — show notification
         const message = `🎉 MD Pretty Viewer ${currentVersion} 업데이트됨!`;
         vscode.window.showInformationMessage(
             message,
@@ -223,108 +240,51 @@ function showUpdateNotification(context) {
 }
 
 function activate(context) {
-    // Show update notification if version changed since last run
     showUpdateNotification(context);
 
-    // Auto-convert text editor tabs for .md files into our pretty viewer
-    // Set of URIs we've already started converting (to avoid loops/double-handling)
-    const inProgress = new Set();
-
-    const convertToPrettyView = async (uri, column) => {
-        const key = uri.toString();
-        if (!isMarkdownFile(uri)) return;
-        if (uri.scheme !== 'file') return;
-        if (openPanels.has(key)) {
-            // Already open as pretty view → just reveal it
-            openPanels.get(key).reveal(column || vscode.ViewColumn.Active);
-            return;
-        }
-        if (inProgress.has(key)) return;
-        inProgress.add(key);
-
-        try {
-            // Close any text editor tabs for this file
-            for (const group of vscode.window.tabGroups.all) {
-                for (const tab of group.tabs) {
-                    if (tab.input instanceof vscode.TabInputText &&
-                        tab.input.uri.toString() === key) {
-                        await vscode.window.tabGroups.close(tab);
-                    }
-                }
-            }
-            await openPrettyView(context, uri, column || vscode.ViewColumn.Active);
-        } catch (_) {}
-        inProgress.delete(key);
-    };
-
-    const handleEditor = async (editor) => {
-        if (!editor || !editor.document) return;
-        const uri = editor.document.uri;
-        const column = editor.viewColumn || vscode.ViewColumn.Active;
-        await convertToPrettyView(uri, column);
-    };
-
+    // Register the pretty viewer as the default editor for markdown. VS Code
+    // now routes every association-respecting open (Explorer, Quick Open,
+    // vscode.open — which is what Claude Code's chat file-links use — terminal
+    // Ctrl+click, tab restore) straight into this editor.
     context.subscriptions.push(
-        // When a document is freshly opened
-        vscode.workspace.onDidOpenTextDocument(async (document) => {
-            // Wait briefly so VS Code attaches it to an editor with a column
-            await new Promise(r => setTimeout(r, 30));
-            const editor = vscode.window.visibleTextEditors.find(
-                e => e.document.uri.toString() === document.uri.toString()
-            );
-            const column = (editor && editor.viewColumn) || vscode.ViewColumn.Active;
-            await convertToPrettyView(document.uri, column);
-        }),
-        // When the active editor changes (e.g. clicking a tab, link from Claude, etc.)
-        vscode.window.onDidChangeActiveTextEditor(handleEditor),
-        // When the visible editors change (e.g. opening files programmatically)
-        vscode.window.onDidChangeVisibleTextEditors(async (editors) => {
-            for (const e of editors) {
-                if (isMarkdownFile(e.document.uri)) {
-                    await convertToPrettyView(e.document.uri, e.viewColumn || vscode.ViewColumn.Active);
-                }
+        vscode.window.registerCustomEditorProvider(
+            VIEW_TYPE,
+            new MdPrettyEditorProvider(context),
+            {
+                webviewOptions: { retainContextWhenHidden: true, enableFindWidget: true },
+                supportsMultipleEditorsPerDocument: false
             }
-        })
+        )
     );
 
-    // Handle any markdown text editors already visible
-    for (const e of vscode.window.visibleTextEditors) {
-        if (isMarkdownFile(e.document.uri)) {
-            convertToPrettyView(e.document.uri, e.viewColumn || vscode.ViewColumn.Active);
-        }
-    }
-
-    // Commands
     context.subscriptions.push(
+        // "Open Pretty View" — reopens the active markdown in our editor. Still
+        // useful after a user picks "Reopen Editor With… › Text Editor".
         vscode.commands.registerCommand('mdPrettyViewer.open', async () => {
-            const editor = vscode.window.activeTextEditor;
-            const uri = editor ? editor.document.uri : undefined;
-            if (uri && isMarkdownFile(uri)) {
-                const column = editor.viewColumn || vscode.ViewColumn.Active;
-                await openPrettyView(context, uri, column);
+            const uri = activeMarkdownUri();
+            if (uri) {
+                await vscode.commands.executeCommand('vscode.openWith', uri, VIEW_TYPE);
             } else {
                 vscode.window.showInformationMessage('MD Pretty Viewer: Open a markdown file first.');
             }
         }),
         vscode.commands.registerCommand('mdPrettyViewer.toggleMode', () => {
-            broadcast('command', { action: 'toggleMode' });
+            postToActive('command', { action: 'toggleMode' });
         }),
         vscode.commands.registerCommand('mdPrettyViewer.bold', () => {
-            broadcast('command', { action: 'bold' });
+            postToActive('command', { action: 'bold' });
         }),
         vscode.commands.registerCommand('mdPrettyViewer.italic', () => {
-            broadcast('command', { action: 'italic' });
+            postToActive('command', { action: 'italic' });
         }),
         vscode.commands.registerCommand('mdPrettyViewer.code', () => {
-            broadcast('command', { action: 'code' });
+            postToActive('command', { action: 'code' });
         })
     );
 }
 
 function deactivate() {
-    openPanels.forEach(panel => panel.dispose());
-    openPanels.clear();
-    activeWebviews.clear();
+    activePanel = null;
 }
 
 module.exports = { activate, deactivate };

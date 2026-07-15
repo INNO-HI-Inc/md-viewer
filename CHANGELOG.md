@@ -7,6 +7,20 @@
 
 
 
+## [1.0.30] - 2026-07-03
+
+### Changed
+
+- **마크다운 파일을 클릭하면 곧바로 MD Pretty Viewer로 열립니다** — VS Code의 Custom Editor로 `.md`(및 `.markdown`/`.mdown`/`.mkd`)의 기본 에디터로 등록했습니다. 탐색기 클릭 · Quick Open · 터미널 Cmd/Ctrl+클릭 · **Claude Code 채팅의 파일 링크**(내부적으로 `vscode.open` 사용) 모두 원문이 잠깐 보였다 바뀌는 깜빡임 없이 바로 뷰어로 열립니다.
+- 이전의 "텍스트로 열린 뒤 탭을 닫고 웹뷰로 교체"하던 방식(깜빡임 · 타이밍 취약)을 제거했습니다. 이제 VS Code가 탭 수명주기를 직접 관리하므로 파일 열기가 안정적입니다.
+- 원문 마크다운으로 보고 싶으면 탭 우클릭 → **Reopen Editor With… → Text Editor**, 항상 원문으로 열려면 `workbench.editorAssociations`에 `"*.md": "default"`를 설정하면 됩니다.
+- `git diff` 등 비교(diff) 화면은 그대로 텍스트 diff로 열립니다 — 변경 내용 검토가 깨지지 않습니다.
+
+### Fixed
+
+- 서식 명령(굵게 · 이탤릭 · 코드 · 모드 전환)이 여러 마크다운 편집기가 열려 있을 때 **포커스된 문서에만** 적용되도록 했습니다(이전 구조에서는 모든 열린 편집기에 전달될 수 있었음).
+- 자동 저장 시 `files.insertFinalNewline`·`files.trimTrailingWhitespace` 같은 저장 참여자가 편집 되돌리기 스택을 초기화하던 문제를 원인 기반(provenance) 에코 억제로 차단했습니다.
+
 ## [1.0.29] - 2026-07-03
 
 ### Fixed

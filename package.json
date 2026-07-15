@@ -2,7 +2,7 @@
   "name": "md-pretty-viewer",
   "displayName": "MD Pretty Viewer",
   "description": "Beautiful markdown preview · 13 color themes · LaTeX math · Mermaid diagrams · one-click PDF export · Korean typography bundled. The markdown editor that makes your writing look like art. — 마크다운을 작품처럼. 13가지 테마, LaTeX 수식, Mermaid 다이어그램, PDF 한 번 클릭, 한글 폰트 번들.",
-  "version": "1.0.29",
+  "version": "1.0.30",
   "publisher": "innohi",
   "author": {
     "name": "INNO-HI Inc.",
@@ -71,6 +71,27 @@
     "onStartupFinished"
   ],
   "contributes": {
+    "customEditors": [
+      {
+        "viewType": "mdPrettyViewer.editor",
+        "displayName": "MD Pretty Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.md"
+          },
+          {
+            "filenamePattern": "*.markdown"
+          },
+          {
+            "filenamePattern": "*.mdown"
+          },
+          {
+            "filenamePattern": "*.mkd"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
     "commands": [
       {
         "command": "mdPrettyViewer.open",
@@ -104,25 +125,25 @@
         "command": "mdPrettyViewer.toggleMode",
         "key": "ctrl+e",
         "mac": "cmd+e",
-        "when": "activeWebviewPanelId == 'mdPrettyViewer.editor'"
+        "when": "activeCustomEditorId == 'mdPrettyViewer.editor'"
       },
       {
         "command": "mdPrettyViewer.bold",
         "key": "ctrl+b",
         "mac": "cmd+b",
-        "when": "activeWebviewPanelId == 'mdPrettyViewer.editor'"
+        "when": "activeCustomEditorId == 'mdPrettyViewer.editor'"
       },
       {
         "command": "mdPrettyViewer.italic",
         "key": "ctrl+i",
         "mac": "cmd+i",
-        "when": "activeWebviewPanelId == 'mdPrettyViewer.editor'"
+        "when": "activeCustomEditorId == 'mdPrettyViewer.editor'"
       },
       {
         "command": "mdPrettyViewer.code",
         "key": "ctrl+shift+c",
         "mac": "cmd+shift+c",
-        "when": "activeWebviewPanelId == 'mdPrettyViewer.editor'"
+        "when": "activeCustomEditorId == 'mdPrettyViewer.editor'"
       },
       {
         "command": "mdPrettyViewer.open",
