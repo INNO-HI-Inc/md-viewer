@@ -3501,9 +3501,19 @@ function _runPdfExport(userOpts) {
                 height: element.scrollHeight,
                 windowHeight: element.scrollHeight,
                 onclone: function (clonedDoc) {
+                    // Remove all editing chrome (＋ ⠿ ✎ handles, edit icons,
+                    // ✓/✕ buttons, toolbars, popups) so it never prints. The
+                    // CSS meant to hide it keyed on body.exporting-pdf, but
+                    // that class was never actually applied — add it here too
+                    // so the rest of the print rules (table-scroll unwrap,
+                    // code-block header, block padding) finally take effect.
+                    clonedDoc.querySelectorAll('[data-md-chrome="1"]').forEach(function (n) {
+                        if (n.parentNode) n.parentNode.removeChild(n);
+                    });
                     // Force light theme on cloned body so CSS variables resolve to light values
                     var b = clonedDoc.body;
                     if (b) {
+                        b.classList.add('exporting-pdf');
                         b.classList.remove('vscode-dark', 'vscode-high-contrast');
                         b.classList.add('vscode-light');
                         b.removeAttribute('data-theme');
