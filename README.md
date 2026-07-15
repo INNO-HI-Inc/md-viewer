@@ -91,6 +91,7 @@ LaTeX math · Mermaid · clipboard image paste · auto TOC · Korean-first typog
 
 
 ### ✍️ Write fluently
+- **Default `.md` editor** — click to open, no setup
 - Preview · Edit · Split modes
 - Double-click to toggle
 - Smart list continuation
@@ -129,6 +130,18 @@ LaTeX math · Mermaid · clipboard image paste · auto TOC · Korean-first typog
 <br/>
 
 ## 🚀 Highlights
+
+<details open>
+<summary><b>📂 Opens as your default markdown editor <sub>v1.0.30</sub></b></summary>
+
+Click any `.md` file and it opens straight in MD Pretty Viewer — no extra command, no raw-text flash.
+
+- Registered as a VS Code **custom editor** for `.md` · `.markdown` · `.mdown` · `.mkd`
+- Works for every open path: Explorer click, Quick Open, terminal <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+click, and **file links from Claude Code / other extensions** (they use `vscode.open`, which honors the default editor)
+- Want the raw source? Right-click the tab → **Reopen Editor With… → Text Editor**. To make raw text the default, set `"workbench.editorAssociations": { "*.md": "default" }`
+- `git diff` and compare views stay the plain text diff — reviewing changes is never intercepted
+
+</details>
 
 <details open>
 <summary><b>✍️ Edit right in the preview <sub>v1.0.29</sub></b></summary>
@@ -275,8 +288,10 @@ Or search **`md pretty viewer`** in VS Code Extensions.
 For manual install, grab the latest `.vsix` from [Releases](https://github.com/INNO-HI-Inc/md-viewer/releases/latest):
 
 ```bash
-code --install-extension md-pretty-viewer-1.0.2.vsix
+code --install-extension md-pretty-viewer-1.0.30.vsix
 ```
+
+Once installed, **every `.md` file opens in MD Pretty Viewer by default**. Prefer the raw source for a file? Right-click the tab → *Reopen Editor With… → Text Editor*. Requires VS Code `1.74.0` or newer.
 
 <br/>
 
@@ -369,6 +384,7 @@ Full license texts in [NOTICE.md](NOTICE.md).
   <td width="33%" valign="top">
 
 ### ✍️ 빠르게 쓰기
+- **`.md` 기본 에디터** — 클릭하면 바로 뷰어로
 - Preview · Edit · Split 3가지 모드
 - 더블클릭으로 즉시 토글
 - 리스트 자동 이어쓰기
@@ -393,14 +409,14 @@ Full license texts in [NOTICE.md](NOTICE.md).
 </tr>
 </table>
 
-### 🚀 v1.0.2 새 기능
+### 🚀 새 기능
 
+- **📂 `.md` 기본 에디터 <sub>v1.0.30</sub>** — 마크다운 파일을 클릭하면 곧바로 뷰어로 열립니다(탐색기·Quick Open·터미널 클릭·Claude Code 파일 링크 모두). 원문으로 보려면 탭 우클릭 → *Reopen With → Text Editor*, 항상 원문은 `"workbench.editorAssociations": { "*.md": "default" }`. `git diff`는 그대로 텍스트 diff로 열립니다.
+- **✍️ 프리뷰에서 바로 편집 <sub>v1.0.29</sub>** — 렌더된 블록을 클릭해 제자리 수정, ＋로 삽입·⠿로 드래그 이동·`/`로 타입 변환, 표 행/열·정렬 편집, 링크·체크박스 클릭 편집. 저장하면 자동으로 깔끔한 마크다운으로 되돌아갑니다.
 - **🖼 이미지 라이트박스** — 클릭하면 풀스크린, 휠로 확대, 드래그로 이동, ESC로 닫기
 - **🔍 프리뷰 인-페이지 검색** — `Cmd/Ctrl+F`로 매치 하이라이트 + 화살표 탐색
 - **📌 아웃라인 스크롤 추적** — 스크롤 위치에 따라 현재 섹션이 강조
-- **🔗 스마트 URL 붙여넣기** — 선택 후 URL 붙여넣기 → `[선택텍스트](url)` 자동 변환
 - **📄 PDF 옵션 다이얼로그** — 추출 전 용지/방향/여백/헤더/페이지번호 선택, 설정 저장
-- **📊 표 가로 스크롤** — 화면보다 넓은 표는 가로 스크롤 wrapper에 자동 감싸짐
 
 ### 📦 설치
 
