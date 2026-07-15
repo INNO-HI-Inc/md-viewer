@@ -1,150 +1,181 @@
 #!/usr/bin/env python3
 """
-Marketing screenshot generator for VS Code Marketplace.
+Marketing screenshot generator — framed macOS-window captures on a soft
+backdrop, rendered from the REAL editor.css/editor.js.
 
-Renders the webview in multiple themes / modes / overlay states and saves
-clean 1280-wide PNGs into docs/marketing/.
+Outputs polished PNGs into docs/marketing/ and the hero into docs/screenshot.png.
 """
 import asyncio
-import sys
 from pathlib import Path
 from playwright.async_api import async_playwright
 
 REPO = Path(__file__).parent.parent.resolve()
-HARNESS = REPO / "tests" / "marketing-harness.html"
+FRAME = REPO / "tests" / "frame-harness.html"
 OUT = REPO / "docs" / "marketing"
 OUT.mkdir(parents=True, exist_ok=True)
 
-# Marketplace recommends 1280x720+, scaled 2x for retina
-WIDTH = 1280
-HEIGHT = 800
+# Outer viewport = window (1240x800) + backdrop padding. 2x for retina.
+VW, VH = 1360, 924
+
+
+async def get_frame(page):
+    # file:// iframes are cross-origin (origin "null") to the outer page, so
+    # drive the app frame directly via Playwright instead of a JS proxy.
+    for f in page.frames:
+        if "marketing-harness" in (f.url or ""):
+            return f
+    return None
 
 
 async def boot(page):
-    await page.goto(f"file://{HARNESS}", wait_until="networkidle")
-    await page.wait_for_function(
+    await page.goto(f"file://{FRAME}", wait_until="networkidle")
+    frame = None
+    for _ in range(50):
+        frame = await get_frame(page)
+        if frame:
+            break
+        await page.wait_for_timeout(100)
+    if not frame:
+        raise RuntimeError("app iframe never appeared")
+    await frame.wait_for_function(
         "window.__mkt && document.querySelector('#preview') && document.querySelector('#preview').children.length > 0",
-        timeout=10000,
+        timeout=15000,
     )
-    await page.wait_for_timeout(700)  # let katex/mermaid settle
+    await page.wait_for_timeout(1200)  # katex/mermaid settle
+    return frame
 
 
-async def shoot(page, name):
-    out = OUT / name
-    await page.screenshot(path=str(out), full_page=False)
+async def call(frame, name, *args):
+    await frame.evaluate(
+        "([n,a]) => { var m = window.__mkt; if (m && m[n]) return m[n].apply(m, a); }",
+        [name, list(args)],
+    )
+
+
+async def backdrop(page, cls):
+    await page.evaluate("c => window.__frame.backdrop(c)", cls)
+
+
+async def shoot(page, name, out_dir=OUT):
+    await page.wait_for_timeout(120)
+    await page.screenshot(path=str(out_dir / name), full_page=False)
     print(f"  → {name}")
-
-
-async def shoot_full(page, name):
-    out = OUT / name
-    await page.screenshot(path=str(out), full_page=True)
-    print(f"  → {name} (full)")
 
 
 async def main():
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         ctx = await browser.new_context(
-            viewport={"width": WIDTH, "height": HEIGHT},
+            viewport={"width": VW, "height": VH},
             device_scale_factor=2,
         )
         page = await ctx.new_page()
-        await boot(page)
+        frame = await boot(page)
 
-        # ── 1. Hero — light, blue, preview, outline visible ─────────
+        # ── HERO — light, blue, preview, outline ────────────────────
         print("HERO")
-        await page.evaluate("window.__mkt.setVscodeTheme('vscode-light')")
-        await page.evaluate("window.__mkt.setTheme('blue')")
-        await page.evaluate("window.__mkt.setMode('preview')")
-        await page.evaluate("window.__mkt.setOutline(true)")
-        await page.evaluate(
-            "var p=document.querySelector('.preview-pane'); if(p) p.scrollTo({top:0});"
-        )
-        await page.wait_for_timeout(600)
+        await backdrop(page, "light")
+        await call(frame, "setVscodeTheme", "vscode-light")
+        await call(frame, "setTheme", "blue")
+        await call(frame, "setMode", "preview")
+        await call(frame, "setOutline", True)
+        await call(frame, "scrollTop")
+        await page.wait_for_timeout(700)
         await shoot(page, "01-hero-light-blue.png")
+        # also the README/homepage hero
+        await page.screenshot(path=str(REPO / "docs" / "screenshot.png"), full_page=False)
+        print("  → ../screenshot.png")
 
-        # ── 2. Hero — dark, orchid (Pantone), preview ─────────────
+        # ── DARK HERO — orchid ──────────────────────────────────────
         print("DARK HERO")
-        await page.evaluate("window.__mkt.setVscodeTheme('vscode-dark')")
-        await page.evaluate("window.__mkt.setTheme('orchid')")
-        await page.wait_for_timeout(400)
+        await backdrop(page, "dark")
+        await call(frame, "setVscodeTheme", "vscode-dark")
+        await call(frame, "setTheme", "orchid")
+        await page.wait_for_timeout(500)
         await shoot(page, "02-hero-dark-orchid.png")
 
-        # ── 3. Theme variety — capture 6 distinct themes ──────────
+        # ── BLOCK EDITING (the headline feature) ────────────────────
+        # Insert-menu open + handles revealed on a heading block
+        print("BLOCK EDITING")
+        await backdrop(page, "light")
+        await call(frame, "setVscodeTheme", "vscode-light")
+        await call(frame, "setTheme", "blue")
+        await call(frame, "setOutline", False)
+        await page.wait_for_timeout(300)
+        await call(frame, "openInsertMenu", "핵심 의사결정")
+        await page.wait_for_timeout(500)
+        await shoot(page, "15-block-insert.png")
+        await call(frame, "closeOverlays")
+
+        # Gutter handles (＋ ⠿ ✎) revealed on a block
+        print("BLOCK HANDLES")
+        await page.wait_for_timeout(200)
+        await call(frame, "showHandles", "사용자가 무료 체험")
+        await page.wait_for_timeout(400)
+        await shoot(page, "16-block-handles.png")
+        await call(frame, "closeOverlays")
+
+        # ── THEME VARIETY ───────────────────────────────────────────
         print("THEMES")
+        await call(frame, "setOutline", False)
         themes = [
-            ("vscode-light", "blue", "03-theme-blue.png"),
-            ("vscode-light", "green", "04-theme-green.png"),
-            ("vscode-light", "peach", "05-theme-peach.png"),
-            ("vscode-dark", "aqua", "06-theme-aqua.png"),
-            ("vscode-light", "sepia", "07-theme-sepia.png"),
-            ("vscode-dark", "mist", "08-theme-mist.png"),
+            ("light", "vscode-light", "blue", "03-theme-blue.png"),
+            ("light", "vscode-light", "green", "04-theme-green.png"),
+            ("peach", "vscode-light", "peach", "05-theme-peach.png"),
+            ("dark", "vscode-dark", "aqua", "06-theme-aqua.png"),
+            ("sepia", "vscode-light", "sepia", "07-theme-sepia.png"),
+            ("dark", "vscode-dark", "mist", "08-theme-mist.png"),
         ]
-        await page.evaluate("window.__mkt.setOutline(false)")
-        for vscode_theme, theme, fname in themes:
-            await page.evaluate(f"window.__mkt.setVscodeTheme('{vscode_theme}')")
-            await page.evaluate(f"window.__mkt.setTheme('{theme}')")
-            await page.evaluate(
-                "var p=document.querySelector('.preview-pane'); if(p) p.scrollTo({top:300});"
-            )
-            await page.wait_for_timeout(350)
+        for bg, vtheme, theme, fname in themes:
+            await backdrop(page, bg)
+            await call(frame, "setVscodeTheme", vtheme)
+            await call(frame, "setTheme", theme)
+            await call(frame, "scrollTo", 0.18)
+            await page.wait_for_timeout(450)
             await shoot(page, fname)
 
-        # Reset to top, outline on, light blue
-        await page.evaluate("window.__mkt.setVscodeTheme('vscode-light')")
-        await page.evaluate("window.__mkt.setTheme('blue')")
-        await page.evaluate("window.__mkt.setOutline(true)")
-        await page.evaluate(
-            "var p=document.querySelector('.preview-pane'); if(p) p.scrollTo({top:0});"
-        )
+        # reset
+        await backdrop(page, "light")
+        await call(frame, "setVscodeTheme", "vscode-light")
+        await call(frame, "setTheme", "blue")
+        await call(frame, "scrollTop")
         await page.wait_for_timeout(400)
 
-        # ── 4. Split mode ──────────────────────────────────────
+        # ── SPLIT MODE ──────────────────────────────────────────────
         print("SPLIT")
-        await page.evaluate("window.__mkt.setMode('split')")
-        await page.evaluate("window.__mkt.setOutline(false)")
-        await page.wait_for_timeout(500)
+        await call(frame, "setMode", "split")
+        await call(frame, "setOutline", False)
+        await page.wait_for_timeout(600)
         await shoot(page, "09-split-mode.png")
 
-        # ── 5. PDF dialog ──────────────────────────────────────
+        # ── PDF DIALOG ──────────────────────────────────────────────
         print("PDF DIALOG")
-        await page.evaluate("window.__mkt.setMode('preview')")
+        await call(frame, "setMode", "preview")
         await page.wait_for_timeout(300)
-        await page.evaluate("window.__mkt.openPdfDialog()")
+        await call(frame, "openPdfDialog")
         await page.wait_for_timeout(500)
         await shoot(page, "10-pdf-dialog.png")
-        await page.evaluate("window.__mkt.closeOverlays()")
-        await page.wait_for_timeout(200)
+        await call(frame, "closeOverlays")
 
-        # ── 6. Preview search ──────────────────────────────────
+        # ── PREVIEW SEARCH ──────────────────────────────────────────
         print("SEARCH")
-        await page.evaluate("window.__mkt.openPreviewSearch('LTV')")
+        await call(frame, "openPreviewSearch", "LTV")
         await page.wait_for_timeout(500)
         await shoot(page, "11-preview-search.png")
-        await page.evaluate("window.__mkt.closeOverlays()")
-        await page.wait_for_timeout(200)
+        await call(frame, "closeOverlays")
 
-        # ── 7. Outline scroll spy ──────────────────────────────
+        # ── OUTLINE SPY ─────────────────────────────────────────────
         print("OUTLINE SPY")
-        await page.evaluate("window.__mkt.setOutline(true)")
-        await page.evaluate(
-            "var p=document.querySelector('.preview-pane'); if(p) p.scrollTo({top: p.scrollHeight*0.55});"
-        )
+        await call(frame, "setOutline", True)
+        await call(frame, "scrollTo", 0.5)
         await page.wait_for_timeout(900)
         await shoot(page, "12-outline-active.png")
 
-        # ── 8. Full-page preview render (showcase ALL content) ─
-        print("FULL PAGE")
-        await page.evaluate("window.__mkt.setOutline(false)")
-        await page.evaluate(
-            "var p=document.querySelector('.preview-pane'); if(p) p.scrollTo({top:0});"
-        )
-        await page.wait_for_timeout(400)
-        await shoot_full(page, "13-full-document.png")
-
-        # ── 9. Edit mode showing toolbar / line numbers ─────────
+        # ── EDIT MODE ───────────────────────────────────────────────
         print("EDIT MODE")
-        await page.evaluate("window.__mkt.setMode('edit')")
+        await call(frame, "setOutline", False)
+        await call(frame, "setMode", "edit")
+        await call(frame, "scrollTop")
         await page.wait_for_timeout(400)
         await shoot(page, "14-edit-mode.png")
 

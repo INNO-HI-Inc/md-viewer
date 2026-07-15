@@ -214,15 +214,38 @@
             position: relative;
         }
 
+        /* Screenshots are self-framed (macOS window on a soft backdrop is
+           baked into the PNG), so the page only adds a gentle accent halo —
+           no second border/shadow, or it'd read as a frame-in-a-frame. */
         .shot-frame {
-            border-radius: 14px;
+            border-radius: 16px;
             overflow: hidden;
-            border: 1px solid var(--border);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 80px var(--glow);
+            box-shadow: 0 0 90px var(--glow);
             transition: box-shadow 0.5s;
         }
 
         .shot-frame img { width: 100%; display: block; }
+
+        /* Secondary feature showcase — 2-up self-framed shots */
+        .showcase {
+            max-width: 940px;
+            margin: 0 auto;
+            padding: 0 24px 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .showcase figure { margin: 0; }
+        .showcase img { width: 100%; display: block; border-radius: 12px; }
+        .showcase figcaption {
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--dim);
+            text-align: center;
+        }
+        @media (max-width: 700px) {
+            .showcase { grid-template-columns: 1fr; padding: 0 12px 12px; }
+        }
 
         /* ── Section common ── */
         .section {
@@ -269,6 +292,15 @@
             border-color: var(--accent);
             transform: translateY(-3px);
         }
+
+        /* Flagship (in-place editing) cards — accent-tinted so they lead */
+        .feature-card-hl {
+            border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+            background:
+                linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, transparent), transparent 60%),
+                var(--surface);
+        }
+        .feature-card-hl .icon { color: var(--accent); }
 
         .feature-card .icon {
             font-size: 24px;
@@ -688,14 +720,14 @@
 <!-- Hero -->
 <section class="hero">
     <div class="hero-glow"></div>
-    <div class="hero-tag"><span class="dot"></span> v1.0.2 — Lightbox · In-preview search · Outline spy · PDF options</div>
+    <div class="hero-tag"><span class="dot"></span> <span class="ko">v1.0.29 — 프리뷰에서 바로 편집 · 블록 삽입·드래그 · 표 구조 편집</span><span class="en">v1.0.29 — In-place editing · block insert &amp; drag · table structure editing</span></div>
     <h1>
         <span class="ko">내가 쓴 마크다운이<br><span class="accent">작품이 되는</span> 순간</span>
         <span class="en">Where your markdown<br>becomes a <span class="accent">masterpiece</span></span>
     </h1>
     <p class="hero-desc">
-        <span class="ko">13가지 테마 · LaTeX 수식 · Mermaid 다이어그램 · PDF 옵션 다이얼로그 · 한글 폰트 번들.<br>회의록부터 제안서까지 — 한 번 쓰고 그대로 발표 자료가 됩니다.</span>
-        <span class="en">13 themes · LaTeX math · Mermaid diagrams · PDF export with options · Korean fonts bundled.<br>From notes to proposals — write once, present instantly.</span>
+        <span class="ko">프리뷰에서 바로 편집합니다 — 블록을 클릭해 고치고, ＋로 삽입하고, 드래그로 옮기세요.<br>13가지 테마 · LaTeX 수식 · Mermaid · PDF 내보내기 · 한글 폰트 번들. 회의록부터 제안서까지.</span>
+        <span class="en">Edit right in the preview — click a block to change it, ＋ to insert, drag to reorder.<br>13 themes · LaTeX math · Mermaid · PDF export · Korean fonts bundled. From notes to proposals.</span>
     </p>
     <div class="hero-btns">
         <a class="btn btn-primary" href="demo.html">
@@ -721,6 +753,18 @@
     </a>
 </div>
 
+<!-- Feature showcase -->
+<div class="showcase fade-up">
+    <figure>
+        <img src="marketing/15-block-insert.png" alt="Insert menu — add any block type from the ＋ handle">
+        <figcaption><span class="ko">＋ 블록 삽입 메뉴 · ⠿ 드래그 핸들</span><span class="en">＋ block insert menu · ⠿ drag handles</span></figcaption>
+    </figure>
+    <figure>
+        <img src="marketing/02-hero-dark-orchid.png" alt="Dark mode with the Orchid theme">
+        <figcaption><span class="ko">다크 모드 · 13가지 테마</span><span class="en">Dark mode · 13 themes</span></figcaption>
+    </figure>
+</div>
+
 <div class="divider"></div>
 
 <!-- Features -->
@@ -731,10 +775,30 @@
         <span class="en">Everything you need</span>
     </h2>
     <div class="feature-grid">
+        <div class="feature-card feature-card-hl">
+            <span class="icon">&#9998;</span>
+            <h3><span class="ko">프리뷰에서 바로 편집</span><span class="en">Edit in the preview</span></h3>
+            <p><span class="ko">렌더된 화면 그대로 블록을 클릭해 수정. 저장하면 자동으로 마크다운으로 되돌아갑니다. Notion처럼.</span><span class="en">Click a rendered block and edit it in place — it round-trips back to clean markdown on save. Notion-style.</span></p>
+        </div>
+        <div class="feature-card feature-card-hl">
+            <span class="icon">&#65291;</span>
+            <h3><span class="ko">블록 삽입 · 드래그 이동</span><span class="en">Insert &amp; drag blocks</span></h3>
+            <p><span class="ko">＋로 텍스트·제목·리스트·표·코드 삽입, ⠿로 드래그해 순서 변경·복제·삭제. / 슬래시로 타입 변환.</span><span class="en">＋ inserts text, headings, lists, tables, code; ⠿ drags to reorder, duplicate, delete; / converts block type.</span></p>
+        </div>
+        <div class="feature-card feature-card-hl">
+            <span class="icon">&#9638;</span>
+            <h3><span class="ko">표 구조 편집</span><span class="en">Table structure editing</span></h3>
+            <p><span class="ko">셀을 편집하며 행·열 추가·삭제, 열 정렬 전환. Tab으로 다음 셀, 마지막 셀에선 새 행 자동 추가.</span><span class="en">Add/remove rows &amp; columns and cycle column alignment while editing a cell. Tab hops cells; the last cell adds a row.</span></p>
+        </div>
+        <div class="feature-card feature-card-hl">
+            <span class="icon">&#9745;</span>
+            <h3><span class="ko">클릭 체크박스 · 링크 편집</span><span class="en">Click checkboxes · edit links</span></h3>
+            <p><span class="ko">체크박스를 클릭하면 원본이 <code>[ ]</code>↔<code>[x]</code>로 토글. 링크를 클릭하면 텍스트·URL 편집 팝오버.</span><span class="en">Click a checkbox to toggle <code>[ ]</code>↔<code>[x]</code> in the source; click a link to edit its text &amp; URL in a popover.</span></p>
+        </div>
         <div class="feature-card">
             <span class="icon">&#9654;</span>
             <h3><span class="ko">세 가지 모드</span><span class="en">Three modes</span></h3>
-            <p><span class="ko">Preview, Edit, Split. 더블클릭으로 바로 편집. Cmd+E로 토글.</span><span class="en">Preview, Edit, Split. Double-click to edit. Cmd+E to toggle.</span></p>
+            <p><span class="ko">Preview, Edit, Split. Cmd+E로 토글. Split은 앵커 기반 스크롤 동기화.</span><span class="en">Preview, Edit, Split. Cmd+E to toggle. Split has anchor-based scroll sync.</span></p>
         </div>
         <div class="feature-card">
             <span class="icon">&#9998;</span>
@@ -948,7 +1012,7 @@
     </p>
     <a class="btn btn-primary" href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer" target="_blank">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-        <span class="ko">다운로드 v1.0.2</span><span class="en">Install v1.0.2</span>
+        <span class="ko">다운로드 v1.0.29</span><span class="en">Install v1.0.29</span>
     </a>
 </section>
 

@@ -33,6 +33,16 @@ LaTeX math · Mermaid · clipboard image paste · auto TOC · Korean-first typog
 <table>
 <tr>
   <td width="50%" valign="top" align="center">
+    <a href="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/marketing/15-block-insert.png"><img src="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/marketing/15-block-insert.png" alt="Notion-style block editing — insert menu and drag handles in the preview" width="100%"></a>
+    <sub><b>Edit in the preview</b> — ＋ insert · ⠿ drag/reorder · ✎ in-place WYSIWYG · <code>/</code> convert</sub>
+  </td>
+  <td width="50%" valign="top" align="center">
+    <a href="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/marketing/02-hero-dark-orchid.png"><img src="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/marketing/02-hero-dark-orchid.png" alt="Dark mode with the Orchid theme and outline sidebar" width="100%"></a>
+    <sub><b>Dark mode</b> — every theme adapts to light &amp; dark, outline included</sub>
+  </td>
+</tr>
+<tr>
+  <td width="50%" valign="top" align="center">
     <a href="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/marketing/09-split-mode.png"><img src="https://raw.githubusercontent.com/INNO-HI-Inc/md-viewer/main/docs/marketing/09-split-mode.png" alt="Split mode — edit and preview side by side" width="100%"></a>
     <sub><b>Split mode</b> — edit and preview side by side with anchor-based scroll sync</sub>
   </td>
@@ -119,6 +129,22 @@ LaTeX math · Mermaid · clipboard image paste · auto TOC · Korean-first typog
 <br/>
 
 ## 🚀 Highlights
+
+<details open>
+<summary><b>✍️ Edit right in the preview <sub>v1.0.29</sub></b></summary>
+
+The headline feature — no mode switch, no raw markdown.
+
+- **Click a rendered block** (paragraph, heading, list, quote) and edit it in place; it round-trips back to clean markdown on save
+- **＋ handle** inserts any block type — text, headings, lists, checkboxes, quote, code, table, image, link, divider
+- **⠿ handle** drags to reorder, or opens a menu to move / duplicate / delete
+- **`/` slash menu** converts the current block to another type, Notion-style
+- **Tables**: add / remove rows & columns and cycle column alignment while editing a cell; `Tab` hops cells and the last cell adds a new row
+- **Code blocks** open a dedicated editor (language field + `Tab` indent, no fence fiddling)
+- **Links**: click to edit text & URL in a popover; **checkboxes**: click to toggle `[ ]`↔`[x]` in the source
+- **Cmd/Ctrl+Z / Shift+Z** undo & redo, right in Preview
+
+</details>
 
 <details open>
 <summary><b>👀 View modes — Preview / Edit / Split</b></summary>

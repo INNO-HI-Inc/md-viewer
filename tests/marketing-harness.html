@@ -6,10 +6,46 @@
 <link rel="stylesheet" href="../media/editor.css">
 <link rel="stylesheet" href="../media/katex.min.css">
 <style>
-  body { margin: 0; }
+  html, body { margin: 0; height: 100%; }
+  /* Column layout: macOS titlebar on top, app fills the rest. Overriding
+     #app's 100vh so it flexes inside the framed window instead of the
+     whole viewport. */
+  body { display: flex; flex-direction: column; }
+  #app { height: auto !important; flex: 1 1 auto; min-height: 0; }
+  .mac-titlebar {
+    flex: 0 0 auto;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 18px;
+    background: var(--md-toolbar-bg, #f8f9fa);
+    border-bottom: 1px solid var(--md-border, #e5e7eb);
+    user-select: none;
+  }
+  .mac-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .mac-dot.r { background: #ff5f57; }
+  .mac-dot.y { background: #febc2e; }
+  .mac-dot.g { background: #28c840; }
+  .mac-title {
+    margin-left: 10px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--md-text-muted, #8a919c);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  /* Force-reveal one block's structural handles for the block-editing shot */
+  .markdown-body .md-block[data-shot-hover] > .md-block-handles { opacity: 1 !important; }
+  .markdown-body .md-block[data-shot-hover] { background: color-mix(in srgb, var(--md-accent) 4%, transparent); }
+  .markdown-body td[data-shot-hover] > .md-edit-icon,
+  .markdown-body .md-block[data-shot-hover] > .md-edit-icon { opacity: 1 !important; transform: scale(1) !important; }
 </style>
 </head>
 <body class="mode-preview vscode-light">
+<div class="mac-titlebar">
+  <span class="mac-dot r"></span><span class="mac-dot y"></span><span class="mac-dot g"></span>
+  <span class="mac-title" id="mac-title">회의록.md — MD Pretty Viewer</span>
+</div>
 <div id="app"></div>
 <script>
 window.acquireVsCodeApi = function () {
@@ -28,7 +64,7 @@ window.__lazyAssets = {
 <script src="../media/highlight.min.js"></script>
 <script src="../media/editor.js"></script>
 <script>
-// Rich marketing-grade sample: shows off LaTeX, code, table, image, checklist, quote, math, mermaid
+// Rich marketing-grade sample: LaTeX, code, table, checklist, quote, math, mermaid
 var MD = `# 📝 회의록 — Q3 제품 전략
 
 > **참석자**: 김민수, 이서연, 박지훈, 정다은
@@ -119,12 +155,19 @@ initEditor(MD, '회의록.md', '', {
     showOutline: true
 });
 
+function blockByText(txt) {
+    var blocks = document.querySelectorAll('#preview .md-block');
+    for (var i = 0; i < blocks.length; i++) {
+        if ((blocks[i].textContent || '').indexOf(txt) >= 0) return blocks[i];
+    }
+    return null;
+}
+
 // Marketing controls
 window.__mkt = {
-    setTheme: function (name) {
-        if (typeof applyTheme === 'function') applyTheme(name);
-    },
+    setTheme: function (name) { if (typeof applyTheme === 'function') applyTheme(name); },
     setMode: function (m) { setMode(m); },
+    setTitle: function (t) { var e = document.getElementById('mac-title'); if (e) e.textContent = t; },
     setOutline: function (visible) {
         if (outlineEl) {
             outlineEl.classList.toggle('hidden', !visible);
@@ -142,21 +185,72 @@ window.__mkt = {
             i.dispatchEvent(new Event('input', { bubbles: true }));
         }
     },
+    scrollTo: function (frac) {
+        var p = document.querySelector('.preview-pane');
+        if (p) p.scrollTo({ top: p.scrollHeight * frac });
+    },
+    scrollTop: function () {
+        var p = document.querySelector('.preview-pane'); if (p) p.scrollTo({ top: 0 });
+    },
     closeOverlays: function () {
-        closeLightbox();
-        closePreviewSearch();
+        closeLightbox(); closePreviewSearch();
+        if (typeof closeBlockPopup === 'function') closeBlockPopup();
         var d = document.querySelector('.pdf-options-dialog');
         if (d && d.parentNode) d.parentNode.removeChild(d);
+        document.querySelectorAll('[data-shot-hover]').forEach(function (n) { n.removeAttribute('data-shot-hover'); });
     },
     setVscodeTheme: function (t) {
         document.body.classList.remove('vscode-light', 'vscode-dark', 'vscode-high-contrast');
         document.body.classList.add(t);
+        // editor.css derives --md-bg/--md-text from VS Code's injected
+        // --vscode-* vars, which don't exist outside VS Code. Provide
+        // realistic values so dark mode actually renders dark (default VS
+        // Code dark: editor bg #1e1e1e / fg #d4d4d4).
+        // --md-bg is declared on :root, so the --vscode-* vars must live on
+        // :root (documentElement) too — setting them on <body> wouldn't be
+        // visible to the :root var() lookup.
+        var s = document.documentElement.style;
+        if (t === 'vscode-dark') {
+            s.setProperty('--vscode-editor-background', '#1e1e1e');
+            s.setProperty('--vscode-editor-foreground', '#d4d4d4');
+            s.setProperty('--vscode-panel-border', '#2b2b2b');
+        } else {
+            s.removeProperty('--vscode-editor-background');
+            s.removeProperty('--vscode-editor-foreground');
+            s.removeProperty('--vscode-panel-border');
+        }
     },
-    setEditorContent: function (s) {
-        currentContent = s;
-        if (editorEl) editorEl.value = s;
-        renderPreview();
-        if (typeof updateStats === 'function') updateStats();
+    // Scroll a block to the vertical middle so its gutter handles + any
+    // anchored menu sit fully in view (not clipped under the toolbar).
+    centerBlock: function (txt) {
+        var b = blockByText(txt);
+        if (b) b.scrollIntoView({ block: 'center' });
+        return !!b;
+    },
+    // Reveal the ＋ ⠿ ✎ handles on the block containing `txt`
+    showHandles: function (txt) {
+        var b = blockByText(txt);
+        if (!b) return false;
+        b.scrollIntoView({ block: 'center' });
+        b.setAttribute('data-shot-hover', '1');
+        return true;
+    },
+    // Open the insert (＋) menu anchored to that block's add handle
+    openInsertMenu: function (txt) {
+        var b = blockByText(txt);
+        if (!b) return false;
+        b.scrollIntoView({ block: 'center' });
+        b.setAttribute('data-shot-hover', '1');
+        var idx = parseInt(b.dataset.blockIdx, 10);
+        var btn = b.querySelector('.md-handle-add');
+        if (typeof openBlockPopup === 'function' && btn) { openBlockPopup('insert', idx, btn); return true; }
+        return false;
+    },
+    // Put a paragraph block into in-place WYSIWYG edit state
+    editBlock: function (txt) {
+        var b = blockByText(txt);
+        if (b && typeof openBlockEditor === 'function') { openBlockEditor(b); return true; }
+        return false;
     }
 };
 </script>
