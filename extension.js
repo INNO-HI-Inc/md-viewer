@@ -162,7 +162,12 @@ class MdPrettyEditorProvider {
         // the native undo stack, then persist (preserving the extension's
         // long-standing auto-save behaviour).
         const msgSub = webview.onDidReceiveMessage(async msg => {
-            if (msg.type !== 'edit' || isDisposed) return;
+            if (!msg || isDisposed) return;
+            if (msg.type === 'openLink') {
+                openLinkFromWebview(String(msg.href || ''), uri);
+                return;
+            }
+            if (msg.type !== 'edit') return;
             if (document.getText() === msg.content) return;   // no-op
             const fullRange = new vscode.Range(
                 new vscode.Position(0, 0),
@@ -204,6 +209,34 @@ class MdPrettyEditorProvider {
 
 function isMarkdownFile(uri) {
     return /\.(md|markdown|mdown|mkd)$/i.test(uri.fsPath);
+}
+
+/* Open a link the user clicked inside the rendered markdown. URLs (http/https/
+   mailto/…) open externally; a relative or absolute path (optionally with a
+   #fragment) is resolved against the document's folder and opened as a file —
+   so a link to another .md opens in the pretty viewer too. */
+function openLinkFromWebview(href, docUri) {
+    if (!href) return;
+    // Absolute URL with a scheme → open externally (openExternal prompts for
+    // untrusted sites and safely ignores javascript:/etc.).
+    if (/^[a-z][a-z0-9+.-]*:/i.test(href)) {
+        try { vscode.env.openExternal(vscode.Uri.parse(href)).then(undefined, () => {}); } catch (_) {}
+        return;
+    }
+    // Workspace file path (drop any #fragment — file links can't target anchors).
+    let path = href;
+    const hash = path.indexOf('#');
+    if (hash >= 0) path = path.slice(0, hash);
+    if (!path) return;
+    let target;
+    try {
+        target = path.charAt(0) === '/'
+            ? vscode.Uri.file(path)
+            : vscode.Uri.joinPath(docUri, '..', path);
+    } catch (_) { return; }
+    vscode.commands.executeCommand('vscode.open', target).then(undefined, () => {
+        vscode.window.showWarningMessage('MD Pretty Viewer: 링크한 파일을 열 수 없습니다 — ' + href);
+    });
 }
 
 /* The uri of the markdown file in the active tab — works for both our custom

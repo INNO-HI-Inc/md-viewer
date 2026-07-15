@@ -2768,6 +2768,41 @@ function scrollToHeading(text) {
     }
 }
 
+/* Link navigation (v1.0.31) — VS Code webviews don't scroll the preview
+   pane for in-page #anchors (the pane, not the window, is the scroll
+   container) and don't reliably open external links from a custom-editor
+   webview. Intercept clicks and route them: #anchors scroll within the
+   pane; everything else is handed to the extension (openExternal for URLs,
+   vscode.open for workspace files). Bound once on previewEl, which survives
+   the innerHTML swaps. */
+function bindLinkNavigation() {
+    if (!previewEl || previewEl.dataset.linkNavBound === '1') return;
+    previewEl.dataset.linkNavBound = '1';
+    previewEl.addEventListener('click', function (e) {
+        // While a block is being edited, its own handler shows the link
+        // editor popover instead of navigating.
+        if (_activeBlockEdit) return;
+        var a = e.target && e.target.closest ? e.target.closest('a') : null;
+        if (!a || !previewEl.contains(a)) return;
+        var href = a.getAttribute('href') || '';
+        if (!href) return;
+        if (href.charAt(0) === '#') {
+            e.preventDefault();
+            var id = href.slice(1);
+            try { id = decodeURIComponent(id); } catch (_) {}
+            var target = null;
+            try { target = previewEl.querySelector('[id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id.replace(/"/g, '\\"')) + '"]'); }
+            catch (_) { target = document.getElementById(id); }
+            if (!target) target = document.getElementById(id);
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return;
+        }
+        // External URL or workspace file — let the extension host open it.
+        e.preventDefault();
+        try { vscodeApi.postMessage({ type: 'openLink', href: href }); } catch (_) {}
+    });
+}
+
 /* ───────────────────────────────────────────
    Preview rendering
    ─────────────────────────────────────────── */
@@ -2806,6 +2841,7 @@ function renderPreview() {
         makeCheckboxesClickable();
         wrapTablesScrollable(previewEl);
         bindImageLightbox(previewEl);
+        bindLinkNavigation();
         bindBlockEditing(previewEl);
         renderEmptyPlaceholder();
         renderMath(previewEl);
