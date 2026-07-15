@@ -3588,3 +3588,12 @@ body.exporting-pdf .md-drop-indicator,
 body.exporting-pdf .markdown-body .md-empty-doc,
 body.exporting-pdf .md-help-overlay,
 body.exporting-pdf .md-block-popup { display: none !important; }
+
+/* PDF export drops the <details> disclosure triangle and the external-link ↗
+   arrow. These are ::before/::after pseudo-elements; html2canvas reads them
+   from the LIVE nodes, so _runPdfExport applies body.exporting-pdf to the
+   real document (not just the clone) for the duration of the capture. */
+body.exporting-pdf .markdown-body summary::before { content: none !important; }
+body.exporting-pdf .markdown-body summary { cursor: default !important; padding-left: 0 !important; }
+body.exporting-pdf .markdown-body a[href^="http"]::after,
+body.exporting-pdf .markdown-body a[href^="//"]::after { content: none !important; }

@@ -3464,6 +3464,18 @@ function _runPdfExport(userOpts) {
         return;
     }
 
+    // Prepare the LIVE preview for capture. html2canvas reads computed styles
+    // AND ::before/::after pseudo content from the ORIGINAL (live) nodes, not
+    // the clone — so hiding the disclosure triangle / external-link arrow and
+    // expanding collapsed <details> must happen here, on the live DOM, and be
+    // undone afterwards. (body.exporting-pdf CSS drives the pseudo hiding.)
+    var _closedDetails = [];
+    element.querySelectorAll('details:not([open])').forEach(function (d) {
+        _closedDetails.push(d);
+        d.setAttribute('open', '');
+    });
+    document.body.classList.add('exporting-pdf');
+
     // Resolve margin preset to mm tuple [top, left, bottom, right]
     var marginPresets = {
         narrow: [10, 10, 14, 10],
@@ -3474,7 +3486,11 @@ function _runPdfExport(userOpts) {
     var paperFormat = userOpts.paperSize === 'letter' ? 'letter' : 'a4';
     var pageOrient = userOpts.orientation === 'landscape' ? 'landscape' : 'portrait';
 
-    var restore = function () { /* no-op — onclone touches only the cloned doc */ };
+    var restore = function () {
+        document.body.classList.remove('exporting-pdf');
+        _closedDetails.forEach(function (d) { d.removeAttribute('open'); });
+        _closedDetails = [];
+    };
 
     // Get document title from first H1, but only use ASCII parts for jsPDF (no CJK)
     var docTitle = '';
@@ -3510,6 +3526,10 @@ function _runPdfExport(userOpts) {
                     clonedDoc.querySelectorAll('[data-md-chrome="1"]').forEach(function (n) {
                         if (n.parentNode) n.parentNode.removeChild(n);
                     });
+                    // NOTE: <details> expansion and the triangle/arrow hiding are
+                    // done on the LIVE DOM before capture (see _runPdfExport),
+                    // because html2canvas reads computed styles + ::before/::after
+                    // pseudo content from the ORIGINAL nodes, not this clone.
                     // Force light theme on cloned body so CSS variables resolve to light values
                     var b = clonedDoc.body;
                     if (b) {
@@ -3592,8 +3612,9 @@ function _runPdfExport(userOpts) {
                         // Code block wrap: hide header in PDF, keep code block together
                         '#preview .code-block-header { display:none !important; }',
                         '#preview .code-block-wrap { page-break-inside:avoid !important; break-inside:avoid !important; border-radius:4px !important; }',
-                        // External link arrow — drop in print, URL is appended already
-                        '#preview a[href^="http"]::after, #preview a[href^="//"]::after { content: none !important; }'
+                        // <details> print as normal boxes; the summary is the box heading
+                        '#preview details { break-inside:avoid !important; page-break-inside:avoid !important; }',
+                        '#preview summary { font-weight:700 !important; }'
                     ].join('\n');
                     clonedDoc.head.appendChild(s);
                 }

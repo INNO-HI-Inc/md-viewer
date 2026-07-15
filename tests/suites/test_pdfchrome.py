@@ -12,7 +12,7 @@ from playwright.sync_api import sync_playwright
 
 DOC = """# 제목
 
-문단.
+외부 [링크](https://example.com) 그리고 내부 [앵커](#섹션).
 
 | A | B |
 | --- | --- |
@@ -24,6 +24,12 @@ DOC = """# 제목
 ```js
 const x = 1;
 ```
+
+<details>
+<summary>접힌 섹션</summary>
+
+접힌 내용.
+</details>
 """
 
 results = []
@@ -58,6 +64,36 @@ with sync_playwright() as p:
     check('exporting-pdf hides block handles (display:none)', with_class['handle'] == 'none', with_class)
     check('exporting-pdf hides edit icons (display:none)', with_class['icon'] == 'none', with_class)
     check('exporting-pdf hides code-block header', with_class['codeHeader'] == 'none', with_class)
+
+    # pseudo-elements html2canvas reads from the live nodes: with the class on
+    # the live body, the ▶ summary triangle and the ↗ external-link arrow must
+    # compute to content:none.
+    pseudo = page.evaluate("""()=>{
+        var sum = document.querySelector('#preview summary');
+        var ext = document.querySelector('#preview a[href^="https"]');
+        return {
+            triangle: sum ? getComputedStyle(sum, '::before').content : 'none',
+            arrow: ext ? getComputedStyle(ext, '::after').content : 'none'
+        };
+    }""")
+    check('exporting-pdf removes summary ▶ triangle', pseudo['triangle'] in ('none', 'normal'), pseudo)
+    check('exporting-pdf removes external-link ↗ arrow', pseudo['arrow'] in ('none', 'normal'), pseudo)
+
+    # _runPdfExport force-opens collapsed <details> on the live DOM (so all
+    # content prints) — simulate + verify the closed one becomes visible.
+    details = page.evaluate("""()=>{
+        var closed = document.querySelectorAll('#preview details:not([open])');
+        var n = closed.length;
+        closed.forEach(function(d){ d.setAttribute('open',''); });
+        var body = document.querySelector('#preview details:not([open])');
+        // content visible after open?
+        var d0 = document.querySelector('#preview details');
+        var contentVisible = false;
+        if (d0) { var p = d0.querySelector('p'); contentVisible = !!(p && p.offsetHeight > 0); }
+        return { hadClosed: n, stillClosed: document.querySelectorAll('#preview details:not([open])').length, contentVisible: contentVisible };
+    }""")
+    check('details force-open expands collapsed sections',
+          details['hadClosed'] >= 1 and details['stillClosed'] == 0 and details['contentVisible'], details)
 
     # stripping data-md-chrome removes every chrome node (belt-and-suspenders)
     after = page.evaluate("""()=>{
