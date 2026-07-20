@@ -137,7 +137,8 @@ LaTeX math · Mermaid · clipboard image paste · auto TOC · Korean-first typog
 Click any `.md` file and it opens straight in MD Pretty Viewer — no extra command, no raw-text flash.
 
 - Registered as a VS Code **custom editor** for `.md` · `.markdown` · `.mdown` · `.mkd`
-- Works for every open path: Explorer click, Quick Open, terminal <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+click, and **file links from Claude Code / other extensions** (they use `vscode.open`, which honors the default editor)
+- Opens straight in the viewer from Explorer click, Quick Open, and terminal <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+click
+- **File links from Claude Code / other extensions** open in the viewer too. Those use `showTextDocument`, which bypasses default-editor settings, so the extension detects a markdown file that landed in a plain text tab and re-opens it in the viewer
 - Want the raw source? Right-click the tab → **Reopen Editor With… → Text Editor**. To make raw text the default, set `"workbench.editorAssociations": { "*.md": "default" }`
 - `git diff` and compare views stay the plain text diff — reviewing changes is never intercepted
 

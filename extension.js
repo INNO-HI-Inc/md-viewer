@@ -239,6 +239,40 @@ function openLinkFromWebview(href, docUri) {
     });
 }
 
+/* Respect a deliberate global preference for the built-in text editor:
+   if the user pinned markdown to "default" via workbench.editorAssociations,
+   we never auto-convert their text tabs. */
+function userPinnedMarkdownToText() {
+    let assoc;
+    try {
+        assoc = vscode.workspace.getConfiguration('workbench').get('editorAssociations') || {};
+    } catch (_) { return false; }
+    return Object.keys(assoc).some(glob =>
+        /\*\.(md|markdown|mdown|mkd)\b/i.test(glob) && assoc[glob] === 'default');
+}
+
+/* Re-open markdown files that landed in a PLAIN TEXT tab into the pretty
+   editor. priority:"default" covers Explorer / Quick Open / terminal clicks,
+   but window.showTextDocument — which Claude Code's chat file links use —
+   forces the text editor and bypasses custom editors entirely. This sweep is
+   the safety net for that path (and for the cold-start race). Custom-editor
+   tabs are TabInputCustom, so it can never fire on our own editor or loop. */
+function reopenMarkdownTextTabs() {
+    if (userPinnedMarkdownToText()) return;
+    for (const group of vscode.window.tabGroups.all) {
+        for (const tab of group.tabs) {
+            if (tab.input instanceof vscode.TabInputText &&
+                tab.input.uri.scheme === 'file' &&
+                isMarkdownFile(tab.input.uri)) {
+                vscode.commands.executeCommand(
+                    'vscode.openWith', tab.input.uri, VIEW_TYPE,
+                    { viewColumn: tab.group.viewColumn }
+                ).then(undefined, () => {});
+            }
+        }
+    }
+}
+
 /* The uri of the markdown file in the active tab — works for both our custom
    editor tabs (TabInputCustom) and plain text tabs (TabInputText). */
 function activeMarkdownUri() {
@@ -289,6 +323,16 @@ function activate(context) {
             }
         )
     );
+
+    // Safety net for opens that bypass the default custom editor — most
+    // importantly Claude Code's chat file links, which use showTextDocument
+    // (a text-editor-only API). Whenever a markdown file shows up in a plain
+    // text tab, re-open it in the pretty editor.
+    context.subscriptions.push(
+        vscode.window.tabGroups.onDidChangeTabs(reopenMarkdownTextTabs),
+        vscode.window.onDidChangeVisibleTextEditors(reopenMarkdownTextTabs)
+    );
+    reopenMarkdownTextTabs();   // convert anything already open (incl. cold start)
 
     context.subscriptions.push(
         // "Open Pretty View" — reopens the active markdown in our editor. Still
