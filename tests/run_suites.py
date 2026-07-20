@@ -6,14 +6,19 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent
-SUITES = [ROOT / 'verify.py'] + sorted((ROOT / 'suites').glob('test_*.py'))
+# Python suites drive the webview via Playwright; .js suites unit-test
+# extension.js against a mocked vscode API (node).
+SUITES = ([ROOT / 'verify.py']
+          + sorted((ROOT / 'suites').glob('test_*.py'))
+          + sorted((ROOT / 'suites').glob('test_*.js')))
 
 failed = []
 for suite in SUITES:
     print('\n' + '=' * 60)
     print('RUNNING', suite.name)
     print('=' * 60, flush=True)
-    r = subprocess.run([sys.executable, str(suite)])
+    cmd = ['node', str(suite)] if suite.suffix == '.js' else [sys.executable, str(suite)]
+    r = subprocess.run(cmd)
     if r.returncode != 0:
         failed.append(suite.name)
 
