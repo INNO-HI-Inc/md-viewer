@@ -255,22 +255,52 @@ function userPinnedMarkdownToText() {
    editor. priority:"default" covers Explorer / Quick Open / terminal clicks,
    but window.showTextDocument — which Claude Code's chat file links use —
    forces the text editor and bypasses custom editors entirely. This sweep is
-   the safety net for that path (and for the cold-start race). Custom-editor
-   tabs are TabInputCustom, so it can never fire on our own editor or loop. */
+   the safety net for that path (and for the cold-start race).
+
+   Re-entrancy is the danger here: our own vscode.openWith fires the very tab
+   events that trigger this sweep. With two markdown files that turned into an
+   endless focus ping-pong between them. Three guards prevent it:
+     1. `_convertAttempted` — each uri is converted at most once per tab
+        lifetime (cleared only when that file's tab is gone), so a failed or
+        slow conversion can never be retried in a loop.
+     2. a debounce, so the burst of events one conversion emits collapses into
+        a single later pass.
+     3. preserveFocus, so replacing a background tab never steals focus. */
+const _convertAttempted = new Set();
+let _convertTimer = null;
+
 function reopenMarkdownTextTabs() {
     if (userPinnedMarkdownToText()) return;
-    for (const group of vscode.window.tabGroups.all) {
-        for (const tab of group.tabs) {
-            if (tab.input instanceof vscode.TabInputText &&
-                tab.input.uri.scheme === 'file' &&
-                isMarkdownFile(tab.input.uri)) {
-                vscode.commands.executeCommand(
-                    'vscode.openWith', tab.input.uri, VIEW_TYPE,
-                    { viewColumn: tab.group.viewColumn }
-                ).then(undefined, () => {});
+    if (_convertTimer) return;                 // a pass is already scheduled
+    _convertTimer = setTimeout(() => {
+        _convertTimer = null;
+        const openUris = new Set();
+        const pending = [];
+        for (const group of vscode.window.tabGroups.all) {
+            for (const tab of group.tabs) {
+                const uri = tab.input && tab.input.uri;
+                if (!uri) continue;
+                openUris.add(uri.toString());
+                if (tab.input instanceof vscode.TabInputText &&
+                    uri.scheme === 'file' && isMarkdownFile(uri)) {
+                    pending.push({ uri, column: tab.group.viewColumn });
+                }
             }
         }
-    }
+        // Forget files whose tabs are gone, so opening them again later works.
+        for (const key of Array.from(_convertAttempted)) {
+            if (!openUris.has(key)) _convertAttempted.delete(key);
+        }
+        for (const item of pending) {
+            const key = item.uri.toString();
+            if (_convertAttempted.has(key)) continue;   // already handled once
+            _convertAttempted.add(key);
+            vscode.commands.executeCommand(
+                'vscode.openWith', item.uri, VIEW_TYPE,
+                { viewColumn: item.column, preserveFocus: true }
+            ).then(undefined, () => {});
+        }
+    }, 120);
 }
 
 /* The uri of the markdown file in the active tab — works for both our custom
@@ -362,6 +392,8 @@ function activate(context) {
 
 function deactivate() {
     activePanel = null;
+    if (_convertTimer) { clearTimeout(_convertTimer); _convertTimer = null; }
+    _convertAttempted.clear();
 }
 
 module.exports = { activate, deactivate };
