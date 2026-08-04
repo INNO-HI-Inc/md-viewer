@@ -2935,12 +2935,20 @@ function readCssVar(name, fallback) {
     } catch (e) { return fallback; }
 }
 
-/* A signature that changes whenever the visual theme changes, so we know to
-   re-initialize Mermaid with fresh colors (light/dark + any of the 13 themes). */
+/* Mermaid label size, tied to the reader's chosen preview font size (the −/＋
+   control sets --md-font-size). Kept a touch larger than body text so diagram
+   labels stay legible. */
+function mermaidFontSizePx() {
+    var base = parseFloat(readCssVar('--md-font-size', '16')) || 16;
+    return Math.max(12, Math.round(base * 1.1));
+}
+
+/* A signature that changes whenever the visual theme OR font size changes, so we
+   know to re-initialize Mermaid (light/dark + any of the 13 themes + font size). */
 function mermaidThemeSig() {
     return (document.body.classList.contains('vscode-dark') ? 'd' : 'l') + '|' +
         readCssVar('--md-accent', '') + '|' + readCssVar('--md-code-bg', '') + '|' +
-        readCssVar('--md-text', '');
+        readCssVar('--md-text', '') + '|' + mermaidFontSizePx();
 }
 
 /* Build a Mermaid config whose colors track the active color theme, so diagrams
@@ -2969,7 +2977,7 @@ function buildMermaidConfig() {
         gantt:     { useMaxWidth: true },
         themeVariables: {
             fontFamily: font,
-            fontSize: '15px',
+            fontSize: mermaidFontSizePx() + 'px',
             // diagram canvas blends with the .mermaid-diagram card; nodes use the
             // page bg so they pop against the card with an accent border.
             background: codeBg,
@@ -3005,7 +3013,14 @@ function buildMermaidConfig() {
             loopTextColor: text,
             noteBkgColor: bg,
             noteTextColor: text,
-            noteBorderColor: accent
+            noteBorderColor: accent,
+            // Categorical palette for pie / series charts (they'd otherwise all be
+            // the same near-white fill since primaryColor is light).
+            pie1: '#3B82F6', pie2: '#22C55E', pie3: '#F59E0B', pie4: '#A855F7',
+            pie5: '#F43F5E', pie6: '#06B6D4', pie7: '#EC4899', pie8: '#14B8A6',
+            pie9: '#F97316', pie10: '#8B5CF6', pie11: '#10B981', pie12: '#EF4444',
+            pieStrokeColor: bg, pieStrokeWidth: '2px', pieOuterStrokeColor: border,
+            pieSectionTextColor: '#ffffff', pieTitleTextColor: heading
         }
     };
 }
@@ -3032,6 +3047,65 @@ function padMermaidSvg(svg) {
     } catch (e) {}
 }
 
+/* Color a flowchart's nodes by hierarchy level, so each tier reads as a distinct
+   color instead of one flat fill. Levels are inferred from node positions along
+   the flow axis (y for top-down, x for left-right). No-op for non-flowcharts
+   (sequence/gantt/etc. have no g.node). Pastel fills + dark text stay readable on
+   both light paper and a dark preview card. */
+var MERMAID_LEVEL_PALETTE = [
+    { f: '#DBEAFE', s: '#3B82F6' },  // blue
+    { f: '#DCFCE7', s: '#22C55E' },  // green
+    { f: '#FEF3C7', s: '#F59E0B' },  // amber
+    { f: '#F3E8FF', s: '#A855F7' },  // purple
+    { f: '#FFE4E6', s: '#F43F5E' },  // rose
+    { f: '#CFFAFE', s: '#06B6D4' },  // cyan
+    { f: '#FCE7F3', s: '#EC4899' }   // pink
+];
+function colorMermaidByLevel(svg) {
+    if (!svg) return;
+    try {
+        var nodes = svg.querySelectorAll('g.node');
+        if (nodes.length < 2) return;
+        var arr = [];
+        nodes.forEach(function (n) {
+            var t = n.getAttribute('transform') || '';
+            var m = /translate\(\s*(-?[\d.]+)[ ,]+(-?[\d.]+)/.exec(t);
+            arr.push({ n: n, x: m ? parseFloat(m[1]) : 0, y: m ? parseFloat(m[2]) : 0 });
+        });
+        var xs = arr.map(function (o) { return o.x; });
+        var ys = arr.map(function (o) { return o.y; });
+        var xr = Math.max.apply(null, xs) - Math.min.apply(null, xs);
+        var yr = Math.max.apply(null, ys) - Math.min.apply(null, ys);
+        var axis = yr >= xr ? 'y' : 'x';                 // flow direction
+        arr.sort(function (a, b) { return a[axis] - b[axis]; });
+        var tol = Math.max(18, (axis === 'y' ? yr : xr) * 0.04);
+        var levels = [], cur = null;
+        arr.forEach(function (o) {
+            if (cur && Math.abs(o[axis] - cur.v) <= tol) cur.items.push(o);
+            else { cur = { v: o[axis], items: [o] }; levels.push(cur); }
+        });
+        levels.forEach(function (lv, i) {
+            var c = MERMAID_LEVEL_PALETTE[i % MERMAID_LEVEL_PALETTE.length];
+            lv.items.forEach(function (o) {
+                o.n.querySelectorAll('rect, polygon, circle, ellipse, path').forEach(function (sh) {
+                    sh.style.fill = c.f;
+                    sh.style.stroke = c.s;
+                    sh.style.strokeWidth = '1.5px';
+                });
+                // Force dark label text so it stays readable on the pastel fill —
+                // set both `fill` (SVG <text>) and `color` (foreignObject HTML
+                // labels), since the fill would otherwise follow the light --md-text
+                // in dark mode and wash out.
+                o.n.querySelectorAll('text, tspan, .nodeLabel, foreignObject div, foreignObject span, foreignObject p').forEach(function (tx) {
+                    tx.style.fill = '#111';
+                    tx.style.color = '#111';
+                    tx.setAttribute('fill', '#111');
+                });
+            });
+        });
+    } catch (e) {}
+}
+
 /* A print-friendly Mermaid config for PDF export: a light palette that reads on
    white paper, and htmlLabels:false so labels are native SVG <text> (not
    <foreignObject> HTML — which html2canvas silently drops, leaving a blank box). */
@@ -3048,7 +3122,7 @@ function buildMermaidPdfConfig() {
         sequence:  { useMaxWidth: true, mirrorActors: false, boxMargin: 10 },
         gantt:     { useMaxWidth: true },
         themeVariables: {
-            fontFamily: font, fontSize: '15px',
+            fontFamily: font, fontSize: mermaidFontSizePx() + 'px',
             background: '#ffffff', primaryColor: '#ffffff', primaryBorderColor: accent,
             primaryTextColor: '#1a1a1a', secondaryColor: '#f6f8fa', secondaryBorderColor: '#c9d1d9',
             secondaryTextColor: '#1a1a1a', tertiaryColor: '#f6f8fa', tertiaryBorderColor: '#c9d1d9',
@@ -3058,7 +3132,12 @@ function buildMermaidPdfConfig() {
             actorBkg: '#ffffff', actorBorder: accent, actorTextColor: '#1a1a1a', actorLineColor: '#c9d1d9',
             signalColor: '#1a1a1a', signalTextColor: '#1a1a1a', labelBoxBkgColor: '#ffffff',
             labelBoxBorderColor: accent, labelTextColor: '#1a1a1a', loopTextColor: '#1a1a1a',
-            noteBkgColor: '#fff8c5', noteTextColor: '#1a1a1a', noteBorderColor: '#d4b106'
+            noteBkgColor: '#fff8c5', noteTextColor: '#1a1a1a', noteBorderColor: '#d4b106',
+            pie1: '#3B82F6', pie2: '#22C55E', pie3: '#F59E0B', pie4: '#A855F7',
+            pie5: '#F43F5E', pie6: '#06B6D4', pie7: '#EC4899', pie8: '#14B8A6',
+            pie9: '#F97316', pie10: '#8B5CF6', pie11: '#10B981', pie12: '#EF4444',
+            pieStrokeColor: '#ffffff', pieStrokeWidth: '2px', pieOuterStrokeColor: '#c9d1d9',
+            pieSectionTextColor: '#ffffff', pieTitleTextColor: '#111'
         }
     };
 }
@@ -3106,11 +3185,16 @@ function svgToPngDataUrl(svgEl, scale) {
    <img>. html2canvas can't render inline SVG (esp. foreignObject labels), so a
    diagram would otherwise print as a blank box. Re-renders each from source with
    a print-light, SVG-text config. Returns a Promise of a restore() to undo it. */
-function prepareMermaidForPdf(root) {
+function prepareMermaidForPdf(root, fit) {
     if (!root || typeof mermaid === 'undefined') return Promise.resolve(function () {});
     var wrappers = Array.prototype.slice.call(root.querySelectorAll('.mermaid-diagram'))
         .filter(function (w) { return w.dataset.mermaidSrc && w.querySelector('svg'); });
     if (!wrappers.length) return Promise.resolve(function () {});
+
+    fit = fit || {};
+    var maxW = fit.maxW || 0;      // px: fill up to the printable content width
+    var maxH = fit.maxH || 0;      // px: never taller than (most of) one page
+    var MAX_UPSCALE = 1.8;
 
     try { mermaid.initialize(buildMermaidPdfConfig()); } catch (e) {}
     var swapped = [];
@@ -3124,18 +3208,37 @@ function prepareMermaidForPdf(root) {
                 tmp.innerHTML = r.svg;
                 var svgEl = tmp.querySelector('svg');
                 if (!svgEl) return;
+                padMermaidSvg(svgEl);            // breathing room so bottoms never clip
+                colorMermaidByLevel(svgEl);      // per-level colors, same as the live view
                 return svgToPngDataUrl(svgEl, 2).then(function (res) {
                     return new Promise(function (resolve) {
+                        // Scale so the diagram fills the width but is never taller
+                        // than (most of) one page — kept whole, never clipped.
+                        // Constrain to the card's own inner width so max-width can't
+                        // clamp it and distort the aspect ratio. Small diagrams get
+                        // a modest upscale so they don't look tiny.
+                        var cardW = Math.max(50, (w.clientWidth || maxW || res.w) - 32);
+                        var effMaxW = maxW ? Math.min(maxW, cardW) : cardW;
+                        var scale = 1;
+                        if (res.w && res.h && effMaxW && maxH) {
+                            scale = Math.min(effMaxW / res.w, maxH / res.h, MAX_UPSCALE);
+                        } else if (res.w && effMaxW) {
+                            scale = Math.min(effMaxW / res.w, MAX_UPSCALE);
+                        }
+                        if (!(scale > 0)) scale = 1;
+                        var dispW = Math.round(res.w * scale);
+                        var dispH = Math.round(res.h * scale);
+
                         var img = document.createElement('img');
                         img.className = 'mermaid-pdf-img';
-                        img.style.maxWidth = '100%';
-                        img.style.height = 'auto';
                         img.style.display = 'block';
                         img.style.margin = '0 auto';
-                        // explicit width so html2canvas lays it out deterministically
-                        // (a just-decoded data-URL <img> can otherwise capture at its
-                        // full 2× pixel size and overflow/crop the diagram box).
-                        if (res.w) img.setAttribute('width', Math.round(res.w));
+                        // max-width:100% is a safety net against right-edge overflow;
+                        // height:auto keeps the aspect ratio if it ever clamps. Width
+                        // drives the size (dispW is already ≤ the card width).
+                        img.style.maxWidth = '100%';
+                        if (dispW) { img.setAttribute('width', dispW); img.style.width = dispW + 'px'; }
+                        img.style.height = 'auto';
                         var done = function () { resolve(); };
                         img.onload = done;
                         img.onerror = done;
@@ -3230,7 +3333,9 @@ function renderMermaid(container) {
                     // Guard: wrapper might be replaced by a newer render cycle
                     if (!wrapper.isConnected) return;
                     wrapper.innerHTML = r.svg;
-                    padMermaidSvg(wrapper.querySelector('svg'));
+                    var _svg = wrapper.querySelector('svg');
+                    padMermaidSvg(_svg);
+                    colorMermaidByLevel(_svg);
                     addMermaidZoomAffordance(wrapper);
                 }).catch(function () {
                     if (!wrapper.isConnected) return;
@@ -3556,12 +3661,21 @@ function insertAtCursor(insertion) {
     onEditorInput();
 }
 
+var _mermaidFontTimer = null;
 function changeFontSize(delta) {
     var currentSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--md-font-size') || '16');
     var newSize = Math.max(12, Math.min(24, currentSize + delta));
     document.documentElement.style.setProperty('--md-font-size', newSize + 'px');
     if (fontSizeDisplayEl) fontSizeDisplayEl.textContent = Math.round(newSize);
     lsSet('md-viewer-font-size', newSize + 'px');
+    // Mermaid renders to a fixed-size SVG, so it won't reflow with the CSS font
+    // var — re-render the diagrams (debounced) so their labels track the size too.
+    if (document.querySelector('.mermaid-diagram')) {
+        if (_mermaidFontTimer) clearTimeout(_mermaidFontTimer);
+        _mermaidFontTimer = setTimeout(function () {
+            if (typeof renderPreview === 'function') renderPreview();
+        }, 180);
+    }
 }
 
 function toolbarAction(action) {
@@ -3817,8 +3931,21 @@ function _runPdfExport(userOpts) {
     // foreignObject labels — so a diagram would print blank). Running the swap
     // after the settle delay avoids a race where an in-flight live render wipes
     // the swapped <img>. Rasterization failure never blocks the export.
+    // Fit box for diagrams: fill the printable width, but cap height well under
+    // one page so a tall flowchart stays whole (never clipped) AND can share a
+    // page with the title/text instead of getting bumped to its own page (which
+    // is what left the big blank gap).
+    var _pageWmm = paperFormat === 'letter' ? 215.9 : 210;
+    var _pageHmm = paperFormat === 'letter' ? 279.4 : 297;
+    if (pageOrient === 'landscape') { var _t = _pageWmm; _pageWmm = _pageHmm; _pageHmm = _t; }
+    var _printWmm = _pageWmm - marginMm[1] - marginMm[3];
+    var _printHmm = _pageHmm - marginMm[0] - marginMm[2];
+    var _contentWpx = element.clientWidth || 760;
+    var _pxPerMm = _contentWpx / _printWmm;
+    var _fit = { maxW: _contentWpx, maxH: _printHmm * _pxPerMm * 0.56 };
+
     setTimeout(function () {
-    prepareMermaidForPdf(element).then(function (mr) { _mermaidRestore = mr; }, function () {}).then(function () {
+    prepareMermaidForPdf(element, _fit).then(function (mr) { _mermaidRestore = mr; }, function () {}).then(function () {
         var opt = {
             margin: marginMm,
             filename: fileName,
@@ -3828,8 +3955,9 @@ function _runPdfExport(userOpts) {
                 useCORS: true,
                 logging: false,
                 backgroundColor: '#ffffff',
-                height: element.scrollHeight,
-                windowHeight: element.scrollHeight,
+                // NOTE: no fixed `height`/`windowHeight` — pinning the capture
+                // height mis-paginates tall rasterized diagrams (blank/split pages).
+                // html2canvas auto-measures the element's full height correctly.
                 onclone: function (clonedDoc) {
                     // Remove all editing chrome (＋ ⠿ ✎ handles, edit icons,
                     // ✓/✕ buttons, toolbars, popups) so it never prints. The

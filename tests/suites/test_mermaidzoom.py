@@ -40,6 +40,16 @@ with sync_playwright() as p:
     # v1.0.37: viewBox padded so the bottom row of text isn't clipped
     check('svg viewBox padded (no bottom clipping)',
           page.evaluate("document.querySelector('.mermaid-diagram svg').dataset.vbPadded") == '1')
+    # v1.0.38: flowchart nodes are colored by hierarchy level (distinct fills)
+    distinct_fills = page.evaluate("""() => {
+        var s = new Set();
+        document.querySelectorAll('.mermaid-diagram g.node').forEach(function (n) {
+            var sh = n.querySelector('rect, polygon, circle, ellipse, path');
+            if (sh && sh.style && sh.style.fill) s.add(sh.style.fill);
+        });
+        return s.size;
+    }""")
+    check('nodes colored by level (>=2 distinct fills)', distinct_fills >= 2, distinct_fills)
     check('zoom button added', page.evaluate("!!document.querySelector('.mermaid-zoom-btn')"))
     check('zoom button is chrome (stripped on save/pdf)',
           page.evaluate("document.querySelector('.mermaid-zoom-btn').dataset.mdChrome") == '1')
@@ -128,6 +138,20 @@ with sync_playwright() as p:
     page.wait_for_timeout(100)
     check('PDF restore removes raster + restores SVG',
           page.evaluate("!document.querySelector('.mermaid-pdf-img') && !!document.querySelector('.mermaid-diagram svg')"))
+
+    # v1.0.38: the −/＋ font control also resizes Mermaid (re-renders diagrams)
+    LABEL_SEL = ".mermaid-diagram svg .nodeLabel, .mermaid-diagram svg text"
+    page.evaluate("window.__test.setContent(%r)" % DOC)
+    page.wait_for_function("!!document.querySelector(%r)" % LABEL_SEL, timeout=15000)
+    page.wait_for_timeout(200)
+    fs0 = page.evaluate("parseFloat(getComputedStyle(document.querySelector(%r)).fontSize)" % LABEL_SEL)
+    page.evaluate("changeFontSize(1); changeFontSize(1); changeFontSize(1); changeFontSize(1);")
+    page.wait_for_timeout(700)
+    page.wait_for_function("!!document.querySelector(%r)" % LABEL_SEL, timeout=15000)
+    fs1 = page.evaluate("parseFloat(getComputedStyle(document.querySelector(%r)).fontSize)" % LABEL_SEL)
+    check('font control resizes mermaid labels', fs1 > fs0, (fs0, fs1))
+    page.evaluate("changeFontSize(-1); changeFontSize(-1); changeFontSize(-1); changeFontSize(-1);")
+    page.wait_for_timeout(500)
 
     # image lightbox still works (shared engine)
     page.evaluate("""()=>{ var i=document.querySelector('#preview img'); if(i) i.click(); }""")
