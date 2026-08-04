@@ -2374,8 +2374,35 @@ body.vscode-high-contrast .palette-swatch:hover {
    ══════════════════════════════════════════════════════════════ */
 
 /* Mermaid */
-.mermaid-diagram { margin: 1.5em 0; padding: 16px; background: var(--md-code-bg, #f8f9fa); border: 1px solid var(--md-code-border, #e1e4e8); border-radius: 10px; text-align: center; overflow-x: auto; }
+.mermaid-diagram { position: relative; margin: 1.5em 0; padding: 16px; background: var(--md-code-bg, #f8f9fa); border: 1px solid var(--md-code-border, #e1e4e8); border-radius: 10px; text-align: center; overflow-x: auto; }
 .mermaid-diagram svg { max-width: 100%; height: auto; display: inline-block; }
+/* Hover "expand" button — opens the diagram in the zoom/pan overlay */
+.mermaid-zoom-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--md-bg-elevated, #fff);
+    border: 1px solid var(--md-border, #d0d7de);
+    border-radius: 7px;
+    color: var(--md-text-muted, #6b7280);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.12s, background 0.12s, color 0.12s, border-color 0.12s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    z-index: 2;
+}
+body.mode-preview .mermaid-diagram:hover .mermaid-zoom-btn,
+.mermaid-zoom-btn:focus-visible { opacity: 1; }
+.mermaid-zoom-btn:hover { background: var(--md-accent); color: #fff; border-color: var(--md-accent); }
+body.exporting-pdf .mermaid-zoom-btn { display: none !important; }
 
 /* Admonitions */
 .md-admonition { margin: 1.2em 0; padding: 12px 16px 12px 14px; border-left: 4px solid var(--md-accent, #448CFF); border-radius: 6px; background: var(--md-quote-bg, rgba(68,140,255,0.06)); }
@@ -2570,6 +2597,18 @@ body.exporting-pdf .markdown-body .table-scroll > table {
     transition: transform 80ms ease;
     transform-origin: center center;
     background: #fff;
+}
+/* Mermaid SVG in the zoom overlay — vector, so it stays crisp at any zoom */
+.image-lightbox .lightbox-svg {
+    max-width: 92vw;
+    max-height: 86vh;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    border-radius: 8px;
+    cursor: zoom-out;
+    transition: transform 80ms ease;
+    transform-origin: center center;
+    background: #fff;
+    padding: 20px;
 }
 .image-lightbox .lightbox-caption {
     color: rgba(255,255,255,0.9);

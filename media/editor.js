@@ -470,25 +470,26 @@ function highlightCodeBlocks(container) {
     enhanceCodeBlocks(container);
 }
 
-/* Image lightbox (v1.0.2) — click to enlarge, ESC/click to close, wheel to zoom */
+/* Image lightbox (v1.0.2) — click to enlarge, ESC/click to close, wheel to
+   zoom, drag to pan. Since v1.0.36 the zoom/pan engine is shared: it takes any
+   content element (an <img> for images, a cloned <svg> for Mermaid diagrams)
+   so complex diagrams get the same zoom & pan. */
 var _lightboxEl = null;
 var _lightboxCleanup = null;  // tear down window listeners when closing
-function openLightbox(src, alt) {
+
+/* Core zoom/pan overlay. `contentEl` is the zoomable node (img or svg). */
+function openZoomView(contentEl, caption, ariaLabel) {
     closeLightbox();
     var overlay = document.createElement('div');
     overlay.className = 'image-lightbox';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
-    overlay.setAttribute('aria-label', alt || 'Image preview');
-    var img = document.createElement('img');
-    img.src = src;
-    img.alt = alt || '';
-    img.draggable = false;
+    overlay.setAttribute('aria-label', ariaLabel || caption || 'Preview');
 
-    var caption = document.createElement('div');
-    caption.className = 'lightbox-caption';
-    caption.textContent = alt || '';
-    if (!alt) caption.style.display = 'none';
+    var cap = document.createElement('div');
+    cap.className = 'lightbox-caption';
+    cap.textContent = caption || '';
+    if (!caption) cap.style.display = 'none';
 
     var closeBtn = document.createElement('button');
     closeBtn.className = 'lightbox-close';
@@ -497,10 +498,10 @@ function openLightbox(src, alt) {
 
     var hint = document.createElement('div');
     hint.className = 'lightbox-hint';
-    hint.textContent = 'ESC 또는 클릭으로 닫기 · 휠로 확대/축소';
+    hint.textContent = 'ESC 또는 바깥 클릭으로 닫기 · 휠로 확대/축소 · 드래그로 이동 · 더블클릭 리셋';
 
-    overlay.appendChild(img);
-    overlay.appendChild(caption);
+    overlay.appendChild(contentEl);
+    overlay.appendChild(cap);
     overlay.appendChild(closeBtn);
     overlay.appendChild(hint);
     document.body.appendChild(overlay);
@@ -509,20 +510,29 @@ function openLightbox(src, alt) {
     var scale = 1, tx = 0, ty = 0;
     var isDragging = false, dragStartX = 0, dragStartY = 0, dragOriginX = 0, dragOriginY = 0;
     function apply() {
-        img.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
+        contentEl.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
+        contentEl.style.cursor = scale > 1 ? 'grab' : 'zoom-out';
+    }
+    function zoomAt(clientX, clientY, factor) {
+        var r = contentEl.getBoundingClientRect();
+        var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        var ns = Math.min(12, Math.max(0.4, scale * factor));
+        var k = ns / scale;
+        // keep the point under the cursor stationary while zooming
+        tx = (clientX - cx) - (clientX - cx - tx) * k;
+        ty = (clientY - cy) - (clientY - cy - ty) * k;
+        scale = ns;
+        apply();
     }
     function onWheel(e) {
         e.preventDefault();
-        var delta = -e.deltaY * 0.0015;
-        scale = Math.min(6, Math.max(0.3, scale + delta * scale));
-        apply();
+        zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.12 : 1 / 1.12);
     }
     function onMouseDown(e) {
-        if (scale <= 1) return;
-        isDragging = true;
+        isDragging = true;                       // pan at any zoom level
         dragStartX = e.clientX; dragStartY = e.clientY;
         dragOriginX = tx; dragOriginY = ty;
-        img.style.cursor = 'grabbing';
+        contentEl.style.cursor = 'grabbing';
         e.preventDefault();
     }
     function onMouseMove(e) {
@@ -534,32 +544,52 @@ function openLightbox(src, alt) {
     function onMouseUp() {
         if (!isDragging) return;
         isDragging = false;
-        img.style.cursor = 'grab';
+        apply();
     }
     function onDblClick(e) {
         e.stopPropagation();
-        if (scale > 1) { scale = 1; tx = 0; ty = 0; } else { scale = 2.5; }
-        apply();
+        if (scale > 1) { scale = 1; tx = 0; ty = 0; apply(); }
+        else zoomAt(e.clientX, e.clientY, 2.5);
     }
     function onClickOverlay(e) {
         if (e.target === overlay || e.target === closeBtn) closeLightbox();
     }
 
     overlay.addEventListener('wheel', onWheel, { passive: false });
-    img.addEventListener('mousedown', onMouseDown);
+    contentEl.addEventListener('mousedown', onMouseDown);
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
-    img.addEventListener('dblclick', onDblClick);
+    contentEl.addEventListener('dblclick', onDblClick);
     overlay.addEventListener('click', onClickOverlay);
 
-    // Tear-down used by closeLightbox to detach window listeners (avoid leak)
     _lightboxCleanup = function () {
         window.removeEventListener('mousemove', onMouseMove);
         window.removeEventListener('mouseup', onMouseUp);
     };
-
-    // Defer fade-in to next frame for transition
+    apply();
     requestAnimationFrame(function () { overlay.classList.add('show'); });
+}
+
+function openLightbox(src, alt) {
+    var img = document.createElement('img');
+    img.src = src;
+    img.alt = alt || '';
+    img.draggable = false;
+    openZoomView(img, alt || '', alt || 'Image preview');
+}
+
+/* Open a Mermaid diagram's SVG in the zoom/pan overlay. Clones the SVG so the
+   in-document one is untouched, and lets it grow (drop fixed width/height) so
+   zooming stays crisp (it's vector, not a raster). */
+function openMermaidZoom(svg) {
+    if (!svg) return;
+    var clone = svg.cloneNode(true);
+    clone.removeAttribute('width');
+    clone.removeAttribute('height');
+    clone.style.width = 'auto';
+    clone.style.height = 'auto';
+    clone.classList.add('lightbox-svg');
+    openZoomView(clone, '', 'Diagram preview');
 }
 function closeLightbox() {
     if (!_lightboxEl) return;
@@ -2891,6 +2921,34 @@ function lazyLoadScript(key, url) {
     return _lazyLoaded[key];
 }
 var _mermaidInited = false;
+/* Make a rendered Mermaid diagram open in the zoom/pan overlay. Adds a hover
+   "⤢" button (discoverable) and a click-to-zoom on the diagram itself. */
+function addMermaidZoomAffordance(wrapper) {
+    if (!wrapper || wrapper.dataset.zoomBound === '1') return;
+    var svg = wrapper.querySelector('svg');
+    if (!svg) return;
+    wrapper.dataset.zoomBound = '1';
+    wrapper.style.cursor = 'zoom-in';
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'mermaid-zoom-btn';
+    btn.dataset.mdChrome = '1';
+    btn.setAttribute('aria-label', '다이어그램 확대');
+    btn.title = '확대 / 축소 · 팬';
+    btn.textContent = '⤢';
+    btn.addEventListener('click', function (e) {
+        e.preventDefault(); e.stopPropagation();
+        openMermaidZoom(wrapper.querySelector('svg'));
+    });
+    wrapper.appendChild(btn);
+
+    wrapper.addEventListener('click', function (e) {
+        if (e.target.closest('a')) return;   // let links inside the diagram work
+        openMermaidZoom(wrapper.querySelector('svg'));
+    });
+}
+
 function renderMermaid(container) {
     if (!container) return;
     var blocks = container.querySelectorAll('pre code.language-mermaid, pre code.lang-mermaid');
@@ -2927,6 +2985,7 @@ function renderMermaid(container) {
                     // Guard: wrapper might be replaced by a newer render cycle
                     if (!wrapper.isConnected) return;
                     wrapper.innerHTML = r.svg;
+                    addMermaidZoomAffordance(wrapper);
                 }).catch(function () {
                     if (!wrapper.isConnected) return;
                     wrapper.outerHTML = fallbackHtml;

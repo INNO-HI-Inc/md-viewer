@@ -5,3 +5,4 @@ node_modules/
 tests/evidence/
 __pycache__/
 .claude-resume-plan.md
+mermaid-zoom-예시.md
