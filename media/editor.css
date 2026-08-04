@@ -2598,16 +2598,19 @@ body.exporting-pdf .markdown-body .table-scroll > table {
     transform-origin: center center;
     background: #fff;
 }
-/* Mermaid SVG in the zoom overlay — vector, so it stays crisp at any zoom */
+/* Mermaid SVG in the zoom overlay — vector, so it stays crisp at any zoom.
+   Background follows the diagram's theme (dark in dark mode) so a dark-themed
+   diagram isn't forced onto a white card. */
 .image-lightbox .lightbox-svg {
     max-width: 92vw;
     max-height: 86vh;
     box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    border: 1px solid var(--md-code-border, #e1e4e8);
     border-radius: 8px;
     cursor: zoom-out;
     transition: transform 80ms ease;
     transform-origin: center center;
-    background: #fff;
+    background: var(--md-code-bg, #fff);
     padding: 20px;
 }
 .image-lightbox .lightbox-caption {

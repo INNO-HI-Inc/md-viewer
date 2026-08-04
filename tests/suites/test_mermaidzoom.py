@@ -37,6 +37,9 @@ with sync_playwright() as p:
     page.wait_for_timeout(300)
 
     check('mermaid rendered to svg', page.evaluate("!!document.querySelector('.mermaid-diagram svg')"))
+    # v1.0.37: viewBox padded so the bottom row of text isn't clipped
+    check('svg viewBox padded (no bottom clipping)',
+          page.evaluate("document.querySelector('.mermaid-diagram svg').dataset.vbPadded") == '1')
     check('zoom button added', page.evaluate("!!document.querySelector('.mermaid-zoom-btn')"))
     check('zoom button is chrome (stripped on save/pdf)',
           page.evaluate("document.querySelector('.mermaid-zoom-btn').dataset.mdChrome") == '1')
@@ -64,7 +67,11 @@ with sync_playwright() as p:
     }""")
     page.wait_for_timeout(60)
     t2 = page.evaluate("document.querySelector('.image-lightbox .lightbox-svg').style.transform")
-    check('drag pans', 'translate(60px, 30px)' in t2, t2)
+    import re
+    _m = re.search(r'translate\(([-\d.]+)px,\s*([-\d.]+)px\)', t2)
+    _dx = float(_m.group(1)) if _m else None
+    _dy = float(_m.group(2)) if _m else None
+    check('drag pans', _dx is not None and abs(_dx - 60) < 1 and abs(_dy - 30) < 1, t2)
 
     # double-click resets
     page.evaluate("""()=>document.querySelector('.image-lightbox .lightbox-svg').dispatchEvent(
@@ -77,6 +84,50 @@ with sync_playwright() as p:
     page.evaluate("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}))")
     page.wait_for_timeout(300)
     check('ESC closes overlay', page.evaluate("!document.querySelector('.image-lightbox')"))
+
+    # v1.0.37: in dark mode the overlay SVG background follows the theme (not a
+    # hardcoded white card that would break a dark-rendered diagram).
+    page.evaluate("""
+        document.body.classList.remove('vscode-light');
+        document.body.classList.add('vscode-dark');
+        document.documentElement.style.setProperty('--vscode-editor-background', '#0d1117');
+        document.documentElement.style.setProperty('--vscode-editor-foreground', '#e6edf3');
+    """)
+    page.evaluate("window.__test.setContent(%r)" % DOC)
+    page.wait_for_function("!!document.querySelector('.mermaid-diagram svg')", timeout=15000)
+    page.wait_for_timeout(300)
+    page.evaluate("document.querySelector('.mermaid-zoom-btn').click()")
+    page.wait_for_timeout(150)
+    dark_bg = page.evaluate("getComputedStyle(document.querySelector('.image-lightbox .lightbox-svg')).backgroundColor")
+    check('dark-mode overlay bg is not white', dark_bg not in ('rgb(255, 255, 255)', 'rgba(0, 0, 0, 0)'), dark_bg)
+    page.evaluate("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}))")
+    page.wait_for_timeout(200)
+    page.evaluate("""
+        document.body.classList.remove('vscode-dark');
+        document.body.classList.add('vscode-light');
+    """)
+
+    # v1.0.37: PDF export rasterizes each Mermaid diagram to a PNG <img> (inline
+    # SVG can't be captured by html2canvas → prints blank). Verify the swap
+    # produces a real PNG and restore() puts the live SVG back.
+    page.evaluate("window.__test.setContent(%r)" % DOC)
+    page.wait_for_function("!!document.querySelector('.mermaid-diagram svg')", timeout=15000)
+    page.wait_for_timeout(200)
+    page.evaluate("""
+        window.__pdfPrepDone = false;
+        prepareMermaidForPdf(document.querySelector('#preview')).then(function (r) {
+            window.__pdfRestore = r; window.__pdfPrepDone = true;
+        });
+    """)
+    page.wait_for_function("window.__pdfPrepDone === true", timeout=15000)
+    img_src = page.evaluate("(document.querySelector('.mermaid-diagram .mermaid-pdf-img')||{}).src || ''")
+    check('PDF swap produced a PNG raster', img_src.startswith('data:image/png'), img_src[:40])
+    check('live SVG detached during PDF capture',
+          page.evaluate("!document.querySelector('.mermaid-diagram svg')"))
+    page.evaluate("if (window.__pdfRestore) window.__pdfRestore();")
+    page.wait_for_timeout(100)
+    check('PDF restore removes raster + restores SVG',
+          page.evaluate("!document.querySelector('.mermaid-pdf-img') && !!document.querySelector('.mermaid-diagram svg')"))
 
     # image lightbox still works (shared engine)
     page.evaluate("""()=>{ var i=document.querySelector('#preview img'); if(i) i.click(); }""")

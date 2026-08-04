@@ -583,11 +583,15 @@ function openLightbox(src, alt) {
    zooming stays crisp (it's vector, not a raster). */
 function openMermaidZoom(svg) {
     if (!svg) return;
+    padMermaidSvg(svg);                 // ensure the source is padded before cloning
     var clone = svg.cloneNode(true);
     clone.removeAttribute('width');
     clone.removeAttribute('height');
     clone.style.width = 'auto';
     clone.style.height = 'auto';
+    clone.style.maxWidth = '90vw';      // beat Mermaid's inline max-width so it fills the overlay
+    clone.style.maxHeight = '84vh';
+    clone.style.overflow = 'visible';
     clone.classList.add('lightbox-svg');
     openZoomView(clone, '', 'Diagram preview');
 }
@@ -2921,6 +2925,249 @@ function lazyLoadScript(key, url) {
     return _lazyLoaded[key];
 }
 var _mermaidInited = false;
+var _mermaidThemeSig = '';
+
+/* Read a CSS custom property off <body> (falls back if unset/errored). */
+function readCssVar(name, fallback) {
+    try {
+        var v = getComputedStyle(document.body).getPropertyValue(name).trim();
+        return v || fallback;
+    } catch (e) { return fallback; }
+}
+
+/* A signature that changes whenever the visual theme changes, so we know to
+   re-initialize Mermaid with fresh colors (light/dark + any of the 13 themes). */
+function mermaidThemeSig() {
+    return (document.body.classList.contains('vscode-dark') ? 'd' : 'l') + '|' +
+        readCssVar('--md-accent', '') + '|' + readCssVar('--md-code-bg', '') + '|' +
+        readCssVar('--md-text', '');
+}
+
+/* Build a Mermaid config whose colors track the active color theme, so diagrams
+   feel like part of the document instead of a generic gray blob. Uses the 'base'
+   theme (the only one whose variables are fully overridable) and a concrete font
+   stack (a real font — not 'inherit' — so Mermaid measures text correctly and
+   stops clipping descenders). */
+function buildMermaidConfig() {
+    var dark = document.body.classList.contains('vscode-dark');
+    var accent  = readCssVar('--md-accent',      dark ? '#6BA3FF' : '#448CFF');
+    var text    = readCssVar('--md-text',        dark ? '#e6edf3' : '#24292f');
+    var bg      = readCssVar('--md-bg',          dark ? '#0d1117' : '#ffffff');
+    var codeBg  = readCssVar('--md-code-bg',     dark ? '#161b22' : '#f6f8fa');
+    var border  = readCssVar('--md-code-border', dark ? '#30363d' : '#e1e4e8');
+    var heading = readCssVar('--md-heading',     text);
+    var font = "'AtoZ','Pretendard Variable','Pretendard',-apple-system,BlinkMacSystemFont," +
+        "'Segoe UI',Roboto,'Noto Sans KR',sans-serif";
+
+    return {
+        startOnLoad: false,
+        theme: 'base',
+        securityLevel: 'strict',
+        fontFamily: font,
+        flowchart: { curve: 'basis', htmlLabels: true, padding: 14, nodeSpacing: 46, rankSpacing: 52, useMaxWidth: true },
+        sequence:  { useMaxWidth: true, mirrorActors: false, boxMargin: 10 },
+        gantt:     { useMaxWidth: true },
+        themeVariables: {
+            fontFamily: font,
+            fontSize: '15px',
+            // diagram canvas blends with the .mermaid-diagram card; nodes use the
+            // page bg so they pop against the card with an accent border.
+            background: codeBg,
+            primaryColor: bg,
+            primaryBorderColor: accent,
+            primaryTextColor: text,
+            secondaryColor: codeBg,
+            secondaryBorderColor: border,
+            secondaryTextColor: text,
+            tertiaryColor: codeBg,
+            tertiaryBorderColor: border,
+            tertiaryTextColor: text,
+            lineColor: accent,
+            textColor: text,
+            mainBkg: bg,
+            nodeBorder: accent,
+            nodeTextColor: text,
+            clusterBkg: codeBg,
+            clusterBorder: border,
+            titleColor: heading,
+            edgeLabelBackground: codeBg,
+            labelBackground: codeBg,
+            // sequence diagrams
+            actorBkg: bg,
+            actorBorder: accent,
+            actorTextColor: text,
+            actorLineColor: border,
+            signalColor: text,
+            signalTextColor: text,
+            labelBoxBkgColor: bg,
+            labelBoxBorderColor: accent,
+            labelTextColor: text,
+            loopTextColor: text,
+            noteBkgColor: bg,
+            noteTextColor: text,
+            noteBorderColor: accent
+        }
+    };
+}
+
+/* Give a rendered Mermaid SVG a little breathing room so the bottom row of text
+   (descenders / the last node's label) isn't shaved off, and let it paint
+   outside the strict viewBox as a safety net. Idempotent per SVG. */
+function padMermaidSvg(svg) {
+    if (!svg || svg.dataset.vbPadded === '1') return;
+    try {
+        var vb = svg.getAttribute('viewBox');
+        if (vb) {
+            var p = vb.split(/[\s,]+/).map(Number);
+            if (p.length === 4 && p.every(function (n) { return !isNaN(n); })) {
+                var padX = Math.max(6, p[2] * 0.02);
+                var padY = Math.max(8, p[3] * 0.04);
+                p[0] -= padX; p[1] -= padY * 0.5;
+                p[2] += padX * 2; p[3] += padY * 1.5;   // extra room at the bottom
+                svg.setAttribute('viewBox', p.join(' '));
+            }
+        }
+        svg.style.overflow = 'visible';
+        svg.dataset.vbPadded = '1';
+    } catch (e) {}
+}
+
+/* A print-friendly Mermaid config for PDF export: a light palette that reads on
+   white paper, and htmlLabels:false so labels are native SVG <text> (not
+   <foreignObject> HTML — which html2canvas silently drops, leaving a blank box). */
+function buildMermaidPdfConfig() {
+    var accent = readCssVar('--md-accent', '#448CFF');
+    var font = "'AtoZ','Pretendard Variable','Pretendard',-apple-system,BlinkMacSystemFont," +
+        "'Segoe UI',Roboto,'Noto Sans KR',sans-serif";
+    return {
+        startOnLoad: false,
+        theme: 'base',
+        securityLevel: 'strict',
+        fontFamily: font,
+        flowchart: { curve: 'basis', htmlLabels: false, padding: 14, nodeSpacing: 46, rankSpacing: 52, useMaxWidth: true },
+        sequence:  { useMaxWidth: true, mirrorActors: false, boxMargin: 10 },
+        gantt:     { useMaxWidth: true },
+        themeVariables: {
+            fontFamily: font, fontSize: '15px',
+            background: '#ffffff', primaryColor: '#ffffff', primaryBorderColor: accent,
+            primaryTextColor: '#1a1a1a', secondaryColor: '#f6f8fa', secondaryBorderColor: '#c9d1d9',
+            secondaryTextColor: '#1a1a1a', tertiaryColor: '#f6f8fa', tertiaryBorderColor: '#c9d1d9',
+            tertiaryTextColor: '#1a1a1a', lineColor: accent, textColor: '#1a1a1a', mainBkg: '#ffffff',
+            nodeBorder: accent, nodeTextColor: '#1a1a1a', clusterBkg: '#f6f8fa', clusterBorder: '#c9d1d9',
+            titleColor: '#111', edgeLabelBackground: '#ffffff', labelBackground: '#ffffff',
+            actorBkg: '#ffffff', actorBorder: accent, actorTextColor: '#1a1a1a', actorLineColor: '#c9d1d9',
+            signalColor: '#1a1a1a', signalTextColor: '#1a1a1a', labelBoxBkgColor: '#ffffff',
+            labelBoxBorderColor: accent, labelTextColor: '#1a1a1a', loopTextColor: '#1a1a1a',
+            noteBkgColor: '#fff8c5', noteTextColor: '#1a1a1a', noteBorderColor: '#d4b106'
+        }
+    };
+}
+
+/* Rasterize an SVG element to a white-backed PNG data URL. Uses a same-origin
+   data: URI (not a Blob URL) so the canvas isn't tainted and toDataURL succeeds. */
+function svgToPngDataUrl(svgEl, scale) {
+    return new Promise(function (resolve, reject) {
+        try {
+            var clone = svgEl.cloneNode(true);
+            var vb = (clone.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
+            var w = 0, h = 0;
+            if (vb.length === 4 && !isNaN(vb[2]) && !isNaN(vb[3])) { w = vb[2]; h = vb[3]; }
+            if (!w || !h) {
+                var wa = parseFloat(clone.getAttribute('width')), ha = parseFloat(clone.getAttribute('height'));
+                if (!isNaN(wa) && !isNaN(ha)) { w = wa; h = ha; }
+            }
+            w = w || 800; h = h || 600;
+            clone.removeAttribute('style');            // drop mermaid's inline max-width cap
+            clone.setAttribute('width', w);
+            clone.setAttribute('height', h);
+            var xml = new XMLSerializer().serializeToString(clone);
+            if (!/\bxmlns=/.test(xml)) xml = xml.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+            var src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+            var img = new Image();
+            img.onload = function () {
+                var s = scale || 2;
+                var canvas = document.createElement('canvas');
+                canvas.width = Math.max(1, Math.round(w * s));
+                canvas.height = Math.max(1, Math.round(h * s));
+                var ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                try { resolve({ url: canvas.toDataURL('image/png'), w: w, h: h }); }
+                catch (e) { reject(e); }
+            };
+            img.onerror = function (e) { reject(e || new Error('svg image load failed')); };
+            img.src = src;
+        } catch (e) { reject(e); }
+    });
+}
+
+/* Before a PDF capture, swap every rendered Mermaid diagram for a rasterized
+   <img>. html2canvas can't render inline SVG (esp. foreignObject labels), so a
+   diagram would otherwise print as a blank box. Re-renders each from source with
+   a print-light, SVG-text config. Returns a Promise of a restore() to undo it. */
+function prepareMermaidForPdf(root) {
+    if (!root || typeof mermaid === 'undefined') return Promise.resolve(function () {});
+    var wrappers = Array.prototype.slice.call(root.querySelectorAll('.mermaid-diagram'))
+        .filter(function (w) { return w.dataset.mermaidSrc && w.querySelector('svg'); });
+    if (!wrappers.length) return Promise.resolve(function () {});
+
+    try { mermaid.initialize(buildMermaidPdfConfig()); } catch (e) {}
+    var swapped = [];
+    var idBase = 'mmpdf-' + (wrappers[0].id || 'x') + '-';
+    var chain = Promise.resolve();
+
+    wrappers.forEach(function (w, i) {
+        chain = chain.then(function () {
+            return mermaid.render(idBase + i, w.dataset.mermaidSrc).then(function (r) {
+                var tmp = document.createElement('div');
+                tmp.innerHTML = r.svg;
+                var svgEl = tmp.querySelector('svg');
+                if (!svgEl) return;
+                return svgToPngDataUrl(svgEl, 2).then(function (res) {
+                    return new Promise(function (resolve) {
+                        var img = document.createElement('img');
+                        img.className = 'mermaid-pdf-img';
+                        img.style.maxWidth = '100%';
+                        img.style.height = 'auto';
+                        img.style.display = 'block';
+                        img.style.margin = '0 auto';
+                        // explicit width so html2canvas lays it out deterministically
+                        // (a just-decoded data-URL <img> can otherwise capture at its
+                        // full 2× pixel size and overflow/crop the diagram box).
+                        if (res.w) img.setAttribute('width', Math.round(res.w));
+                        var done = function () { resolve(); };
+                        img.onload = done;
+                        img.onerror = done;
+                        img.src = res.url;
+                        // Detach (not just hide) the live SVG so html2canvas can't
+                        // pick it up; re-attached on restore.
+                        var origSvg = w.querySelector('svg');
+                        var origBtn = w.querySelector('.mermaid-zoom-btn');
+                        if (origSvg && origSvg.parentNode) origSvg.parentNode.removeChild(origSvg);
+                        if (origBtn) origBtn.style.display = 'none';
+                        w.insertBefore(img, w.firstChild);
+                        swapped.push({ wrapper: w, img: img, svg: origSvg, btn: origBtn });
+                        if (img.complete) done();
+                    });
+                });
+            }).catch(function () { /* keep original SVG for this one */ });
+        });
+    });
+
+    return chain.then(function () {
+        return function restoreMermaid() {
+            swapped.forEach(function (s) {
+                if (s.img && s.img.parentNode) s.img.parentNode.removeChild(s.img);
+                if (s.svg && s.wrapper) s.wrapper.appendChild(s.svg);
+                if (s.btn) s.btn.style.display = '';
+            });
+            swapped = [];
+            try { mermaid.initialize(buildMermaidConfig()); } catch (e) {}
+        };
+    });
+}
+
 /* Make a rendered Mermaid diagram open in the zoom/pan overlay. Adds a hover
    "⤢" button (discoverable) and a click-to-zoom on the diagram itself. */
 function addMermaidZoomAffordance(wrapper) {
@@ -2956,15 +3203,12 @@ function renderMermaid(container) {
     var assets = window.__lazyAssets || {};
     lazyLoadScript('mermaid', assets.mermaid).then(function () {
         if (typeof mermaid === 'undefined') return;
-        if (!_mermaidInited) {
+        var sig = mermaidThemeSig();
+        if (!_mermaidInited || sig !== _mermaidThemeSig) {
             try {
-                mermaid.initialize({
-                    startOnLoad: false,
-                    theme: document.body.classList.contains('vscode-dark') ? 'dark' : 'default',
-                    securityLevel: 'strict',
-                    fontFamily: 'inherit'
-                });
+                mermaid.initialize(buildMermaidConfig());
                 _mermaidInited = true;
+                _mermaidThemeSig = sig;
             } catch (e) {}
         }
         blocks.forEach(function (codeEl, idx) {
@@ -2974,6 +3218,7 @@ function renderMermaid(container) {
             var wrapper = document.createElement('div');
             wrapper.className = 'mermaid-diagram';
             wrapper.id = 'mermaid-' + Date.now() + '-' + idx;
+            wrapper.dataset.mermaidSrc = source;   // kept so PDF export can re-render to a raster
             pre.replaceWith(wrapper);
 
             var fallbackHtml = '<pre><code class="language-mermaid">' +
@@ -2985,6 +3230,7 @@ function renderMermaid(container) {
                     // Guard: wrapper might be replaced by a newer render cycle
                     if (!wrapper.isConnected) return;
                     wrapper.innerHTML = r.svg;
+                    padMermaidSvg(wrapper.querySelector('svg'));
                     addMermaidZoomAffordance(wrapper);
                 }).catch(function () {
                     if (!wrapper.isConnected) return;
@@ -3545,10 +3791,13 @@ function _runPdfExport(userOpts) {
     var paperFormat = userOpts.paperSize === 'letter' ? 'letter' : 'a4';
     var pageOrient = userOpts.orientation === 'landscape' ? 'landscape' : 'portrait';
 
+    var _mermaidRestore = function () {};
     var restore = function () {
         document.body.classList.remove('exporting-pdf');
         _closedDetails.forEach(function (d) { d.removeAttribute('open'); });
         _closedDetails = [];
+        try { _mermaidRestore(); } catch (e) {}
+        _mermaidRestore = function () {};
     };
 
     // Get document title from first H1, but only use ASCII parts for jsPDF (no CJK)
@@ -3563,7 +3812,13 @@ function _runPdfExport(userOpts) {
         }
     }
 
+    // Let the live preview's async Mermaid renders settle first, THEN rasterize
+    // each diagram to a PNG <img> (html2canvas can't capture inline SVG — esp.
+    // foreignObject labels — so a diagram would print blank). Running the swap
+    // after the settle delay avoids a race where an in-flight live render wipes
+    // the swapped <img>. Rasterization failure never blocks the export.
     setTimeout(function () {
+    prepareMermaidForPdf(element).then(function (mr) { _mermaidRestore = mr; }, function () {}).then(function () {
         var opt = {
             margin: marginMm,
             filename: fileName,
@@ -3728,7 +3983,8 @@ function _runPdfExport(userOpts) {
             console.error(err);
             showToast('PDF 저장 실패');
         });
-    }, 150);
+    });
+    }, 250);
 }
 
 var _toastTimers = [];
