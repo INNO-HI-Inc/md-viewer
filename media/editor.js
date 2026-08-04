@@ -3061,7 +3061,7 @@ var MERMAID_LEVEL_PALETTE = [
     { f: '#CFFAFE', s: '#06B6D4' },  // cyan
     { f: '#FCE7F3', s: '#EC4899' }   // pink
 ];
-var _mermaidLevelColors = true;   // toggled by the mdPrettyViewer.mermaidLevelColors setting
+var _mermaidLevelColors = false;   // default 흑백; toggled by the ◐ button / mdPrettyViewer.mermaidLevelColors setting
 function colorMermaidByLevel(svg) {
     if (!svg || !_mermaidLevelColors) return;
     try {
@@ -3991,7 +3991,7 @@ function _runPdfExport(userOpts) {
     var _printHmm = _pageHmm - marginMm[0] - marginMm[2];
     var _contentWpx = element.clientWidth || 760;
     var _pxPerMm = _contentWpx / _printWmm;
-    var _fit = { maxW: _contentWpx, maxH: _printHmm * _pxPerMm * 0.56 };
+    var _fit = { maxW: _contentWpx, maxH: _printHmm * _pxPerMm * 0.8 };
 
     setTimeout(function () {
     prepareMermaidForPdf(element, _fit).then(function (mr) { _mermaidRestore = mr; }, function () {}).then(function () {

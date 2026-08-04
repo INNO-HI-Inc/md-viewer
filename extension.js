@@ -75,7 +75,7 @@ function readSettings() {
         defaultFontSize: config.get('defaultFontSize', 16),
         defaultMode: config.get('defaultMode', 'preview'),
         showOutline: config.get('showOutline', false),
-        mermaidLevelColors: config.get('mermaidLevelColors', true)
+        mermaidLevelColors: config.get('mermaidLevelColors', false)
     };
 }
 

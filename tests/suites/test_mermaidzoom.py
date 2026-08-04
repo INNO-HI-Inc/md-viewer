@@ -40,6 +40,10 @@ with sync_playwright() as p:
     # v1.0.37: viewBox padded so the bottom row of text isn't clipped
     check('svg viewBox padded (no bottom clipping)',
           page.evaluate("document.querySelector('.mermaid-diagram svg').dataset.vbPadded") == '1')
+    # v1.0.41: color is OFF (흑백) by default — turn it on to test the coloring
+    page.evaluate("_mermaidLevelColors = true; renderPreview();")
+    page.wait_for_function("!!document.querySelector('.mermaid-diagram svg')", timeout=15000)
+    page.wait_for_timeout(300)
     # v1.0.38: flowchart nodes are colored by hierarchy level (distinct fills)
     distinct_fills = page.evaluate("""() => {
         var s = new Set();

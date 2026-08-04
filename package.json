@@ -2,7 +2,7 @@
   "name": "md-pretty-viewer",
   "displayName": "MD Pretty Viewer",
   "description": "Beautiful markdown preview · 13 color themes · LaTeX math · Mermaid diagrams · one-click PDF export · Korean typography bundled. The markdown editor that makes your writing look like art. — 마크다운을 작품처럼. 13가지 테마, LaTeX 수식, Mermaid 다이어그램, PDF 한 번 클릭, 한글 폰트 번들.",
-  "version": "1.0.40",
+  "version": "1.0.41",
   "publisher": "innohi",
   "author": {
     "name": "INNO-HI Inc.",
@@ -235,8 +235,8 @@
         },
         "mdPrettyViewer.mermaidLevelColors": {
           "type": "boolean",
-          "default": true,
-          "description": "Mermaid 플로우차트·클래스·상태 다이어그램의 노드를 계층(단계)별 색상으로 칠합니다. 끄면 단색(테마색)으로 표시됩니다. Color Mermaid flowchart/class/state nodes by hierarchy level (turn off for a single flat color)."
+          "default": false,
+          "description": "Mermaid 다이어그램에 색을 입힙니다(플로우차트·클래스·상태는 계층별, 시퀀스는 액터별). 기본값은 흑백이며, 다이어그램 위의 ◐ 버튼으로 문서마다 바로 켜고 끌 수 있습니다. Color Mermaid diagrams (default off / monochrome; toggle per-document with the ◐ button on the diagram)."
         }
       }
     }
