@@ -25,7 +25,6 @@ let toolbarEl = null;
 let statsLeftEl = null;
 let statsRightEl = null;
 let fontSizeDisplayEl = null;
-let mermaidColorBtnEl = null;
 let isSyncingScroll = false;
 let docBaseUri = '';
 
@@ -3067,7 +3066,7 @@ function colorMermaidByLevel(svg) {
     if (!svg || !_mermaidLevelColors) return;
     try {
         var nodes = svg.querySelectorAll('g.node');
-        if (nodes.length < 2) return;
+        if (nodes.length < 2) { colorMermaidActors(svg); return; }
         var arr = [];
         nodes.forEach(function (n) {
             var t = n.getAttribute('transform') || '';
@@ -3104,6 +3103,34 @@ function colorMermaidByLevel(svg) {
                     tx.setAttribute('fill', '#111');
                 });
             });
+        });
+    } catch (e) {}
+}
+
+/* Color a sequence diagram's actors — each participant column gets its own color
+   (top + bottom boxes share it), so the lanes are easy to tell apart. */
+function colorMermaidActors(svg) {
+    try {
+        var actors = Array.prototype.slice.call(svg.querySelectorAll('rect.actor'));
+        if (!actors.length) return;
+        var byX = {};
+        actors.forEach(function (a) {
+            var x = Math.round(parseFloat(a.getAttribute('x') || '0'));
+            (byX[x] = byX[x] || []).push(a);
+        });
+        var xkeys = Object.keys(byX).map(Number).sort(function (a, b) { return a - b; });
+        xkeys.forEach(function (x, i) {
+            var c = MERMAID_LEVEL_PALETTE[i % MERMAID_LEVEL_PALETTE.length];
+            byX[x].forEach(function (a) {
+                a.style.fill = c.f;
+                a.style.stroke = c.s;
+                a.style.strokeWidth = '1.5px';
+            });
+        });
+        // Actor name labels: dark text so they read on the pastel boxes.
+        svg.querySelectorAll('text.actor, text.actor > tspan').forEach(function (t) {
+            t.style.fill = '#111';
+            t.setAttribute('fill', '#111');
         });
     } catch (e) {}
 }
@@ -3295,6 +3322,26 @@ function addMermaidZoomAffordance(wrapper) {
     });
     wrapper.appendChild(btn);
 
+    // Color on/off (흑백) toggle — sits on the diagram next to the zoom button,
+    // only for diagram types that actually get colored (flowchart/class/state/
+    // sequence). Toggles globally + persists; re-renders so it applies at once.
+    if (svg.querySelector('g.node, rect.actor')) {
+        var cbtn = document.createElement('button');
+        cbtn.type = 'button';
+        cbtn.className = 'mermaid-color-btn' + (_mermaidLevelColors ? ' active' : '');
+        cbtn.dataset.mdChrome = '1';
+        cbtn.setAttribute('aria-label', '색상 / 흑백 전환');
+        cbtn.title = _mermaidLevelColors ? '흑백으로 보기' : '색상으로 보기';
+        cbtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.8 A6.2 6.2 0 0 1 8 14.2 Z" fill="currentColor"/></svg>';
+        cbtn.addEventListener('click', function (e) {
+            e.preventDefault(); e.stopPropagation();
+            _mermaidLevelColors = !_mermaidLevelColors;
+            lsSet('md-viewer-mermaid-colors', _mermaidLevelColors ? 'on' : 'off');
+            if (typeof renderPreview === 'function') renderPreview();
+        });
+        wrapper.appendChild(cbtn);
+    }
+
     wrapper.addEventListener('click', function (e) {
         if (e.target.closest('a')) return;   // let links inside the diagram work
         openMermaidZoom(wrapper.querySelector('svg'));
@@ -3304,7 +3351,6 @@ function addMermaidZoomAffordance(wrapper) {
 function renderMermaid(container) {
     if (!container) return;
     var blocks = container.querySelectorAll('pre code.language-mermaid, pre code.lang-mermaid');
-    if (mermaidColorBtnEl) mermaidColorBtnEl.style.display = blocks.length ? '' : 'none';
     if (blocks.length === 0) return;
     var assets = window.__lazyAssets || {};
     lazyLoadScript('mermaid', assets.mermaid).then(function () {
@@ -5063,20 +5109,6 @@ function buildUI(fileName) {
     fontSizeGroup.appendChild(fontSizeDisplayEl);
     fontSizeGroup.appendChild(fontUpBtn);
     topRight.appendChild(fontSizeGroup);
-
-    // Mermaid per-level color toggle — only revealed when the doc has a diagram
-    mermaidColorBtnEl = document.createElement('button');
-    mermaidColorBtnEl.className = 'topbar-btn mermaid-color-toggle' + (_mermaidLevelColors ? ' active' : '');
-    mermaidColorBtnEl.title = 'Mermaid 계층별 색상 켜기/끄기 · Toggle diagram level colors';
-    mermaidColorBtnEl.style.display = 'none';
-    mermaidColorBtnEl.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="5" cy="5" r="2.4" fill="#3B82F6"/><circle cx="11" cy="5.6" r="2.4" fill="#22C55E"/><circle cx="5.6" cy="11" r="2.4" fill="#F59E0B"/><circle cx="11" cy="11" r="2.4" fill="#A855F7"/></svg>';
-    mermaidColorBtnEl.addEventListener('click', function () {
-        _mermaidLevelColors = !_mermaidLevelColors;
-        lsSet('md-viewer-mermaid-colors', _mermaidLevelColors ? 'on' : 'off');
-        mermaidColorBtnEl.classList.toggle('active', _mermaidLevelColors);
-        if (typeof renderPreview === 'function') renderPreview();
-    });
-    topRight.appendChild(mermaidColorBtnEl);
 
     // PDF export button (always visible in topbar)
     var pdfBtn = document.createElement('button');

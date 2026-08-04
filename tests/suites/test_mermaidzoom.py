@@ -148,12 +148,14 @@ with sync_playwright() as p:
     page.wait_for_function("window.__pdfPrepDone === true", timeout=15000)
     img_src = page.evaluate("(document.querySelector('.mermaid-diagram .mermaid-pdf-img')||{}).src || ''")
     check('PDF swap produced a PNG raster', img_src.startswith('data:image/png'), img_src[:40])
+    # ".mermaid-diagram > svg" targets the diagram's own svg (the color-toggle
+    # button also contains an icon <svg>, so a bare "svg" query would match that).
     check('live SVG detached during PDF capture',
-          page.evaluate("!document.querySelector('.mermaid-diagram svg')"))
+          page.evaluate("!document.querySelector('.mermaid-diagram > svg')"))
     page.evaluate("if (window.__pdfRestore) window.__pdfRestore();")
     page.wait_for_timeout(100)
     check('PDF restore removes raster + restores SVG',
-          page.evaluate("!document.querySelector('.mermaid-pdf-img') && !!document.querySelector('.mermaid-diagram svg')"))
+          page.evaluate("!document.querySelector('.mermaid-pdf-img') && !!document.querySelector('.mermaid-diagram > svg')"))
 
     # v1.0.38: the −/＋ font control also resizes Mermaid (re-renders diagrams)
     LABEL_SEL = ".mermaid-diagram svg .nodeLabel, .mermaid-diagram svg text"
@@ -169,7 +171,29 @@ with sync_playwright() as p:
     page.evaluate("changeFontSize(-1); changeFontSize(-1); changeFontSize(-1); changeFontSize(-1);")
     page.wait_for_timeout(500)
 
+    # v1.0.40: sequence diagrams color each actor column + carry the in-diagram
+    # color toggle button (chrome, stripped on save/PDF)
+    SEQ = "# s\n\n```mermaid\nsequenceDiagram\n    participant A as 가\n    participant B as 나\n    participant C as 다\n    A->>B: x\n    B->>C: y\n```\n"
+    page.evaluate("window.__test.setContent(%r)" % SEQ)
+    page.wait_for_function("!!document.querySelector('.mermaid-diagram svg rect.actor')", timeout=15000)
+    page.wait_for_timeout(300)
+    seq_fills = page.evaluate("""() => {
+        var s = new Set();
+        document.querySelectorAll('.mermaid-diagram svg rect.actor').forEach(function (a) {
+            if (a.style && a.style.fill) s.add(a.style.fill);
+        });
+        return s.size;
+    }""")
+    check('sequence actors colored per column (>=2)', seq_fills >= 2, seq_fills)
+    cbtn = page.evaluate("""() => {
+        var b = document.querySelector('.mermaid-diagram .mermaid-color-btn');
+        return { present: !!b, chrome: b && b.dataset.mdChrome };
+    }""")
+    check('in-diagram color toggle present + is chrome', cbtn['present'] and cbtn['chrome'] == '1', cbtn)
+
     # image lightbox still works (shared engine)
+    page.evaluate("window.__test.setContent(%r)" % DOC)
+    page.wait_for_timeout(200)
     page.evaluate("""()=>{ var i=document.querySelector('#preview img'); if(i) i.click(); }""")
     page.wait_for_timeout(150)
     check('image lightbox still opens (shared engine)', page.evaluate("!!document.querySelector('.image-lightbox img')"))

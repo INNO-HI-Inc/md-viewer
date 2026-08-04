@@ -2406,6 +2406,34 @@ body.mode-preview .mermaid-diagram:hover .mermaid-zoom-btn,
 .mermaid-zoom-btn:hover { background: var(--md-accent); color: #fff; border-color: var(--md-accent); }
 body.exporting-pdf .mermaid-zoom-btn { display: none !important; }
 
+/* Color / 흑백 toggle — same chip as the zoom button, sits just left of it */
+.mermaid-color-btn {
+    position: absolute;
+    top: 8px;
+    right: 44px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--md-bg-elevated, #fff);
+    border: 1px solid var(--md-border, #d0d7de);
+    border-radius: 7px;
+    color: var(--md-text-muted, #6b7280);
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.12s, background 0.12s, color 0.12s, border-color 0.12s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    z-index: 2;
+}
+body.mode-preview .mermaid-diagram:hover .mermaid-color-btn,
+.mermaid-color-btn:focus-visible { opacity: 1; }
+.mermaid-color-btn.active { color: var(--md-accent); border-color: var(--md-accent); }
+.mermaid-color-btn:hover { background: var(--md-accent); color: #fff; border-color: var(--md-accent); }
+body.exporting-pdf .mermaid-color-btn { display: none !important; }
+
 /* Admonitions */
 .md-admonition { margin: 1.2em 0; padding: 12px 16px 12px 14px; border-left: 4px solid var(--md-accent, #448CFF); border-radius: 6px; background: var(--md-quote-bg, rgba(68,140,255,0.06)); }
 .md-admonition-title { display: flex; align-items: center; gap: 8px; font-weight: 700; margin-bottom: 0.4em; color: var(--md-heading, #1a1a1a); }
