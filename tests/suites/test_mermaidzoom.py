@@ -50,6 +50,22 @@ with sync_playwright() as p:
         return s.size;
     }""")
     check('nodes colored by level (>=2 distinct fills)', distinct_fills >= 2, distinct_fills)
+    # v1.0.39: the color toggle turns per-level coloring off (single flat color)
+    page.evaluate("_mermaidLevelColors = false; renderPreview();")
+    page.wait_for_function("!!document.querySelector('.mermaid-diagram svg')", timeout=15000)
+    page.wait_for_timeout(300)
+    off_fills = page.evaluate("""() => {
+        var s = new Set();
+        document.querySelectorAll('.mermaid-diagram g.node').forEach(function (n) {
+            var sh = n.querySelector('rect, polygon, circle, ellipse, path');
+            if (sh && sh.style && sh.style.fill) s.add(sh.style.fill);
+        });
+        return s.size;
+    }""")
+    check('color toggle OFF -> no per-level fills', off_fills == 0, off_fills)
+    page.evaluate("_mermaidLevelColors = true; renderPreview();")
+    page.wait_for_function("!!document.querySelector('.mermaid-diagram svg')", timeout=15000)
+    page.wait_for_timeout(300)
     check('zoom button added', page.evaluate("!!document.querySelector('.mermaid-zoom-btn')"))
     check('zoom button is chrome (stripped on save/pdf)',
           page.evaluate("document.querySelector('.mermaid-zoom-btn').dataset.mdChrome") == '1')

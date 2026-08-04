@@ -25,6 +25,7 @@ let toolbarEl = null;
 let statsLeftEl = null;
 let statsRightEl = null;
 let fontSizeDisplayEl = null;
+let mermaidColorBtnEl = null;
 let isSyncingScroll = false;
 let docBaseUri = '';
 
@@ -2973,7 +2974,7 @@ function buildMermaidConfig() {
         securityLevel: 'strict',
         fontFamily: font,
         flowchart: { curve: 'basis', htmlLabels: true, padding: 14, nodeSpacing: 46, rankSpacing: 52, useMaxWidth: true },
-        sequence:  { useMaxWidth: true, mirrorActors: false, boxMargin: 10 },
+        sequence:  { useMaxWidth: true, mirrorActors: true, boxMargin: 10 },
         gantt:     { useMaxWidth: true },
         themeVariables: {
             fontFamily: font,
@@ -3061,8 +3062,9 @@ var MERMAID_LEVEL_PALETTE = [
     { f: '#CFFAFE', s: '#06B6D4' },  // cyan
     { f: '#FCE7F3', s: '#EC4899' }   // pink
 ];
+var _mermaidLevelColors = true;   // toggled by the mdPrettyViewer.mermaidLevelColors setting
 function colorMermaidByLevel(svg) {
-    if (!svg) return;
+    if (!svg || !_mermaidLevelColors) return;
     try {
         var nodes = svg.querySelectorAll('g.node');
         if (nodes.length < 2) return;
@@ -3119,7 +3121,7 @@ function buildMermaidPdfConfig() {
         securityLevel: 'strict',
         fontFamily: font,
         flowchart: { curve: 'basis', htmlLabels: false, padding: 14, nodeSpacing: 46, rankSpacing: 52, useMaxWidth: true },
-        sequence:  { useMaxWidth: true, mirrorActors: false, boxMargin: 10 },
+        sequence:  { useMaxWidth: true, mirrorActors: true, boxMargin: 10 },
         gantt:     { useMaxWidth: true },
         themeVariables: {
             fontFamily: font, fontSize: mermaidFontSizePx() + 'px',
@@ -3302,6 +3304,7 @@ function addMermaidZoomAffordance(wrapper) {
 function renderMermaid(container) {
     if (!container) return;
     var blocks = container.querySelectorAll('pre code.language-mermaid, pre code.lang-mermaid');
+    if (mermaidColorBtnEl) mermaidColorBtnEl.style.display = blocks.length ? '' : 'none';
     if (blocks.length === 0) return;
     var assets = window.__lazyAssets || {};
     lazyLoadScript('mermaid', assets.mermaid).then(function () {
@@ -5061,6 +5064,20 @@ function buildUI(fileName) {
     fontSizeGroup.appendChild(fontUpBtn);
     topRight.appendChild(fontSizeGroup);
 
+    // Mermaid per-level color toggle — only revealed when the doc has a diagram
+    mermaidColorBtnEl = document.createElement('button');
+    mermaidColorBtnEl.className = 'topbar-btn mermaid-color-toggle' + (_mermaidLevelColors ? ' active' : '');
+    mermaidColorBtnEl.title = 'Mermaid 계층별 색상 켜기/끄기 · Toggle diagram level colors';
+    mermaidColorBtnEl.style.display = 'none';
+    mermaidColorBtnEl.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="5" cy="5" r="2.4" fill="#3B82F6"/><circle cx="11" cy="5.6" r="2.4" fill="#22C55E"/><circle cx="5.6" cy="11" r="2.4" fill="#F59E0B"/><circle cx="11" cy="11" r="2.4" fill="#A855F7"/></svg>';
+    mermaidColorBtnEl.addEventListener('click', function () {
+        _mermaidLevelColors = !_mermaidLevelColors;
+        lsSet('md-viewer-mermaid-colors', _mermaidLevelColors ? 'on' : 'off');
+        mermaidColorBtnEl.classList.toggle('active', _mermaidLevelColors);
+        if (typeof renderPreview === 'function') renderPreview();
+    });
+    topRight.appendChild(mermaidColorBtnEl);
+
     // PDF export button (always visible in topbar)
     var pdfBtn = document.createElement('button');
     pdfBtn.className = 'topbar-btn pdf-btn';
@@ -5377,6 +5394,13 @@ function setupMessageListener() {
                 document.documentElement.style.setProperty('--md-font-size', msg.settings.defaultFontSize + 'px');
                 if (fontSizeDisplayEl) fontSizeDisplayEl.textContent = msg.settings.defaultFontSize;
             }
+            // Only follow the setting if the user hasn't set a local override.
+            if (msg.settings && typeof msg.settings.mermaidLevelColors === 'boolean'
+                && lsGet('md-viewer-mermaid-colors') == null
+                && msg.settings.mermaidLevelColors !== _mermaidLevelColors) {
+                _mermaidLevelColors = msg.settings.mermaidLevelColors;
+                if (typeof renderPreview === 'function') renderPreview();
+            }
         }
     });
 }
@@ -5411,6 +5435,12 @@ function initEditor(content, fileName, baseUri, initialSettings) {
     if (settings.showOutline) {
         outlineVisible = true;
     }
+
+    // Mermaid per-level colors (saved override > setting > default on)
+    var savedMmColors = lsGet('md-viewer-mermaid-colors');
+    if (savedMmColors === 'off') _mermaidLevelColors = false;
+    else if (savedMmColors === 'on') _mermaidLevelColors = true;
+    else if (typeof settings.mermaidLevelColors === 'boolean') _mermaidLevelColors = settings.mermaidLevelColors;
 
     buildUI(fileName);
     // Restore custom color if saved

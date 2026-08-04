@@ -74,7 +74,8 @@ function readSettings() {
         defaultTheme: config.get('defaultTheme', 'blue'),
         defaultFontSize: config.get('defaultFontSize', 16),
         defaultMode: config.get('defaultMode', 'preview'),
-        showOutline: config.get('showOutline', false)
+        showOutline: config.get('showOutline', false),
+        mermaidLevelColors: config.get('mermaidLevelColors', true)
     };
 }
 
@@ -153,7 +154,8 @@ class MdPrettyEditorProvider {
                     defaultTheme: cfg.get('defaultTheme'),
                     defaultFontSize: cfg.get('defaultFontSize'),
                     defaultMode: cfg.get('defaultMode'),
-                    showOutline: cfg.get('showOutline')
+                    showOutline: cfg.get('showOutline'),
+                    mermaidLevelColors: cfg.get('mermaidLevelColors')
                 }
             });
         });

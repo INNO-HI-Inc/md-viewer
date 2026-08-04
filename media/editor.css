@@ -2375,7 +2375,9 @@ body.vscode-high-contrast .palette-swatch:hover {
 
 /* Mermaid */
 .mermaid-diagram { position: relative; margin: 1.5em 0; padding: 16px; background: var(--md-code-bg, #f8f9fa); border: 1px solid var(--md-code-border, #e1e4e8); border-radius: 10px; text-align: center; overflow-x: auto; }
-.mermaid-diagram svg { max-width: 100%; height: auto; display: inline-block; }
+/* Cap the on-screen height so a tall diagram shows whole (scaled to fit) instead
+   of running off the bottom of the pane — the ⤢ button zooms in for detail. */
+.mermaid-diagram svg { max-width: 100%; max-height: 78vh; height: auto; display: inline-block; }
 /* Hover "expand" button — opens the diagram in the zoom/pan overlay */
 .mermaid-zoom-btn {
     position: absolute;
