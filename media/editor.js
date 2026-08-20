@@ -165,7 +165,7 @@ function isAllowedAttribute(tag, name, value) {
     if (attr === 'target' && tag === 'a') return /^_(blank|self|parent|top)$/.test(value);
     if (attr === 'rel' && tag === 'a') return true;
     if (attr === 'href' && tag === 'a') return isSafeUrl(value);
-    if (attr === 'src' && tag === 'img') return isSafeUrl(value);
+    if (attr === 'src' && tag === 'img') return isSafeImgSrc(value);
     if ((attr === 'alt' || attr === 'loading') && tag === 'img') return true;
     if ((attr === 'width' || attr === 'height') && tag === 'img') return /^\d{1,4}%?$/.test(value);
     return false;
@@ -179,6 +179,17 @@ function isSafeUrl(url) {
     if (/^(https?:|mailto:|#|\/|\.\/|\.\.\/)/i.test(trimmed)) return true;
     if (/^vscode-webview/i.test(trimmed)) return true;
     return !/^[a-z][a-z0-9+.-]*:/i.test(trimmed);
+}
+
+/* Image src is more permissive than link href: `data:image/...` is a common,
+   safe way to embed base64 images in markdown (exported docs, charts). It's inert
+   when loaded via <img> — even data:image/svg+xml can't run scripts there — so we
+   allow the image media types while everything else defers to isSafeUrl. */
+function isSafeImgSrc(url) {
+    var t = String(url || '').trim();
+    if (/[ -]/.test(t)) return false;
+    if (/^data:image\/(png|jpe?g|gif|webp|bmp|svg\+xml|avif|x-icon|apng|tiff)\s*[;,]/i.test(t)) return true;
+    return isSafeUrl(url);
 }
 
 function resolveUri(href) {
@@ -3944,6 +3955,27 @@ function _runPdfExport(userOpts) {
     });
     document.body.classList.add('exporting-pdf');
 
+    // Wide tables: PDF has no horizontal scroll, so a table wider than the page
+    // gets clipped off the right edge. Shrink each over-wide table's font size
+    // (and compact its cell padding via .pdf-narrow) until it fits — deterministic
+    // and, unlike CSS transforms, reliably captured by html2canvas. Undone in
+    // restore(). Reading scrollWidth each step forces the reflow we measure.
+    var _shrunkBlocks = [];
+    element.querySelectorAll('.table-scroll').forEach(function (wrap) {
+        var t = wrap.querySelector('table');
+        if (!t) return;
+        var avail = wrap.clientWidth;
+        if (!(avail > 0) || t.scrollWidth <= avail + 2) return;
+        _shrunkBlocks.push({ el: t, fs: t.style.fontSize });
+        t.classList.add('pdf-narrow');   // compact padding (onclone CSS)
+        var size = parseFloat(getComputedStyle(t).fontSize) || 15;
+        for (var i = 0; i < 12 && t.scrollWidth > avail + 2 && size > 6.5; i++) {
+            size = Math.max(6.5, size * Math.max(0.6, avail / t.scrollWidth));
+            // inline !important so it beats the onclone's `table { font-size:.95em !important }`
+            t.style.setProperty('font-size', size + 'px', 'important');
+        }
+    });
+
     // Resolve margin preset to mm tuple [top, left, bottom, right]
     var marginPresets = {
         narrow: [10, 10, 14, 10],
@@ -3959,6 +3991,11 @@ function _runPdfExport(userOpts) {
         document.body.classList.remove('exporting-pdf');
         _closedDetails.forEach(function (d) { d.removeAttribute('open'); });
         _closedDetails = [];
+        _shrunkBlocks.forEach(function (s) {
+            s.el.classList.remove('pdf-narrow');
+            s.el.style.fontSize = s.fs;
+        });
+        _shrunkBlocks = [];
         try { _mermaidRestore(); } catch (e) {}
         _mermaidRestore = function () {};
     };
@@ -4050,6 +4087,8 @@ function _runPdfExport(userOpts) {
 
                         // Code blocks
                         '#preview pre { background:#fff !important; border:1px solid #c0c0c0 !important; border-radius:4px !important; box-shadow:none !important; }',
+                        // Wrap long code lines instead of clipping them off the right edge (PDF has no scroll)
+                        '#preview pre, #preview pre code, #preview pre .hljs { white-space:pre-wrap !important; word-break:break-word !important; overflow-wrap:anywhere !important; overflow-x:visible !important; }',
                         '#preview pre code, #preview pre code.hljs, #preview pre .hljs { background:transparent !important; color:#000 !important; }',
                         '#preview pre code *, #preview pre .hljs * { color:#000 !important; background:transparent !important; }',
                         '#preview pre .hljs-comment, #preview pre .hljs-quote { color:#6a737d !important; font-style:italic !important; }',
@@ -4075,6 +4114,8 @@ function _runPdfExport(userOpts) {
                         '#preview tbody tr:nth-child(even) td { background:#fafbfc !important; }',
                         '#preview tbody tr:hover td { background:#fff !important; }',
                         '#preview table strong, #preview table b { color:#000 !important; }',
+                        // Over-wide tables shrunk to fit: compact padding
+                        '#preview table.pdf-narrow th, #preview table.pdf-narrow td { padding:3px 6px !important; }',
 
                         // Strong / emphasis
                         '#preview strong, #preview b { color:#000 !important; font-weight:700 !important; }',
