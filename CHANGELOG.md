@@ -7,6 +7,29 @@
 
 
 
+## [1.0.43] - 2026-10-09
+
+마켓플레이스에서 더 잘 찾히도록 이름·분류·키워드를 손보고, Open VSX(Cursor·Windsurf·VSCodium)에도 올립니다. 렌더링·편집 동작은 바뀐 것이 없습니다.
+
+### Added
+
+- **Open VSX 배포** — Cursor·Windsurf·VSCodium·Gitpod 사용자도 내장 확장 마켓에서 `innohi.md-pretty-viewer`를 바로 설치할 수 있습니다. 릴리스 워크플로가 VS Code Marketplace와 Open VSX에 같은 VSIX를 함께 올립니다.
+
+### Changed
+
+- **표시 이름** — "MD Pretty Viewer — Markdown Preview & PDF". 확장 ID는 그대로라 기존 설치·설정·단축키에 영향이 없습니다.
+- **카테고리** — Other를 빼고 Visualization · Formatters만 남겼습니다.
+- **검색 키워드** — Claude Code·Cursor·Copilot이 써 준 문서를 읽는 용도로도 검색되도록 `claude`, `cursor`, `copilot`, `ai docs`, `markdown pdf`, `markdown preview`를 추가했습니다.
+- **README·설명 첫 줄** — AI 코딩 도구가 만든 md 문서를 예쁘게 읽고 PDF로 내보내는 용도를 앞세웠습니다.
+
+### Fixed
+
+- 패키지에 섞여 들어가던 예시 파일(`mermaid-zoom-예시.md`)을 VSIX에서 제외했습니다.
+
+### Known issue
+
+- 수식의 **제곱근(√)** 기호가 PDF에서 갈고리 없이 윗줄만 나올 수 있는 문제는 아직 남아 있습니다(1.0.42 참고).
+
 ## [1.0.42] - 2026-08-04
 
 PDF 변환을 다양한 상황에서 검증(넓은 표·긴 코드·수식·이미지·이모지 등)하고 고쳤습니다.

@@ -6,11 +6,11 @@
 
 <h1>MD Pretty Viewer</h1>
 
-Where your markdown becomes a masterpiece.  
-내가 쓴 마크다운이 작품이 되는 순간.
+<b>Read the markdown that Claude Code · Cursor · Copilot write for you — beautifully — and export it to PDF in one click.</b>  
+Claude Code·Cursor가 만든 md 문서를 예쁘게 읽고, 한 번 클릭으로 PDF로.
 
 <p>
-  <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer"><img src="https://img.shields.io/github/v/release/INNO-HI-Inc/md-viewer?style=flat-square&color=448CFF&labelColor=0E1128&label=VS%20Code&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>&nbsp;<a href="https://github.com/INNO-HI-Inc/md-viewer/blob/main/LICENSE"><img src="https://img.shields.io/github/license/INNO-HI-Inc/md-viewer?style=flat-square&color=448CFF&labelColor=0E1128" alt="License"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer"><img src="https://img.shields.io/github/v/release/INNO-HI-Inc/md-viewer?style=flat-square&color=448CFF&labelColor=0E1128&label=VS%20Code&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>&nbsp;<a href="https://open-vsx.org/extension/innohi/md-pretty-viewer"><img src="https://img.shields.io/open-vsx/v/innohi/md-pretty-viewer?style=flat-square&color=448CFF&labelColor=0E1128&label=Open%20VSX" alt="Open VSX (Cursor · Windsurf · VSCodium)"></a>&nbsp;<a href="https://github.com/INNO-HI-Inc/md-viewer/blob/main/LICENSE"><img src="https://img.shields.io/github/license/INNO-HI-Inc/md-viewer?style=flat-square&color=448CFF&labelColor=0E1128" alt="License"></a>
 </p>
 
 Live preview that doesn't suck. 13 themes for every mood. PDF export that actually looks good.  
@@ -280,16 +280,19 @@ Status bar shows `● Modified` / `◐ Saving` / `✓ Saved` plus word count, ch
 ## 📦 Installation
 
 ```bash
-# Marketplace
+# VS Code (Marketplace)
 code --install-extension innohi.md-pretty-viewer
+
+# Cursor · Windsurf · VSCodium (Open VSX) — same extension ID
+cursor --install-extension innohi.md-pretty-viewer
 ```
 
-Or search **`md pretty viewer`** in VS Code Extensions.
+Or search **`markdown preview pdf`** / **`md pretty viewer`** in the Extensions view. The same ID is published on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer) and on [Open VSX](https://open-vsx.org/extension/innohi/md-pretty-viewer) (Cursor, Windsurf, VSCodium, Gitpod, Theia).
 
 For manual install, grab the latest `.vsix` from [Releases](https://github.com/INNO-HI-Inc/md-viewer/releases/latest):
 
 ```bash
-code --install-extension md-pretty-viewer-1.0.30.vsix
+code --install-extension md-pretty-viewer-<version>.vsix
 ```
 
 Once installed, **every `.md` file opens in MD Pretty Viewer by default**. Prefer the raw source for a file? Right-click the tab → *Reopen Editor With… → Text Editor*. Requires VS Code `1.74.0` or newer.
@@ -421,11 +424,17 @@ Full license texts in [NOTICE.md](NOTICE.md).
 
 ### 📦 설치
 
-VS Code Extensions에서 **`md pretty viewer`** 검색 후 Install. 또는:
+VS Code Extensions에서 **`markdown preview pdf`** 또는 **`md pretty viewer`** 검색 후 Install. 또는:
 
 ```bash
+# VS Code (Marketplace)
 code --install-extension innohi.md-pretty-viewer
+
+# Cursor · Windsurf · VSCodium (Open VSX) — 같은 ID
+cursor --install-extension innohi.md-pretty-viewer
 ```
+
+[VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=innohi.md-pretty-viewer)와 [Open VSX](https://open-vsx.org/extension/innohi/md-pretty-viewer) 양쪽에 같은 ID로 올라가 있어 Cursor·Windsurf·VSCodium에서도 내장 마켓에서 바로 설치됩니다.
 
 ### ⚙️ 설정
 

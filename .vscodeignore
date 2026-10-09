@@ -2,6 +2,7 @@
 .github/
 test-sample.md
 test-click.md
+mermaid-zoom-예시.md
 .gitignore
 docs/
 tests/

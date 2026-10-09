@@ -16,6 +16,7 @@ jobs:
     # releases never auto-published even with the secret set.
     env:
       VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      OVSX_PAT: ${{ secrets.OVSX_PAT }}
     steps:
       - uses: actions/checkout@v4
 
@@ -23,8 +24,8 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install vsce
-        run: npm install -g @vscode/vsce
+      - name: Install vsce and ovsx
+        run: npm install -g @vscode/vsce ovsx
 
       - name: Package VSIX
         run: vsce package
@@ -49,3 +50,9 @@ jobs:
       - name: Publish to VS Code Marketplace
         if: env.VSCE_PAT != ''
         run: vsce publish --no-git-tag-version -p "$VSCE_PAT"
+
+      # Open VSX = Cursor · Windsurf · VSCodium · Gitpod · Theia 내장 마켓.
+      # 최초 1회 네임스페이스 생성이 필요: `npx ovsx create-namespace innohi -p $OVSX_PAT`
+      - name: Publish to Open VSX
+        if: env.OVSX_PAT != ''
+        run: ovsx publish "md-pretty-viewer-${{ steps.version.outputs.version }}.vsix" -p "$OVSX_PAT"

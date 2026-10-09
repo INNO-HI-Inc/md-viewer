@@ -104,18 +104,40 @@ md-viewer/
 
 ## 빌드 & 배포
 
-유지보수자만 해당:
+유지보수자만 해당. 같은 VSIX를 **VS Code Marketplace**와 **Open VSX**(Cursor·Windsurf·VSCodium·Gitpod) 두 곳에 올립니다.
+
+### 자동 배포 (권장)
+
+`v*` 태그를 푸시하면 [release.yml](.github/workflows/release.yml)이 VSIX를 빌드해 GitHub Release에 첨부하고, 저장소 Secrets가 있으면 두 마켓에 게시합니다.
+
+| Secret | 발급처 |
+|--------|--------|
+| `VSCE_PAT` | Azure DevOps → Personal Access Token (Marketplace: Manage) |
+| `OVSX_PAT` | [open-vsx.org](https://open-vsx.org) → Eclipse 계정 로그인 → Publisher Agreement 서명 → Settings › Access Tokens |
 
 ```bash
-# 버전 업
-npm version minor  # or patch, major
+# 1) 버전 + CHANGELOG 갱신 후 커밋
+npm version patch --no-git-tag-version   # package.json만 올림
+git commit -am "v1.0.44 — ..."
 
-# VSIX 빌드
-vsce package
-
-# Marketplace 배포
-vsce publish
+# 2) 태그 푸시 → 워크플로가 빌드·게시
+git tag v1.0.44 && git push origin main --tags
 ```
+
+### 수동 배포
+
+```bash
+vsce package                                                   # md-pretty-viewer-<version>.vsix
+
+# VS Code Marketplace
+vsce publish --packagePath md-pretty-viewer-<version>.vsix -p "$VSCE_PAT"
+
+# Open VSX — 최초 1회만 네임스페이스 생성 (publisher 와 동일한 이름)
+npx ovsx create-namespace innohi -p "$OVSX_PAT"
+npx ovsx publish md-pretty-viewer-<version>.vsix -p "$OVSX_PAT"
+```
+
+Open VSX 네임스페이스에 "verified" 표시를 받으려면 [open-vsx.org 저장소 이슈](https://github.com/EclipseFdn/open-vsx.org/issues/new/choose)로 소유권 확인을 요청하면 됩니다(선택).
 
 ## 질문이 있으신가요?
 
