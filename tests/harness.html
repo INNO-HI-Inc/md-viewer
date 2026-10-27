@@ -39,7 +39,7 @@ initEditor(SAMPLE_MD, 'test.md', '', {
     defaultFontSize: 16,
     defaultMode: 'preview',
     showOutline: true
-});
+}, window.__restoreState || null);   // set by tests that simulate a language rebuild
 
 // Expose internal functions for test driver
 window.__test = {

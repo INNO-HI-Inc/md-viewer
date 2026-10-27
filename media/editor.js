@@ -11,6 +11,318 @@ function lsRemove(key) {
     try { lsRemove(key); } catch (_) {}
 }
 
+/* ── UI language (v1.0.44) ──
+   The extension host resolves the language (mdPrettyViewer.language →
+   VS Code display language → OS language) and injects window.__mdpvLang
+   BEFORE this script loads, so top-level tables like INSERT_BLOCKS are
+   built in the right language. Korean strings are kept byte-for-byte
+   identical to earlier versions; English is the fallback for every other
+   locale. Missing a key in 'en' falls back to 'ko', then to the key. */
+var MDPV_LANG = (typeof window !== 'undefined' && window.__mdpvLang === 'en') ? 'en' : 'ko';
+var L10N = {
+    ko: {
+        'fm.title': '문서 정보',
+        'toc.title': '목차 / Table of Contents',
+        'toast.bigDoc': '대용량 문서 — 코드 하이라이트를 생략해 속도를 유지합니다',
+        'lightbox.hint': 'ESC 또는 바깥 클릭으로 닫기 · 휠로 확대/축소 · 드래그로 이동 · 더블클릭 리셋',
+
+        'blk.text': '텍스트',        'blk.text.raw': '내용',
+        'blk.h1': '제목 1',          'blk.h1.raw': '# 제목',
+        'blk.h2': '제목 2',          'blk.h2.raw': '## 제목',
+        'blk.h3': '제목 3',          'blk.h3.raw': '### 제목',
+        'blk.bullet': '리스트',      'blk.bullet.raw': '- 항목',
+        'blk.number': '번호 리스트', 'blk.number.raw': '1. 항목',
+        'blk.check': '체크박스',     'blk.check.raw': '- [ ] 할 일',
+        'blk.quote': '인용',         'blk.quote.raw': '> 인용문',
+        'blk.code': '코드 블록',
+        'blk.table': '표',           'blk.table.raw': '| 제목 | 제목 |\n| --- | --- |\n| 내용 | 내용 |',
+        'blk.image': '이미지',       'blk.image.raw': '![설명](https://)',
+        'blk.link': '링크',          'blk.link.raw': '[링크 제목](https://)',
+        'blk.hr': '구분선',
+
+        'handle.add': '아래에 블록 추가',
+        'handle.drag': '블록 메뉴 · 드래그로 이동',
+        'handle.edit': '블록 편집',
+        'menu.moveUp': '↑ 위로 이동',
+        'menu.moveDown': '↓ 아래로 이동',
+        'menu.duplicate': '⧉ 복제',
+        'menu.delete': '🗑 삭제',
+        'toast.blockNotFound': '문서가 바뀌어 블록을 찾지 못했습니다',
+        'toast.firstBlock': '맨 위 블록입니다',
+        'toast.lastBlock': '맨 아래 블록입니다',
+        'toast.blockDuplicated': '블록 복제됨',
+        'toast.blockDeleted': '블록 삭제됨 · Cmd/Ctrl+Z로 복구',
+        'toast.blockMoved': '블록 이동됨',
+        'empty.add': '＋ 블록 추가',
+        'empty.addAria': '블록 추가',
+        'empty.hint': '빈 문서입니다 — 블록을 추가해 시작하세요',
+        'slash.hint': '↑↓ 이동 · Enter 선택 · Esc 닫기',
+
+        'link.edit': '링크 편집',
+        'link.text': '텍스트',
+        'link.textPlaceholder': '표시할 텍스트',
+        'link.apply': '적용',
+        'link.remove': '링크 제거',
+        'edit.icon': '수정',
+        'fmt.bold': '굵게',
+        'fmt.italic': '이탤릭',
+        'fmt.code': '코드',
+        'fmt.link': '링크',
+        'edit.cancel': '취소',
+        'edit.done': '완료',
+
+        'table.headerRowNoDelete': '제목 행은 삭제할 수 없습니다',
+        'table.lastRow': '마지막 행입니다',
+        'table.lastCol': '마지막 열입니다',
+        'table.newHeader': '제목',
+        'table.align': '열 정렬: {align}',
+        'table.alignDefault': '기본',
+        'table.rowAdd': '＋행',      'table.rowAddAria': '아래에 행 추가',
+        'table.rowDel': '－행',      'table.rowDelAria': '현재 행 삭제',
+        'table.colAdd': '＋열',      'table.colAddAria': '오른쪽에 열 추가',
+        'table.colDel': '－열',      'table.colDelAria': '현재 열 삭제',
+        'table.alignAria': '열 정렬 전환',
+        'code.lang': '언어',
+
+        'toast.imgTooBig': '이미지가 너무 큽니다 (8MB 초과) — 파일로 저장 후 링크하세요',
+        'toast.imgLarge': '큰 이미지({size}MB) — 문서 용량이 커집니다',
+        'toast.imgInserted': '이미지 삽입됨',
+        'toast.undo': '편집 되돌림',
+        'toast.redo': '편집 다시 실행',
+        'toast.copyFailed': '복사 실패',
+        'outline.empty': '헤딩이 없습니다',
+        'toast.renderError': '렌더링 오류가 발생했습니다 — 원본은 안전합니다',
+
+        'mermaid.zoomAria': '다이어그램 확대',
+        'mermaid.zoomTitle': '확대 / 축소 · 팬',
+        'mermaid.colorAria': '색상 / 흑백 전환',
+        'mermaid.toMono': '흑백으로 보기',
+        'mermaid.toColor': '색상으로 보기',
+
+        'toast.copiedMd': '마크다운 복사됨 / Copied markdown',
+        'toast.copiedHtml': 'HTML 복사됨 / Copied HTML',
+
+        'pdf.title': 'PDF 내보내기 옵션',
+        'pdf.paper': '용지 크기',
+        'pdf.orientation': '방향',
+        'pdf.portrait': '세로',
+        'pdf.landscape': '가로',
+        'pdf.margin': '여백',
+        'pdf.narrow': '좁게',
+        'pdf.normal': '보통',
+        'pdf.wide': '넓게',
+        'pdf.showHeader': '상단 제목 표시',
+        'pdf.showPageNumber': '페이지 번호 표시',
+        'pdf.cancel': '취소',
+        'pdf.create': 'PDF 만들기',
+        'toast.pdfBusy': 'PDF 생성 중입니다',
+        'toast.pdfLibFail': 'PDF 라이브러리 로드 실패',
+        'toast.pdfLibLoading': 'PDF 라이브러리 로딩 중...',
+        'toast.pdfGenerating': 'PDF 생성 중... / Generating PDF...',
+        'toast.previewNotFound': '프리뷰를 찾을 수 없습니다',
+        'toast.pdfSaved': 'PDF 저장 완료',
+        'toast.pdfFailed': 'PDF 저장 실패',
+
+        'save.dirty': '● 수정됨',
+        'save.saving': '◐ 저장 중',
+        'save.saved': '✓ 저장됨',
+        'toast.saved': '저장됨',
+
+        'help.blockMenu': '블록 편집 · 삽입 · 이동 메뉴 (블록에 마우스 올리면 왼쪽에 표시)',
+        'help.slash': '빈 블록 편집 중 블록 타입 변환 메뉴',
+        'help.saveEdit': '편집 저장',
+        'help.esc': '편집 취소 · 메뉴/검색/도움말 닫기',
+        'help.undo': '편집 되돌리기 (Preview)',
+        'help.redo': '다시 실행 (Preview)',
+        'help.saveNow': '즉시 저장',
+        'help.find': '찾기 (Preview 검색 / 편집 찾기·바꾸기)',
+        'help.toggleMode': 'Preview ↔ Edit 전환',
+        'help.cellVertical': '표 셀: 아래/위 셀로 이동',
+        'help.cellHorizontal': '표 셀: 다음/이전 셀로 이동',
+        'help.thisHelp': '이 도움말',
+        'help.aria': '키보드 단축키',
+        'help.title': '⌨️ 키보드 단축키',
+        'help.closeHint': 'ESC 또는 바깥 클릭으로 닫기',
+
+        'palette.title': '컬러 선택 / Pick a color',
+        'topbar.pdf': 'Export as PDF / PDF로 저장',
+        'topbar.language': '화면 언어: 한국어 — 클릭하면 English로 바꿉니다',
+        'toast.imgPasted': '이미지 붙여넣음 / Image pasted',
+        'toast.linked': '링크 변환됨 / Linked',
+        'preview.dblHint': '✎ 블록 편집 · 더블클릭 시 소스 편집',
+
+        'search.placeholder': '프리뷰에서 찾기 / Find in preview',
+        'search.prev': '이전 (Shift+Enter)',
+        'search.next': '다음 (Enter)',
+        'search.close': '닫기 (ESC)',
+        'fr.find': '찾기 / Find',
+        'fr.prev': '이전',
+        'fr.next': '다음',
+        'fr.replacePlaceholder': '바꾸기 / Replace',
+        'fr.replace': '바꾸기',
+        'fr.replaceAll': '모두',
+        'fr.close': '닫기',
+        'toast.replaced': '{n}개 바꿈',
+        'toast.replacedOne': '{n}개 바꿈'
+    },
+    en: {
+        'fm.title': 'Document Info',
+        'toc.title': 'Table of Contents',
+        'toast.bigDoc': 'Large document — syntax highlighting is skipped to stay responsive',
+        'lightbox.hint': 'ESC or click outside to close · Scroll to zoom · Drag to pan · Double-click to reset',
+
+        'blk.text': 'Text',             'blk.text.raw': 'Text',
+        'blk.h1': 'Heading 1',          'blk.h1.raw': '# Heading',
+        'blk.h2': 'Heading 2',          'blk.h2.raw': '## Heading',
+        'blk.h3': 'Heading 3',          'blk.h3.raw': '### Heading',
+        'blk.bullet': 'Bulleted list',  'blk.bullet.raw': '- Item',
+        'blk.number': 'Numbered list',  'blk.number.raw': '1. Item',
+        'blk.check': 'Checkbox',        'blk.check.raw': '- [ ] To do',
+        'blk.quote': 'Quote',           'blk.quote.raw': '> Quote',
+        'blk.code': 'Code block',
+        'blk.table': 'Table',           'blk.table.raw': '| Header | Header |\n| --- | --- |\n| Cell | Cell |',
+        'blk.image': 'Image',           'blk.image.raw': '![description](https://)',
+        'blk.link': 'Link',             'blk.link.raw': '[link text](https://)',
+        'blk.hr': 'Divider',
+
+        'handle.add': 'Add block below',
+        'handle.drag': 'Block menu · Drag to move',
+        'handle.edit': 'Edit block',
+        'menu.moveUp': '↑ Move up',
+        'menu.moveDown': '↓ Move down',
+        'menu.duplicate': '⧉ Duplicate',
+        'menu.delete': '🗑 Delete',
+        'toast.blockNotFound': 'The document changed — block not found',
+        'toast.firstBlock': 'Already the first block',
+        'toast.lastBlock': 'Already the last block',
+        'toast.blockDuplicated': 'Block duplicated',
+        'toast.blockDeleted': 'Block deleted · Cmd/Ctrl+Z to undo',
+        'toast.blockMoved': 'Block moved',
+        'empty.add': '＋ Add block',
+        'empty.addAria': 'Add block',
+        'empty.hint': 'This document is empty — add a block to get started',
+        'slash.hint': '↑↓ Navigate · Enter Select · Esc Close',
+
+        'link.edit': 'Edit link',
+        'link.text': 'Text',
+        'link.textPlaceholder': 'Text to display',
+        'link.apply': 'Apply',
+        'link.remove': 'Remove link',
+        'edit.icon': 'Edit',
+        'fmt.bold': 'Bold',
+        'fmt.italic': 'Italic',
+        'fmt.code': 'Code',
+        'fmt.link': 'Link',
+        'edit.cancel': 'Cancel',
+        'edit.done': 'Done',
+
+        'table.headerRowNoDelete': 'The header row cannot be deleted',
+        'table.lastRow': 'This is the last row',
+        'table.lastCol': 'This is the last column',
+        'table.newHeader': 'Header',
+        'table.align': 'Column alignment: {align}',
+        'table.alignDefault': 'default',
+        'table.rowAdd': '＋Row',        'table.rowAddAria': 'Add row below',
+        'table.rowDel': '－Row',        'table.rowDelAria': 'Delete this row',
+        'table.colAdd': '＋Col',        'table.colAddAria': 'Add column to the right',
+        'table.colDel': '－Col',        'table.colDelAria': 'Delete this column',
+        'table.alignAria': 'Cycle column alignment',
+        'code.lang': 'Language',
+
+        'toast.imgTooBig': 'Image is too large (over 8MB) — save it as a file and link to it',
+        'toast.imgLarge': 'Large image ({size}MB) — this will make the document bigger',
+        'toast.imgInserted': 'Image inserted',
+        'toast.undo': 'Edit undone',
+        'toast.redo': 'Edit redone',
+        'toast.copyFailed': 'Copy failed',
+        'outline.empty': 'No headings',
+        'toast.renderError': 'A rendering error occurred — your source is safe',
+
+        'mermaid.zoomAria': 'Zoom diagram',
+        'mermaid.zoomTitle': 'Zoom in / out · Pan',
+        'mermaid.colorAria': 'Toggle color / monochrome',
+        'mermaid.toMono': 'Show in monochrome',
+        'mermaid.toColor': 'Show in color',
+
+        'toast.copiedMd': 'Copied markdown',
+        'toast.copiedHtml': 'Copied HTML',
+
+        'pdf.title': 'PDF Export Options',
+        'pdf.paper': 'Paper size',
+        'pdf.orientation': 'Orientation',
+        'pdf.portrait': 'Portrait',
+        'pdf.landscape': 'Landscape',
+        'pdf.margin': 'Margins',
+        'pdf.narrow': 'Narrow',
+        'pdf.normal': 'Normal',
+        'pdf.wide': 'Wide',
+        'pdf.showHeader': 'Show title at top',
+        'pdf.showPageNumber': 'Show page numbers',
+        'pdf.cancel': 'Cancel',
+        'pdf.create': 'Create PDF',
+        'toast.pdfBusy': 'A PDF is already being generated',
+        'toast.pdfLibFail': 'Failed to load the PDF library',
+        'toast.pdfLibLoading': 'Loading the PDF library...',
+        'toast.pdfGenerating': 'Generating PDF...',
+        'toast.previewNotFound': 'Preview not found',
+        'toast.pdfSaved': 'PDF saved',
+        'toast.pdfFailed': 'PDF export failed',
+
+        'save.dirty': '● Modified',
+        'save.saving': '◐ Saving',
+        'save.saved': '✓ Saved',
+        'toast.saved': 'Saved',
+
+        'help.blockMenu': 'Block edit · insert · move (hover a block)',
+        'help.slash': 'Block type menu (in an empty block)',
+        'help.saveEdit': 'Save edit',
+        'help.esc': 'Cancel edit · Close menu / search / help',
+        'help.undo': 'Undo edit (Preview)',
+        'help.redo': 'Redo (Preview)',
+        'help.saveNow': 'Save now',
+        'help.find': 'Find (Preview) · Find & replace (Edit)',
+        'help.toggleMode': 'Switch Preview ↔ Edit',
+        'help.cellVertical': 'Table cell: move to the cell below / above',
+        'help.cellHorizontal': 'Table cell: move to the next / previous cell',
+        'help.thisHelp': 'This help',
+        'help.aria': 'Keyboard shortcuts',
+        'help.title': '⌨️ Keyboard Shortcuts',
+        'help.closeHint': 'ESC or click outside to close',
+
+        'palette.title': 'Pick a color',
+        'topbar.pdf': 'Export as PDF',
+        'topbar.language': 'Interface language: English — click to switch to Korean',
+        'toast.imgPasted': 'Image pasted',
+        'toast.linked': 'Linked',
+        'preview.dblHint': '✎ Edit block · Double-click to edit source',
+
+        'search.placeholder': 'Find in preview',
+        'search.prev': 'Previous (Shift+Enter)',
+        'search.next': 'Next (Enter)',
+        'search.close': 'Close (ESC)',
+        'fr.find': 'Find',
+        'fr.prev': 'Previous',
+        'fr.next': 'Next',
+        'fr.replacePlaceholder': 'Replace',
+        'fr.replace': 'Replace',
+        'fr.replaceAll': 'All',
+        'fr.close': 'Close',
+        'toast.replaced': 'Replaced {n} matches',
+        'toast.replacedOne': 'Replaced {n} match'
+    }
+};
+/* Look up a UI string. `vars` fills {name} placeholders. */
+function L(key, vars) {
+    var table = L10N[MDPV_LANG] || L10N.ko;
+    var s = table[key];
+    if (s == null) s = L10N.ko[key];
+    if (s == null) return key;
+    if (vars) {
+        s = s.replace(/\{(\w+)\}/g, function (m, k) { return vars[k] != null ? String(vars[k]) : m; });
+    }
+    return s;
+}
+
 const vscodeApi = acquireVsCodeApi();
 
 let currentContent = '';
@@ -295,7 +607,7 @@ function renderFrontmatterCard(fmRaw) {
             rows.push('<div class="md-fm-row md-fm-plain">' + esc(line) + '</div>');
         }
     });
-    return '<div class="md-frontmatter"><div class="md-fm-title">문서 정보</div>' + rows.join('') + '</div>';
+    return '<div class="md-frontmatter"><div class="md-fm-title">' + L('fm.title') + '</div>' + rows.join('') + '</div>';
 }
 
 function computeBlockUnits(tokens) {
@@ -440,7 +752,7 @@ function renderMarkdown(text) {
                 // and WYSIWYG falls back to the raw editor instead of
                 // committing '' over the [[TOC]] marker.
                 var tocOut = getTocHtml() ||
-                    '<div class="md-toc md-toc-empty"><div class="md-toc-title">목차 / Table of Contents</div></div>';
+                    '<div class="md-toc md-toc-empty"><div class="md-toc-title">' + L('toc.title') + '</div></div>';
                 if (token.type === 'paragraph' && /^\[\[(TOC|목차)\]\]$/i.test((token.raw || '').trim())) {
                     blockHtml = tocOut;   // standalone marker → replace whole <p>
                 } else {
@@ -471,7 +783,7 @@ function highlightCodeBlocks(container) {
     var skipHighlight = currentContent.length > 800 * 1024;
     if (skipHighlight && !_bigDocNoticeShown) {
         _bigDocNoticeShown = true;
-        showToast('대용량 문서 — 코드 하이라이트를 생략해 속도를 유지합니다');
+        showToast(L('toast.bigDoc'));
     }
     if (typeof hljs !== 'undefined' && !skipHighlight) {
         container.querySelectorAll('pre code').forEach(function (block) {
@@ -509,7 +821,7 @@ function openZoomView(contentEl, caption, ariaLabel) {
 
     var hint = document.createElement('div');
     hint.className = 'lightbox-hint';
-    hint.textContent = 'ESC 또는 바깥 클릭으로 닫기 · 휠로 확대/축소 · 드래그로 이동 · 더블클릭 리셋';
+    hint.textContent = L('lightbox.hint');
 
     overlay.appendChild(contentEl);
     overlay.appendChild(cap);
@@ -726,19 +1038,19 @@ function bindBlockEditing(container) {
 
 // Block templates shared by the ＋ insert menu and the WYSIWYG slash menu.
 var INSERT_BLOCKS = [
-    { key: 'text',   label: '텍스트',       icon: '¶',  raw: '내용' },
-    { key: 'h1',     label: '제목 1',       icon: 'H1', raw: '# 제목' },
-    { key: 'h2',     label: '제목 2',       icon: 'H2', raw: '## 제목' },
-    { key: 'h3',     label: '제목 3',       icon: 'H3', raw: '### 제목' },
-    { key: 'bullet', label: '리스트',       icon: '•',  raw: '- 항목' },
-    { key: 'number', label: '번호 리스트',  icon: '1.', raw: '1. 항목' },
-    { key: 'check',  label: '체크박스',     icon: '☑',  raw: '- [ ] 할 일' },
-    { key: 'quote',  label: '인용',         icon: '❝',  raw: '> 인용문' },
-    { key: 'code',   label: '코드 블록',    icon: '{}', raw: '```\ncode\n```' },
-    { key: 'table',  label: '표',           icon: '▦',  raw: '| 제목 | 제목 |\n| --- | --- |\n| 내용 | 내용 |' },
-    { key: 'image',  label: '이미지',       icon: '🖼', raw: '![설명](https://)' },
-    { key: 'link',   label: '링크',         icon: '🔗', raw: '[링크 제목](https://)' },
-    { key: 'hr',     label: '구분선',       icon: '—',  raw: '---' }
+    { key: 'text',   label: L('blk.text'),   icon: '¶',  raw: L('blk.text.raw') },
+    { key: 'h1',     label: L('blk.h1'),     icon: 'H1', raw: L('blk.h1.raw') },
+    { key: 'h2',     label: L('blk.h2'),     icon: 'H2', raw: L('blk.h2.raw') },
+    { key: 'h3',     label: L('blk.h3'),     icon: 'H3', raw: L('blk.h3.raw') },
+    { key: 'bullet', label: L('blk.bullet'), icon: '•',  raw: L('blk.bullet.raw') },
+    { key: 'number', label: L('blk.number'), icon: '1.', raw: L('blk.number.raw') },
+    { key: 'check',  label: L('blk.check'),  icon: '☑',  raw: L('blk.check.raw') },
+    { key: 'quote',  label: L('blk.quote'),  icon: '❝',  raw: L('blk.quote.raw') },
+    { key: 'code',   label: L('blk.code'),   icon: '{}', raw: '```\ncode\n```' },
+    { key: 'table',  label: L('blk.table'),  icon: '▦',  raw: L('blk.table.raw') },
+    { key: 'image',  label: L('blk.image'),  icon: '🖼', raw: L('blk.image.raw') },
+    { key: 'link',   label: L('blk.link'),   icon: '🔗', raw: L('blk.link.raw') },
+    { key: 'hr',     label: L('blk.hr'),     icon: '—',  raw: '---' }
 ];
 
 /* Rebuild currentContent from a mutated raw-array, push undo history,
@@ -830,7 +1142,7 @@ function addBlockHandles(blockEl, blockIdx, onEdit) {
     var addBtn = document.createElement('button');
     addBtn.type = 'button';
     addBtn.className = 'md-handle-add';
-    addBtn.setAttribute('aria-label', '아래에 블록 추가');
+    addBtn.setAttribute('aria-label', L('handle.add'));
     addBtn.textContent = '＋';
     addBtn.addEventListener('mousedown', function (e) { e.preventDefault(); });
     addBtn.addEventListener('click', function (e) {
@@ -841,7 +1153,7 @@ function addBlockHandles(blockEl, blockIdx, onEdit) {
     var dragBtn = document.createElement('button');
     dragBtn.type = 'button';
     dragBtn.className = 'md-handle-drag';
-    dragBtn.setAttribute('aria-label', '블록 메뉴 · 드래그로 이동');
+    dragBtn.setAttribute('aria-label', L('handle.drag'));
     dragBtn.textContent = '⠿';
     dragBtn.draggable = true;
     dragBtn.addEventListener('mousedown', function () {
@@ -880,7 +1192,7 @@ function addBlockHandles(blockEl, blockIdx, onEdit) {
         var editBtn = document.createElement('button');
         editBtn.type = 'button';
         editBtn.className = 'md-handle-edit';
-        editBtn.setAttribute('aria-label', '블록 편집');
+        editBtn.setAttribute('aria-label', L('handle.edit'));
         editBtn.textContent = '✎';
         editBtn.addEventListener('mousedown', function (e) { e.preventDefault(); });
         editBtn.addEventListener('click', function (e) {
@@ -966,10 +1278,10 @@ function openBlockPopup(kind, blockIdx, anchorEl) {
             addItem(item.label, item.icon, false, function () { insertBlockAfter(blockIdx, item.raw); });
         });
     } else {
-        addItem('↑ 위로 이동',   null, false, function () { moveBlockStep(blockIdx, -1); });
-        addItem('↓ 아래로 이동', null, false, function () { moveBlockStep(blockIdx, +1); });
-        addItem('⧉ 복제',        null, false, function () { duplicateBlock(blockIdx); });
-        addItem('🗑 삭제',        null, true,  function () { deleteBlock(blockIdx); });
+        addItem(L('menu.moveUp'),    null, false, function () { moveBlockStep(blockIdx, -1); });
+        addItem(L('menu.moveDown'),  null, false, function () { moveBlockStep(blockIdx, +1); });
+        addItem(L('menu.duplicate'), null, false, function () { duplicateBlock(blockIdx); });
+        addItem(L('menu.delete'),    null, true,  function () { deleteBlock(blockIdx); });
     }
 
     document.body.appendChild(p);
@@ -997,7 +1309,7 @@ function insertBlockAfter(blockIdx, rawTemplate) {
         applyRawsUpdate([ensureBlockSep(rawTemplate)]);
     } else {
         blockIdx = resolveIdxAfterCommit(blockIdx);
-        if (blockIdx < 0) { showToast('문서가 바뀌어 블록을 찾지 못했습니다'); return; }
+        if (blockIdx < 0) { showToast(L('toast.blockNotFound')); return; }
         var units = computeBlockUnits(_currentTokens);
         var ui = unitIndexOf(units, blockIdx);
         if (ui < 0) return;
@@ -1027,7 +1339,7 @@ function insertBlockAfter(blockIdx, rawTemplate) {
 
 function moveBlockStep(blockIdx, dir) {
     blockIdx = resolveIdxAfterCommit(blockIdx);
-    if (blockIdx < 0) { showToast('문서가 바뀌어 블록을 찾지 못했습니다'); return; }
+    if (blockIdx < 0) { showToast(L('toast.blockNotFound')); return; }
     var units = computeBlockUnits(_currentTokens);
     var ui = unitIndexOf(units, blockIdx);
     if (ui < 0) return;
@@ -1035,7 +1347,7 @@ function moveBlockStep(blockIdx, dir) {
     var uj = ui + dir;
     while (uj >= 0 && uj < uraws.length && isBlankUnitRaw(uraws[uj])) uj += dir;
     if (uj < 0 || uj >= uraws.length) {
-        showToast(dir < 0 ? '맨 위 블록입니다' : '맨 아래 블록입니다');
+        showToast(dir < 0 ? L('toast.firstBlock') : L('toast.lastBlock'));
         return;
     }
     var a = ensureBlockSep(uraws[ui]);
@@ -1053,7 +1365,7 @@ function moveBlockStep(blockIdx, dir) {
 
 function duplicateBlock(blockIdx) {
     blockIdx = resolveIdxAfterCommit(blockIdx);
-    if (blockIdx < 0) { showToast('문서가 바뀌어 블록을 찾지 못했습니다'); return; }
+    if (blockIdx < 0) { showToast(L('toast.blockNotFound')); return; }
     var units = computeBlockUnits(_currentTokens);
     var ui = unitIndexOf(units, blockIdx);
     if (ui < 0) return;
@@ -1062,12 +1374,12 @@ function duplicateBlock(blockIdx) {
     uraws[ui] = norm;
     uraws.splice(ui + 1, 0, norm);
     applyRawsUpdate(uraws);
-    showToast('블록 복제됨');
+    showToast(L('toast.blockDuplicated'));
 }
 
 function deleteBlock(blockIdx) {
     blockIdx = resolveIdxAfterCommit(blockIdx);
-    if (blockIdx < 0) { showToast('문서가 바뀌어 블록을 찾지 못했습니다'); return; }
+    if (blockIdx < 0) { showToast(L('toast.blockNotFound')); return; }
     var units = computeBlockUnits(_currentTokens);
     var ui = unitIndexOf(units, blockIdx);
     if (ui < 0) return;
@@ -1080,7 +1392,7 @@ function deleteBlock(blockIdx) {
         uraws[ui - 1] = ensureBlockSep(uraws[ui - 1]);
     }
     applyRawsUpdate(uraws);
-    showToast('블록 삭제됨 · Cmd/Ctrl+Z로 복구');
+    showToast(L('toast.blockDeleted'));
 }
 
 /* ── Drag & drop reorder ── */
@@ -1186,7 +1498,7 @@ function performBlockMove(srcIdx, tgtIdx, before) {
     }
     uraws.splice(insertAt, 0, moved);
     applyRawsUpdate(uraws);
-    showToast('블록 이동됨');
+    showToast(L('toast.blockMoved'));
 }
 
 /* Close every piece of floating chrome that anchors to block indexes —
@@ -1213,15 +1525,15 @@ function renderEmptyPlaceholder() {
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'md-empty-add';
-    btn.textContent = '＋ 블록 추가';
-    btn.setAttribute('aria-label', '블록 추가');
+    btn.textContent = L('empty.add');
+    btn.setAttribute('aria-label', L('empty.addAria'));
     btn.addEventListener('click', function (e) {
         e.preventDefault(); e.stopPropagation();
         openBlockPopup('insert', -1, btn);
     });
     var hint = document.createElement('div');
     hint.className = 'md-empty-hint';
-    hint.textContent = '빈 문서입니다 — 블록을 추가해 시작하세요';
+    hint.textContent = L('empty.hint');
     wrap.appendChild(btn);
     wrap.appendChild(hint);
     previewEl.appendChild(wrap);
@@ -1300,7 +1612,7 @@ function openWysiwygSlash(blockEl, blockIdx, filter) {
     });
     var hintEl = document.createElement('div');
     hintEl.className = 'md-popup-hint';
-    hintEl.textContent = '↑↓ 이동 · Enter 선택 · Esc 닫기';
+    hintEl.textContent = L('slash.hint');
     _wSlashEl.appendChild(hintEl);
     // Position under the caret (fallback: under the block)
     var rect = null;
@@ -1422,7 +1734,7 @@ function openLinkPopover(anchorEl, focusUrl) {
     pop.className = 'md-link-popover';
     pop.dataset.mdChrome = '1';
     pop.setAttribute('role', 'dialog');
-    pop.setAttribute('aria-label', '링크 편집');
+    pop.setAttribute('aria-label', L('link.edit'));
 
     function field(labelText, value, placeholder) {
         var row = document.createElement('label');
@@ -1439,7 +1751,7 @@ function openLinkPopover(anchorEl, focusUrl) {
         pop.appendChild(row);
         return input;
     }
-    var textInput = field('텍스트', anchorEl.textContent || '', '표시할 텍스트');
+    var textInput = field(L('link.text'), anchorEl.textContent || '', L('link.textPlaceholder'));
     var urlInput = field('URL', anchorEl.getAttribute('href') || '', 'https://…');
 
     var actions = document.createElement('div');
@@ -1476,8 +1788,8 @@ function openLinkPopover(anchorEl, focusUrl) {
             _activeBlockEdit.blockEl.focus();
         }
     }
-    actionBtn('적용', 'md-link-apply', applyLink);
-    actionBtn('링크 제거', 'md-link-remove', removeLink);
+    actionBtn(L('link.apply'), 'md-link-apply', applyLink);
+    actionBtn(L('link.remove'), 'md-link-remove', removeLink);
     pop.appendChild(actions);
 
     pop.addEventListener('keydown', function (ev) {
@@ -1509,7 +1821,7 @@ function addEditIcon(host, onClick) {
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'md-edit-icon';
-    btn.setAttribute('aria-label', '수정');
+    btn.setAttribute('aria-label', L('edit.icon'));
     btn.dataset.mdChrome = '1';
     btn.contentEditable = 'false';   // marker so we can strip on save
     btn.textContent = '✎';        // heavier pencil (U+270E) — more visible than ✏
@@ -1564,10 +1876,10 @@ function ensureFormatToolbar() {
     t.dataset.mdChrome = '1';
     t.setAttribute('role', 'toolbar');
     var BUTTONS = [
-        { cmd: 'bold',   label: 'B',  aria: '굵게'   , style: 'font-weight:700' },
-        { cmd: 'italic', label: 'I',  aria: '이탤릭' , style: 'font-style:italic' },
-        { cmd: 'code',   label: '</>',aria: '코드'   , style: 'font-family:monospace;font-size:10.5px' },
-        { cmd: 'link',   label: '🔗', aria: '링크'   , style: '' }
+        { cmd: 'bold',   label: 'B',  aria: L('fmt.bold'), style: 'font-weight:700' },
+        { cmd: 'italic', label: 'I',  aria: L('fmt.italic'), style: 'font-style:italic' },
+        { cmd: 'code',   label: '</>',aria: L('fmt.code'), style: 'font-family:monospace;font-size:10.5px' },
+        { cmd: 'link',   label: '🔗', aria: L('fmt.link'), style: '' }
     ];
     BUTTONS.forEach(function (b) {
         var btn = document.createElement('button');
@@ -1666,7 +1978,7 @@ function addDoneButton(host) {
     cancelBtn.className = 'md-cancel-btn';
     cancelBtn.dataset.mdChrome = '1';
     cancelBtn.contentEditable = 'false';
-    cancelBtn.setAttribute('aria-label', '취소');
+    cancelBtn.setAttribute('aria-label', L('edit.cancel'));
     cancelBtn.textContent = '✕';
     cancelBtn.addEventListener('mousedown', function (e) { e.preventDefault(); });
     cancelBtn.addEventListener('click', function (e) {
@@ -1680,7 +1992,7 @@ function addDoneButton(host) {
     btn.className = 'md-done-btn';
     btn.dataset.mdChrome = '1';
     btn.contentEditable = 'false';
-    btn.setAttribute('aria-label', '완료');
+    btn.setAttribute('aria-label', L('edit.done'));
     btn.textContent = '✓';
     btn.addEventListener('mousedown', function (e) { e.preventDefault(); });
     btn.addEventListener('click', function (e) {
@@ -1945,8 +2257,8 @@ function tableToolbarAction(action) {
     var rows = token.rows.length;
 
     // Validate before touching anything
-    if (action === 'row-' && (isHeader || rows <= 1)) { showToast(isHeader ? '제목 행은 삭제할 수 없습니다' : '마지막 행입니다'); return; }
-    if (action === 'col-' && cols <= 1) { showToast('마지막 열입니다'); return; }
+    if (action === 'row-' && (isHeader || rows <= 1)) { showToast(isHeader ? L('table.headerRowNoDelete') : L('table.lastRow')); return; }
+    if (action === 'col-' && cols <= 1) { showToast(L('table.lastCol')); return; }
 
     closeBlockEditor(true);   // single-token swap — blockIdx stays stable
 
@@ -1965,7 +2277,7 @@ function tableToolbarAction(action) {
                 break;
             }
             case 'col+': {
-                t.header.splice(colIdx + 1, 0, { text: '제목' });
+                t.header.splice(colIdx + 1, 0, { text: L('table.newHeader') });
                 t.align.splice(colIdx + 1, 0, null);
                 t.rows.forEach(function (r) { r.splice(colIdx + 1, 0, emptyTableCell()); });
                 reopen = { header: isHeader, row: rowIdx, col: colIdx + 1 };
@@ -1982,7 +2294,7 @@ function tableToolbarAction(action) {
                 var CYCLE = [null, 'left', 'center', 'right'];
                 var cur = CYCLE.indexOf(t.align[colIdx] || null);
                 t.align[colIdx] = CYCLE[(cur + 1) % CYCLE.length];
-                showToast('열 정렬: ' + (t.align[colIdx] || '기본'));
+                showToast(L('table.align', { align: t.align[colIdx] || L('table.alignDefault') }));
                 break;
             }
         }
@@ -2004,11 +2316,11 @@ function showTableToolbar(blockEl) {
     bar.dataset.mdChrome = '1';
     bar.contentEditable = 'false';
     var BUTTONS = [
-        { key: 'row+',  label: '＋행', aria: '아래에 행 추가' },
-        { key: 'row-',  label: '－행', aria: '현재 행 삭제' },
-        { key: 'col+',  label: '＋열', aria: '오른쪽에 열 추가' },
-        { key: 'col-',  label: '－열', aria: '현재 열 삭제' },
-        { key: 'align', label: '⇤⇥',  aria: '열 정렬 전환' }
+        { key: 'row+',  label: L('table.rowAdd'), aria: L('table.rowAddAria') },
+        { key: 'row-',  label: L('table.rowDel'), aria: L('table.rowDelAria') },
+        { key: 'col+',  label: L('table.colAdd'), aria: L('table.colAddAria') },
+        { key: 'col-',  label: L('table.colDel'), aria: L('table.colDelAria') },
+        { key: 'align', label: '⇤⇥',  aria: L('table.alignAria') }
     ];
     BUTTONS.forEach(function (b) {
         var btn = document.createElement('button');
@@ -2109,7 +2421,7 @@ function openCodeEditor(blockEl, blockIdx, token, trailingBlanks) {
     head.dataset.mdChrome = '1';
     var langLabel = document.createElement('span');
     langLabel.className = 'md-code-lang-label';
-    langLabel.textContent = '언어';
+    langLabel.textContent = L('code.lang');
     var langInput = document.createElement('input');
     langInput.type = 'text';
     langInput.className = 'md-code-lang';
@@ -2272,11 +2584,11 @@ function handleEditorImageEvent(ev, kind) {
             // base64 inflates ~33% and lands in the markdown source — a huge
             // image would freeze rendering and bloat the file permanently.
             if (file.size > 8 * 1024 * 1024) {
-                showToast('이미지가 너무 큽니다 (8MB 초과) — 파일로 저장 후 링크하세요');
+                showToast(L('toast.imgTooBig'));
                 return;
             }
             if (file.size > 2 * 1024 * 1024) {
-                showToast('큰 이미지(' + (file.size / 1024 / 1024).toFixed(1) + 'MB) — 문서 용량이 커집니다');
+                showToast(L('toast.imgLarge', { size: (file.size / 1024 / 1024).toFixed(1) }));
             }
             var reader = new FileReader();
             reader.onload = function (e) {
@@ -2285,7 +2597,7 @@ function handleEditorImageEvent(ev, kind) {
                     document.execCommand('insertHTML', false,
                         '<img src="' + dataUrl + '" alt="image">');
                 } catch (_) {}
-                showToast('이미지 삽입됨');
+                showToast(L('toast.imgInserted'));
             };
             reader.readAsDataURL(file);
             return;
@@ -2575,7 +2887,7 @@ function undoInlineEdit() {
     saveToDocument(prev);
     updateStats();
     renderPreview();
-    showToast('편집 되돌림');
+    showToast(L('toast.undo'));
     return true;
 }
 function redoInlineEdit() {
@@ -2589,7 +2901,7 @@ function redoInlineEdit() {
     saveToDocument(next);
     updateStats();
     renderPreview();
-    showToast('편집 다시 실행');
+    showToast(L('toast.redo'));
     return true;
 }
 
@@ -2655,7 +2967,7 @@ function enhanceCodeBlocks(container) {
                     btn.classList.remove('copied');
                     if (span) span.textContent = 'Copy';
                 }, 1500);
-            }).catch(function () { showToast('복사 실패'); });
+            }).catch(function () { showToast(L('toast.copyFailed')); });
         });
         header.appendChild(copyBtn);
 
@@ -2683,12 +2995,17 @@ function formatNumber(n) {
 
 function updateStats() {
     var s = computeStats(currentContent);
+    // English mode gets correct singulars ("1 word"); Korean mode keeps the
+    // exact long-standing format.
+    function unit(n, one, many) {
+        return formatNumber(n) + ' ' + (MDPV_LANG === 'en' && n === 1 ? one : many);
+    }
     if (statsLeftEl) {
-        statsLeftEl.textContent = formatNumber(s.words) + ' words \u00B7 ' +
-            formatNumber(s.chars) + ' chars \u00B7 ' + s.readMin + ' min read';
+        statsLeftEl.textContent = unit(s.words, 'word', 'words') + ' \u00B7 ' +
+            unit(s.chars, 'char', 'chars') + ' \u00B7 ' + s.readMin + ' min read';
     }
     if (statsRightEl) {
-        statsRightEl.textContent = formatNumber(s.lines) + ' lines';
+        statsRightEl.textContent = unit(s.lines, 'line', 'lines');
     }
 }
 
@@ -2716,7 +3033,7 @@ function buildOutline(html) {
     if (!headings.length) {
         var empty = document.createElement('div');
         empty.className = 'outline-empty';
-        empty.textContent = '헤딩이 없습니다';
+        empty.textContent = L('outline.empty');
         outlineListEl.appendChild(empty);
         return;
     }
@@ -2909,7 +3226,7 @@ function renderPreview() {
         // Stale tokens must not feed the next commit — better to disable
         // block ops than to write outdated raws over the document.
         _currentTokens = null;
-        showToast('렌더링 오류가 발생했습니다 — 원본은 안전합니다');
+        showToast(L('toast.renderError'));
     } finally {
         _isRendering = false;
     }
@@ -3324,8 +3641,8 @@ function addMermaidZoomAffordance(wrapper) {
     btn.type = 'button';
     btn.className = 'mermaid-zoom-btn';
     btn.dataset.mdChrome = '1';
-    btn.setAttribute('aria-label', '다이어그램 확대');
-    btn.title = '확대 / 축소 · 팬';
+    btn.setAttribute('aria-label', L('mermaid.zoomAria'));
+    btn.title = L('mermaid.zoomTitle');
     btn.textContent = '⤢';
     btn.addEventListener('click', function (e) {
         e.preventDefault(); e.stopPropagation();
@@ -3341,8 +3658,8 @@ function addMermaidZoomAffordance(wrapper) {
         cbtn.type = 'button';
         cbtn.className = 'mermaid-color-btn' + (_mermaidLevelColors ? ' active' : '');
         cbtn.dataset.mdChrome = '1';
-        cbtn.setAttribute('aria-label', '색상 / 흑백 전환');
-        cbtn.title = _mermaidLevelColors ? '흑백으로 보기' : '색상으로 보기';
+        cbtn.setAttribute('aria-label', L('mermaid.colorAria'));
+        cbtn.title = _mermaidLevelColors ? L('mermaid.toMono') : L('mermaid.toColor');
         cbtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.8 A6.2 6.2 0 0 1 8 14.2 Z" fill="currentColor"/></svg>';
         cbtn.addEventListener('click', function (e) {
             e.preventDefault(); e.stopPropagation();
@@ -3562,7 +3879,7 @@ function buildTocHtml(tokens) {
         headings.push({ level: t.depth, text: text, slug: slug });
     });
     if (headings.length === 0) return '';
-    var toc = ['<div class="md-toc"><div class="md-toc-title">목차 / Table of Contents</div><ul>'];
+    var toc = ['<div class="md-toc"><div class="md-toc-title">' + L('toc.title') + '</div><ul>'];
     headings.forEach(function (h) {
         toc.push('<li class="md-toc-level-' + h.level + '"><a href="#' + h.slug + '">' + h.text + '</a></li>');
     });
@@ -3768,12 +4085,12 @@ function toolbarAction(action) {
         case 'font-size-down': changeFontSize(-1); break;
         case 'copy':
             navigator.clipboard.writeText(currentContent).catch(function () {});
-            showToast('마크다운 복사됨 / Copied markdown');
+            showToast(L('toast.copiedMd'));
             break;
         case 'copy-html':
             var html = renderMarkdown(currentContent);
             navigator.clipboard.writeText(html).catch(function () {});
-            showToast('HTML 복사됨 / Copied HTML');
+            showToast(L('toast.copiedHtml'));
             break;
         case 'focus':
             toggleFocusMode();
@@ -3809,41 +4126,41 @@ function showPdfOptionsDialog(onConfirm) {
     overlay.className = 'pdf-options-dialog';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
-    overlay.setAttribute('aria-label', 'PDF 내보내기 옵션');
+    overlay.setAttribute('aria-label', L('pdf.title'));
     overlay.innerHTML =
         '<div class="pdf-dialog-panel">' +
-            '<h3>PDF 내보내기 옵션</h3>' +
+            '<h3>' + L('pdf.title') + '</h3>' +
             '<div class="pdf-row">' +
-                '<label>용지 크기</label>' +
+                '<label>' + L('pdf.paper') + '</label>' +
                 '<div class="pdf-segmented" data-key="paperSize">' +
                     '<button data-val="a4">A4</button>' +
                     '<button data-val="letter">Letter</button>' +
                 '</div>' +
             '</div>' +
             '<div class="pdf-row">' +
-                '<label>방향</label>' +
+                '<label>' + L('pdf.orientation') + '</label>' +
                 '<div class="pdf-segmented" data-key="orientation">' +
-                    '<button data-val="portrait">세로</button>' +
-                    '<button data-val="landscape">가로</button>' +
+                    '<button data-val="portrait">' + L('pdf.portrait') + '</button>' +
+                    '<button data-val="landscape">' + L('pdf.landscape') + '</button>' +
                 '</div>' +
             '</div>' +
             '<div class="pdf-row">' +
-                '<label>여백</label>' +
+                '<label>' + L('pdf.margin') + '</label>' +
                 '<div class="pdf-segmented" data-key="margin">' +
-                    '<button data-val="narrow">좁게</button>' +
-                    '<button data-val="normal">보통</button>' +
-                    '<button data-val="wide">넓게</button>' +
+                    '<button data-val="narrow">' + L('pdf.narrow') + '</button>' +
+                    '<button data-val="normal">' + L('pdf.normal') + '</button>' +
+                    '<button data-val="wide">' + L('pdf.wide') + '</button>' +
                 '</div>' +
             '</div>' +
             '<div class="pdf-row">' +
-                '<label class="pdf-check"><input type="checkbox" data-key="showHeader"> <span>상단 제목 표시</span></label>' +
+                '<label class="pdf-check"><input type="checkbox" data-key="showHeader"> <span>' + L('pdf.showHeader') + '</span></label>' +
             '</div>' +
             '<div class="pdf-row">' +
-                '<label class="pdf-check"><input type="checkbox" data-key="showPageNumber"> <span>페이지 번호 표시</span></label>' +
+                '<label class="pdf-check"><input type="checkbox" data-key="showPageNumber"> <span>' + L('pdf.showPageNumber') + '</span></label>' +
             '</div>' +
             '<div class="pdf-actions">' +
-                '<button class="pdf-cancel">취소</button>' +
-                '<button class="pdf-confirm">PDF 만들기</button>' +
+                '<button class="pdf-cancel">' + L('pdf.cancel') + '</button>' +
+                '<button class="pdf-confirm">' + L('pdf.create') + '</button>' +
             '</div>' +
         '</div>';
     document.body.appendChild(overlay);
@@ -3900,13 +4217,13 @@ function showPdfOptionsDialog(onConfirm) {
 
 function exportToPdf() {
     // Guard against double-trigger (rapid clicks, keyboard repeat)
-    if (_isExporting) { showToast('PDF 생성 중입니다'); return; }
+    if (_isExporting) { showToast(L('toast.pdfBusy')); return; }
 
     if (typeof html2pdf === 'undefined') {
         var assets = window.__lazyAssets || {};
-        if (!assets.html2pdf) { showToast('PDF 라이브러리 로드 실패'); return; }
-        showToast('PDF 라이브러리 로딩 중...');
-        lazyLoadScript('html2pdf', assets.html2pdf).then(function () { exportToPdf(); }).catch(function () { showToast('PDF 라이브러리 로드 실패'); });
+        if (!assets.html2pdf) { showToast(L('toast.pdfLibFail')); return; }
+        showToast(L('toast.pdfLibLoading'));
+        lazyLoadScript('html2pdf', assets.html2pdf).then(function () { exportToPdf(); }).catch(function () { showToast(L('toast.pdfLibFail')); });
         return;
     }
     // Show options dialog first; actual export proceeds in callback
@@ -3923,7 +4240,7 @@ function _runPdfExport(userOpts) {
     renderPreview();
     _isExporting = true;
 
-    showToast('PDF 생성 중... / Generating PDF...');
+    showToast(L('toast.pdfGenerating'));
 
     // Filename from first H1
     var titleFromContent = '';
@@ -3938,7 +4255,7 @@ function _runPdfExport(userOpts) {
 
     var element = previewEl;
     if (!element) {
-        showToast('프리뷰를 찾을 수 없습니다');
+        showToast(L('toast.previewNotFound'));
         _isExporting = false;
         return;
     }
@@ -4189,7 +4506,7 @@ function _runPdfExport(userOpts) {
             pdf.save(fileName);
             restore();
             _isExporting = false;
-            showToast('PDF 저장 완료');
+            showToast(L('toast.pdfSaved'));
             if (previousMode !== 'preview') {
                 setMode(previousMode);
             }
@@ -4199,7 +4516,7 @@ function _runPdfExport(userOpts) {
             // Restore mode even on failure so user isn't stuck in preview
             if (previousMode !== 'preview') setMode(previousMode);
             console.error(err);
-            showToast('PDF 저장 실패');
+            showToast(L('toast.pdfFailed'));
         });
     });
     }, 250);
@@ -4260,9 +4577,9 @@ var saveStateEl = null;
 function setSaveState(state) {
     if (!saveStateEl) return;
     saveStateEl.className = 'save-state save-state-' + state;
-    if (state === 'dirty') saveStateEl.textContent = '● 수정됨';
-    else if (state === 'saving') saveStateEl.textContent = '◐ 저장 중';
-    else saveStateEl.textContent = '✓ 저장됨';
+    if (state === 'dirty') saveStateEl.textContent = L('save.dirty');
+    else if (state === 'saving') saveStateEl.textContent = L('save.saving');
+    else saveStateEl.textContent = L('save.saved');
 }
 
 function updateLineNumbers() {
@@ -4518,29 +4835,29 @@ var _helpOverlayEl = null;
 function toggleShortcutHelp() {
     if (_helpOverlayEl) { closeShortcutHelp(); return; }
     var ROWS = [
-        ['✎ / ＋ / ⠿', '블록 편집 · 삽입 · 이동 메뉴 (블록에 마우스 올리면 왼쪽에 표시)'],
-        ['/', '빈 블록 편집 중 블록 타입 변환 메뉴'],
-        ['Cmd/Ctrl + Enter', '편집 저장'],
-        ['ESC', '편집 취소 · 메뉴/검색/도움말 닫기'],
-        ['Cmd/Ctrl + Z', '편집 되돌리기 (Preview)'],
-        ['Cmd/Ctrl + Shift + Z', '다시 실행 (Preview)'],
-        ['Cmd/Ctrl + S', '즉시 저장'],
-        ['Cmd/Ctrl + F', '찾기 (Preview 검색 / 편집 찾기·바꾸기)'],
-        ['Cmd/Ctrl + E', 'Preview ↔ Edit 전환'],
-        ['Enter / Shift+Enter', '표 셀: 아래/위 셀로 이동'],
-        ['Tab / Shift+Tab', '표 셀: 다음/이전 셀로 이동'],
-        ['?', '이 도움말']
+        ['✎ / ＋ / ⠿', L('help.blockMenu')],
+        ['/', L('help.slash')],
+        ['Cmd/Ctrl + Enter', L('help.saveEdit')],
+        ['ESC', L('help.esc')],
+        ['Cmd/Ctrl + Z', L('help.undo')],
+        ['Cmd/Ctrl + Shift + Z', L('help.redo')],
+        ['Cmd/Ctrl + S', L('help.saveNow')],
+        ['Cmd/Ctrl + F', L('help.find')],
+        ['Cmd/Ctrl + E', L('help.toggleMode')],
+        ['Enter / Shift+Enter', L('help.cellVertical')],
+        ['Tab / Shift+Tab', L('help.cellHorizontal')],
+        ['?', L('help.thisHelp')]
     ];
     var overlay = document.createElement('div');
     overlay.className = 'md-help-overlay';
     overlay.dataset.mdChrome = '1';
     overlay.setAttribute('role', 'dialog');
-    overlay.setAttribute('aria-label', '키보드 단축키');
+    overlay.setAttribute('aria-label', L('help.aria'));
     var card = document.createElement('div');
     card.className = 'md-help-card';
     var title = document.createElement('div');
     title.className = 'md-help-title';
-    title.textContent = '⌨️ 키보드 단축키';
+    title.textContent = L('help.title');
     card.appendChild(title);
     ROWS.forEach(function (r) {
         var row = document.createElement('div');
@@ -4555,7 +4872,7 @@ function toggleShortcutHelp() {
     });
     var hint = document.createElement('div');
     hint.className = 'md-help-hint';
-    hint.textContent = 'ESC 또는 바깥 클릭으로 닫기';
+    hint.textContent = L('help.closeHint');
     card.appendChild(hint);
     overlay.appendChild(card);
     overlay.addEventListener('click', function (e) {
@@ -4601,7 +4918,7 @@ function setupKeyboardShortcuts() {
         // Cmd/Ctrl+S → flush the debounced save immediately, everywhere
         if (mod && (e.key === 's' || e.key === 'S')) {
             e.preventDefault();
-            if (flushPendingSave()) showToast('저장됨');
+            if (flushPendingSave()) showToast(L('toast.saved'));
             return;
         }
         // ? → keyboard shortcut help (only when not typing anywhere)
@@ -4823,8 +5140,10 @@ function clearCustomThemeVars() {
     CUSTOM_VAR_NAMES.forEach(function (v) { root.style.removeProperty(v); });
 }
 
+var _currentCustomColor = null;   // kept so a language rebuild can restore it
 function applyCustomColor(hex) {
     currentTheme = 'custom';
+    _currentCustomColor = hex;
     document.body.removeAttribute('data-theme');
     lsSet('md-viewer-theme', 'custom');
     lsSet('md-viewer-custom-color', hex);
@@ -4979,7 +5298,7 @@ function buildColorPalette() {
 
     var title = document.createElement('div');
     title.className = 'palette-title';
-    title.textContent = '컬러 선택 / Pick a color';
+    title.textContent = L('palette.title');
     wrap.appendChild(title);
 
     Object.keys(colorPalette).forEach(function (category) {
@@ -5151,10 +5470,24 @@ function buildUI(fileName) {
     fontSizeGroup.appendChild(fontUpBtn);
     topRight.appendChild(fontSizeGroup);
 
+    // Interface language toggle (v1.0.44) — shows the CURRENT language; a
+    // click asks the extension to flip mdPrettyViewer.language, which then
+    // rebuilds every open viewer in place.
+    var langBtn = document.createElement('button');
+    langBtn.type = 'button';
+    langBtn.className = 'topbar-btn lang-btn';
+    langBtn.textContent = MDPV_LANG === 'en' ? 'EN' : '한';
+    langBtn.title = L('topbar.language');
+    langBtn.setAttribute('aria-label', L('topbar.language'));
+    langBtn.addEventListener('click', function () {
+        try { vscodeApi.postMessage({ type: 'setLanguage', lang: MDPV_LANG === 'en' ? 'ko' : 'en' }); } catch (_) {}
+    });
+    topRight.appendChild(langBtn);
+
     // PDF export button (always visible in topbar)
     var pdfBtn = document.createElement('button');
     pdfBtn.className = 'topbar-btn pdf-btn';
-    pdfBtn.title = 'Export as PDF / PDF로 저장';
+    pdfBtn.title = L('topbar.pdf');
     pdfBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 2h6l3 3v9h-9V2z"/><path d="M9.5 2v3h3"/><text x="4.5" y="11.5" font-size="3.2" font-weight="700" fill="currentColor" stroke="none" font-family="sans-serif">PDF</text></svg>';
     pdfBtn.addEventListener('click', function () { exportToPdf(); });
     topRight.appendChild(pdfBtn);
@@ -5276,7 +5609,7 @@ function buildUI(fileName) {
                     editorEl.selectionStart = editorEl.selectionEnd = start + insertion.length;
                     onEditorInput();
                     updateLineNumbers();
-                    showToast('이미지 붙여넣음 / Image pasted');
+                    showToast(L('toast.imgPasted'));
                 };
                 reader.readAsDataURL(file);
                 return;
@@ -5303,7 +5636,7 @@ function buildUI(fileName) {
         editorEl.selectionStart = editorEl.selectionEnd = selStart + ins.length;
         onEditorInput();
         updateLineNumbers();
-        showToast('링크 변환됨 / Linked');
+        showToast(L('toast.linked'));
     });
 
     editorWrap.appendChild(lineNumbersEl);
@@ -5333,7 +5666,7 @@ function buildUI(fileName) {
     // Editing hint — pencil edits in place, double-click jumps to source
     var hint = document.createElement('div');
     hint.className = 'dblclick-hint';
-    hint.textContent = '✎ 블록 편집 · 더블클릭 시 소스 편집';
+    hint.textContent = L('preview.dblHint');
     previewPane.appendChild(hint);
 
     // Double-click to switch to edit mode
@@ -5373,7 +5706,7 @@ function buildUI(fileName) {
     statsCenter.className = 'stats-center';
     saveStateEl = document.createElement('span');
     saveStateEl.className = 'save-state save-state-saved';
-    saveStateEl.textContent = '✓ 저장됨';
+    saveStateEl.textContent = L('save.saved');
     statsCenter.appendChild(saveStateEl);
 
     statsRightEl = document.createElement('span');
@@ -5402,6 +5735,60 @@ function getToolbarIcon(name) {
 /* ───────────────────────────────────────────
    Message handling from extension
    ─────────────────────────────────────────── */
+/* Live language switch (v1.0.44). The extension rebuilds the webview in
+   the new language; before that it asks us to (1) commit any open block
+   editor so no typing is lost, (2) send the pending debounced save, and
+   (3) hand back view state the rebuild must restore. localStorage is not
+   reliable inside webviews, so this state travels via the extension. */
+function collectViewState() {
+    var pane = previewEl && previewEl.parentElement;
+    var fontSize = document.documentElement.style.getPropertyValue('--md-font-size') || '';
+    return {
+        mode: currentMode,
+        outline: !!outlineVisible,
+        theme: currentTheme,
+        customColor: currentTheme === 'custom' ? _currentCustomColor : null,
+        fontSize: fontSize.trim(),
+        mermaidColors: !!_mermaidLevelColors,
+        previewScroll: pane ? pane.scrollTop : 0,
+        editorScroll: editorEl ? editorEl.scrollTop : 0,
+        selStart: editorEl ? editorEl.selectionStart : 0,
+        selEnd: editorEl ? editorEl.selectionEnd : 0,
+        undo: _editHistory.slice(-_EDIT_HISTORY_LIMIT),
+        redo: _redoHistory.slice()
+    };
+}
+
+function prepareForRebuild() {
+    try { if (_activeBlockEdit) closeBlockEditor(true); } catch (_) {}
+    try { resetBlockChrome(); } catch (_) {}
+    flushPendingSave();
+    vscodeApi.postMessage({ type: 'rebuildReady', state: collectViewState() });
+}
+
+/* Applied at the end of initEditor, after the first render. */
+function restoreViewState(st) {
+    if (!st) return;
+    if (Array.isArray(st.undo)) _editHistory = st.undo.filter(function (x) { return typeof x === 'string'; });
+    if (Array.isArray(st.redo)) _redoHistory = st.redo.filter(function (x) { return typeof x === 'string'; });
+    if (editorEl && (st.mode === 'edit' || st.mode === 'split')) {
+        try {
+            editorEl.selectionStart = st.selStart || 0;
+            editorEl.selectionEnd = st.selEnd || 0;
+        } catch (_) {}
+    }
+    function scroll() {
+        var pane = previewEl && previewEl.parentElement;
+        if (pane && st.previewScroll) pane.scrollTop = st.previewScroll;
+        if (editorEl && st.editorScroll) editorEl.scrollTop = st.editorScroll;
+    }
+    scroll();
+    // Mermaid / KaTeX / images settle asynchronously and change the height —
+    // re-apply once layout has caught up.
+    setTimeout(scroll, 120);
+    setTimeout(scroll, 600);
+}
+
 var _lastUpdateRenderAt = 0;
 function setupMessageListener() {
     window.addEventListener('message', function (e) {
@@ -5449,6 +5836,8 @@ function setupMessageListener() {
                 }
             }
             updateStats();
+        } else if (msg.type === 'prepareRebuild') {
+            prepareForRebuild();
         } else if (msg.type === 'command') {
             if (msg.action === 'toggleMode') {
                 setMode(currentMode === 'preview' ? 'edit' : 'preview');
@@ -5481,12 +5870,13 @@ function setupMessageListener() {
 /* ───────────────────────────────────────────
    initEditor — global entry point
    ─────────────────────────────────────────── */
-function initEditor(content, fileName, baseUri, initialSettings) {
+function initEditor(content, fileName, baseUri, initialSettings, restoreState) {
     currentContent = content;
     docBaseUri = baseUri || '';
     configureMarked();
 
     var settings = initialSettings || {};
+    var restore = (restoreState && typeof restoreState === 'object') ? restoreState : null;
 
     // Font size: saved > settings > default
     var savedFontSize = lsGet('md-viewer-font-size');
@@ -5515,9 +5905,22 @@ function initEditor(content, fileName, baseUri, initialSettings) {
     else if (savedMmColors === 'on') _mermaidLevelColors = true;
     else if (typeof settings.mermaidLevelColors === 'boolean') _mermaidLevelColors = settings.mermaidLevelColors;
 
+    // Rebuilt after a language switch: the previous webview's view state
+    // wins over saved/setting defaults so nothing visibly resets.
+    var savedCustomColor = lsGet('md-viewer-custom-color');
+    if (restore) {
+        if (restore.fontSize && /^\d+(\.\d+)?px$/.test(restore.fontSize)) {
+            document.documentElement.style.setProperty('--md-font-size', restore.fontSize);
+        }
+        if (typeof restore.theme === 'string' && restore.theme) currentTheme = restore.theme;
+        if (restore.theme === 'custom' && typeof restore.customColor === 'string') savedCustomColor = restore.customColor;
+        if (restore.mode === 'preview' || restore.mode === 'edit' || restore.mode === 'split') currentMode = restore.mode;
+        if (typeof restore.outline === 'boolean') outlineVisible = restore.outline;
+        if (typeof restore.mermaidColors === 'boolean') _mermaidLevelColors = restore.mermaidColors;
+    }
+
     buildUI(fileName);
     // Restore custom color if saved
-    var savedCustomColor = lsGet('md-viewer-custom-color');
     if (currentTheme === 'custom' && savedCustomColor) {
         applyCustomColor(savedCustomColor);
     } else {
@@ -5542,6 +5945,7 @@ function initEditor(content, fileName, baseUri, initialSettings) {
     setupScrollSync();
     setupKeyboardShortcuts();
     setupMessageListener();
+    restoreViewState(restore);
 }
 
 /* Preview-mode search (v1.0.2) — highlights matches in rendered DOM */
@@ -5636,11 +6040,11 @@ function openPreviewSearch() {
         var p = document.createElement('div');
         p.className = 'preview-search-panel';
         p.innerHTML =
-            '<input type="text" class="ps-input" placeholder="프리뷰에서 찾기 / Find in preview" aria-label="Search preview">' +
+            '<input type="text" class="ps-input" placeholder="' + L('search.placeholder') + '" aria-label="Search preview">' +
             '<span class="ps-count" aria-live="polite"></span>' +
-            '<button class="ps-prev" title="이전 (Shift+Enter)" aria-label="Previous match">↑</button>' +
-            '<button class="ps-next" title="다음 (Enter)" aria-label="Next match">↓</button>' +
-            '<button class="ps-close" title="닫기 (ESC)" aria-label="Close">×</button>';
+            '<button class="ps-prev" title="' + L('search.prev') + '" aria-label="Previous match">↑</button>' +
+            '<button class="ps-next" title="' + L('search.next') + '" aria-label="Next match">↓</button>' +
+            '<button class="ps-close" title="' + L('search.close') + '" aria-label="Close">×</button>';
         document.body.appendChild(p);
         _previewSearchPanel = p;
         var input = p.querySelector('.ps-input');
@@ -5677,7 +6081,7 @@ function openFindReplace() {
     if (_findPanel) { _findPanel.style.display = 'block'; var fi = _findPanel.querySelector('.fr-find'); if (fi) { fi.focus(); fi.select(); } return; }
     var p = document.createElement('div');
     p.className = 'find-replace-panel';
-    p.innerHTML = '<div class="fr-row"><input type="text" class="fr-find" placeholder="찾기 / Find"><button class="fr-prev" title="이전">↑</button><button class="fr-next" title="다음">↓</button><span class="fr-count"></span></div><div class="fr-row"><input type="text" class="fr-replace" placeholder="바꾸기 / Replace"><button class="fr-replace-one">바꾸기</button><button class="fr-replace-all">모두</button><button class="fr-close" title="닫기">×</button></div>';
+    p.innerHTML = '<div class="fr-row"><input type="text" class="fr-find" placeholder="' + L('fr.find') + '"><button class="fr-prev" title="' + L('fr.prev') + '">↑</button><button class="fr-next" title="' + L('fr.next') + '">↓</button><span class="fr-count"></span></div><div class="fr-row"><input type="text" class="fr-replace" placeholder="' + L('fr.replacePlaceholder') + '"><button class="fr-replace-one">' + L('fr.replace') + '</button><button class="fr-replace-all">' + L('fr.replaceAll') + '</button><button class="fr-close" title="' + L('fr.close') + '">×</button></div>';
     document.body.appendChild(p);
     _findPanel = p;
     var findInput = p.querySelector('.fr-find');
@@ -5718,7 +6122,7 @@ function openFindReplace() {
         var n = (editorEl.value.match(re) || []).length;
         editorEl.value = editorEl.value.replace(re, r);
         onEditorInput(); updateLineNumbers(); updateCount();
-        showToast(n + '개 바꿈');
+        showToast(L(n === 1 ? 'toast.replacedOne' : 'toast.replaced', { n: n }));
     }
     findInput.addEventListener('input', updateCount);
     findInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); findNext(e.shiftKey ? 'prev' : 'next'); } else if (e.key === 'Escape') closeFindReplace(); });

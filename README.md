@@ -132,6 +132,17 @@ LaTeX math · Mermaid · clipboard image paste · auto TOC · Korean-first typog
 ## 🚀 Highlights
 
 <details open>
+<summary><b>🌐 English / Korean interface <sub>v2.0</sub></b></summary>
+
+Every label — toolbar, block menus, table/code/link editors, PDF options, shortcut help, find & replace, notifications, settings — is available in English and Korean.
+
+- `mdPrettyViewer.language`: `auto` (default) · `en` · `ko`. `auto` picks Korean when VS Code or your OS is Korean, English otherwise
+- Switch instantly with the **EN / 한** button in the top bar, or *MD Pretty Viewer: Change Display Language* in the Command Palette
+- No window reload: open viewers re-render in place, keeping mode, theme, font size, outline, scroll position and undo history
+
+</details>
+
+<details open>
 <summary><b>📂 Opens as your default markdown editor <sub>v1.0.30</sub></b></summary>
 
 Click any `.md` file and it opens straight in MD Pretty Viewer — no extra command, no raw-text flash.
@@ -313,7 +324,13 @@ Once installed, **every `.md` file opens in MD Pretty Viewer by default**. Prefe
   // preview | edit | split
   "mdPrettyViewer.defaultMode": "preview",
 
-  "mdPrettyViewer.showOutline": false
+  "mdPrettyViewer.showOutline": false,
+
+  // Interface language: auto | en | ko
+  // auto = Korean if VS Code or your OS is Korean, English otherwise.
+  // Switch instantly with the EN / 한 button in the top bar or
+  // "MD Pretty Viewer: Change Display Language" in the Command Palette.
+  "mdPrettyViewer.language": "auto"
 }
 ```
 
@@ -415,6 +432,7 @@ Full license texts in [NOTICE.md](NOTICE.md).
 
 ### 🚀 새 기능
 
+- **🌐 영어 / 한국어 화면 <sub>v2.0</sub>** — 툴바·블록 메뉴·편집기·PDF 옵션·단축키 도움말·알림까지 모든 문구를 영어로도 제공합니다. 설정 `mdPrettyViewer.language`(`auto` · `en` · `ko`), 상단바 **EN / 한** 버튼, 명령 팔레트 *화면 언어 변경*으로 바꾸며, 창을 다시 로드하지 않고 그 자리에서 전환됩니다.
 - **📂 `.md` 기본 에디터 <sub>v1.0.30</sub>** — 마크다운 파일을 클릭하면 곧바로 뷰어로 열립니다(탐색기·Quick Open·터미널 클릭·Claude Code 파일 링크 모두). 원문으로 보려면 탭 우클릭 → *Reopen With → Text Editor*, 항상 원문은 `"workbench.editorAssociations": { "*.md": "default" }`. `git diff`는 그대로 텍스트 diff로 열립니다.
 - **✍️ 프리뷰에서 바로 편집 <sub>v1.0.29</sub>** — 렌더된 블록을 클릭해 제자리 수정, ＋로 삽입·⠿로 드래그 이동·`/`로 타입 변환, 표 행/열·정렬 편집, 링크·체크박스 클릭 편집. 저장하면 자동으로 깔끔한 마크다운으로 되돌아갑니다.
 - **🖼 이미지 라이트박스** — 클릭하면 풀스크린, 휠로 확대, 드래그로 이동, ESC로 닫기
@@ -443,7 +461,8 @@ cursor --install-extension innohi.md-pretty-viewer
   "mdPrettyViewer.defaultTheme": "blue",   // 13가지 + custom
   "mdPrettyViewer.defaultFontSize": 16,    // 12-24
   "mdPrettyViewer.defaultMode": "preview", // preview | edit | split
-  "mdPrettyViewer.showOutline": false      // 아웃라인 기본 표시
+  "mdPrettyViewer.showOutline": false,     // 아웃라인 기본 표시
+  "mdPrettyViewer.language": "auto"        // 화면 언어: auto | en | ko (상단바 EN / 한 버튼으로 바로 전환)
 }
 ```
 

@@ -2,7 +2,7 @@
   "name": "md-pretty-viewer",
   "displayName": "MD Pretty Viewer — Markdown Preview & PDF",
   "description": "Beautiful markdown preview + one-click PDF export — made for the docs Claude Code, Cursor & Copilot write for you. 13 color themes · LaTeX math · Mermaid diagrams · Korean typography bundled · fully offline. — Claude Code·Cursor가 만든 마크다운을 예쁘게 읽고 PDF로. 13가지 테마, LaTeX 수식, Mermaid 다이어그램, 한글 폰트 번들.",
-  "version": "1.0.43",
+  "version": "2.0.0",
   "publisher": "innohi",
   "author": {
     "name": "INNO-HI Inc.",
@@ -71,7 +71,8 @@
   "activationEvents": [
     "onLanguage:markdown",
     "onCommand:mdPrettyViewer.open",
-    "onStartupFinished"
+    "onStartupFinished",
+    "onCommand:mdPrettyViewer.changeLanguage"
   ],
   "contributes": {
     "customEditors": [
@@ -121,6 +122,12 @@
         "command": "mdPrettyViewer.code",
         "title": "Code",
         "category": "MD Pretty Viewer"
+      },
+      {
+        "command": "mdPrettyViewer.changeLanguage",
+        "title": "%command.changeLanguage%",
+        "category": "MD Pretty Viewer",
+        "icon": "$(globe)"
       }
     ],
     "keybindings": [
@@ -192,29 +199,29 @@
             "mist"
           ],
           "enumDescriptions": [
-            "차분한 파란색 (기본)",
-            "에메랄드 그린",
-            "로즈 핑크",
-            "바이올렛 퍼플",
-            "앰버 오렌지",
-            "슬레이트 그레이",
-            "흑백",
-            "피치 (2026 Pantone)",
-            "아쿠아 민트 (2026 Pantone)",
-            "오키드 라벤더 (2026 Pantone)",
-            "세이지 그린 (눈 피로 적음)",
-            "세피아 (종이톤, 장시간 독서)",
-            "미스트 (소프트 슬레이트)"
+            "%config.defaultTheme.enum.blue%",
+            "%config.defaultTheme.enum.green%",
+            "%config.defaultTheme.enum.rose%",
+            "%config.defaultTheme.enum.purple%",
+            "%config.defaultTheme.enum.amber%",
+            "%config.defaultTheme.enum.neutral%",
+            "%config.defaultTheme.enum.mono%",
+            "%config.defaultTheme.enum.peach%",
+            "%config.defaultTheme.enum.aqua%",
+            "%config.defaultTheme.enum.orchid%",
+            "%config.defaultTheme.enum.sage%",
+            "%config.defaultTheme.enum.sepia%",
+            "%config.defaultTheme.enum.mist%"
           ],
           "default": "blue",
-          "description": "마크다운 프리뷰의 기본 컬러 테마. Default color theme for the markdown preview."
+          "description": "%config.defaultTheme.description%"
         },
         "mdPrettyViewer.defaultFontSize": {
           "type": "number",
           "default": 16,
           "minimum": 12,
           "maximum": 24,
-          "description": "기본 프리뷰 폰트 크기 (12-24px). Default font size in pixels (12-24)."
+          "description": "%config.defaultFontSize.description%"
         },
         "mdPrettyViewer.defaultMode": {
           "type": "string",
@@ -224,22 +231,37 @@
             "split"
           ],
           "enumDescriptions": [
-            "렌더링된 마크다운 보기",
-            "원문 편집",
-            "좌우 분할 (편집 + 프리뷰)"
+            "%config.defaultMode.enum.preview%",
+            "%config.defaultMode.enum.edit%",
+            "%config.defaultMode.enum.split%"
           ],
           "default": "preview",
-          "description": "마크다운 파일을 열 때 표시되는 기본 모드. Default view mode when opening a markdown file."
+          "description": "%config.defaultMode.description%"
         },
         "mdPrettyViewer.showOutline": {
           "type": "boolean",
           "default": false,
-          "description": "아웃라인 사이드바를 기본으로 표시합니다. Show the outline sidebar by default."
+          "description": "%config.showOutline.description%"
         },
         "mdPrettyViewer.mermaidLevelColors": {
           "type": "boolean",
           "default": false,
-          "description": "Mermaid 다이어그램에 색을 입힙니다(플로우차트·클래스·상태는 계층별, 시퀀스는 액터별). 기본값은 흑백이며, 다이어그램 위의 ◐ 버튼으로 문서마다 바로 켜고 끌 수 있습니다. Color Mermaid diagrams (default off / monochrome; toggle per-document with the ◐ button on the diagram)."
+          "description": "%config.mermaidLevelColors.description%"
+        },
+        "mdPrettyViewer.language": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "en",
+            "ko"
+          ],
+          "enumDescriptions": [
+            "%config.language.enum.auto%",
+            "%config.language.enum.en%",
+            "%config.language.enum.ko%"
+          ],
+          "default": "auto",
+          "description": "%config.language.description%"
         }
       }
     }

@@ -1,11 +1,135 @@
 const vscode = require('vscode');
 const path = require('path');
+const childProcess = require('child_process');
+
+/* ───────────────────────────────────────────
+   UI language (v1.0.44)
+   mdPrettyViewer.language: "auto" | "en" | "ko".
+   "auto" picks Korean when EITHER the VS Code display language OR the OS
+   language is Korean, English otherwise. Checking the OS too matters:
+   many Korean users run an English VS Code, and they have always seen the
+   Korean UI — switching them to English on update would be a regression.
+   ─────────────────────────────────────────── */
+const HOST_STRINGS = {
+    ko: {
+        linkOpenFail: 'MD Pretty Viewer: 링크한 파일을 열 수 없습니다 — ',
+        updated: '🎉 MD Pretty Viewer {version} 업데이트됨!',
+        viewChanges: '변경 사항 보기',
+        close: '닫기',
+        pickLanguage: '화면 언어를 선택하세요',
+        langAuto: '자동',
+        langAutoDetail: 'VS Code나 운영체제 언어가 한국어면 한국어, 아니면 English',
+        langEn: 'English',
+        langKo: '한국어',
+        current: '현재 설정',
+        languageOverridden: 'MD Pretty Viewer: 이 폴더의 설정(.vscode/settings.json)이 화면 언어를 고정하고 있어 바뀌지 않았습니다.'
+    },
+    en: {
+        linkOpenFail: 'MD Pretty Viewer: Could not open the linked file — ',
+        updated: '🎉 MD Pretty Viewer {version} updated!',
+        viewChanges: 'View Changes',
+        close: 'Close',
+        pickLanguage: 'Select the interface language',
+        langAuto: 'Auto',
+        langAutoDetail: 'Korean if VS Code or your OS is Korean, English otherwise',
+        langEn: 'English',
+        langKo: '한국어 (Korean)',
+        current: 'current setting',
+        languageOverridden: 'MD Pretty Viewer: The language did not change because folder settings (.vscode/settings.json) pin it.'
+    }
+};
+
+function hostString(key, vars) {
+    const table = HOST_STRINGS[resolveUiLanguage()] || HOST_STRINGS.ko;
+    let s = table[key] != null ? table[key] : HOST_STRINGS.ko[key];
+    if (vars) s = s.replace(/\{(\w+)\}/g, (m, k) => (vars[k] != null ? String(vars[k]) : m));
+    return s;
+}
+
+function isKoreanTag(tag) {
+    return typeof tag === 'string' && /^ko([-_.]|$)/i.test(tag.trim());
+}
+
+// OS language never changes while VS Code runs — detect once, lazily.
+let _osIsKorean = null;
+function osLanguageIsKorean() {
+    if (_osIsKorean !== null) return _osIsKorean;
+    const tags = [];
+    for (const name of ['LC_ALL', 'LC_MESSAGES', 'LANG', 'LANGUAGE']) {
+        const v = process.env[name];
+        if (v) tags.push(...String(v).split(':'));
+    }
+    try { tags.push(Intl.DateTimeFormat().resolvedOptions().locale); } catch (_) {}
+    // macOS apps launched from the Dock usually have no LANG, and Node's
+    // ICU then reports en-US even on a Korean Mac — ask the system instead.
+    if (process.platform === 'darwin' && !tags.some(isKoreanTag)) {
+        try {
+            const out = childProcess.execFileSync('defaults', ['read', '-g', 'AppleLanguages'], {
+                encoding: 'utf8', timeout: 1500, stdio: ['ignore', 'pipe', 'ignore']
+            });
+            const first = out.match(/[A-Za-z]{2,3}(?:[-_][A-Za-z0-9]+)*/);
+            if (first) tags.push(first[0]);
+        } catch (_) { /* no defaults binary / sandbox — ignore */ }
+    }
+    _osIsKorean = tags.some(isKoreanTag);
+    return _osIsKorean;
+}
+
+function resolveUiLanguage() {
+    let setting = 'auto';
+    try {
+        setting = vscode.workspace.getConfiguration('mdPrettyViewer').get('language', 'auto');
+    } catch (_) {}
+    if (setting === 'en' || setting === 'ko') return setting;
+    const vscodeLang = vscode.env && vscode.env.language;
+    if (isKoreanTag(vscodeLang)) return 'ko';
+    return osLanguageIsKorean() ? 'ko' : 'en';
+}
+
+/* Persist mdPrettyViewer.language. Written to user settings, unless the
+   workspace already pins a value — then the workspace value is updated,
+   since a user-level write would be silently shadowed by it. */
+async function setLanguageSetting(lang) {
+    if (lang !== 'auto' && lang !== 'en' && lang !== 'ko') return;
+    const cfg = vscode.workspace.getConfiguration('mdPrettyViewer');
+    const info = typeof cfg.inspect === 'function' ? cfg.inspect('language') : null;
+    const T = vscode.ConfigurationTarget || { Global: 1, Workspace: 2 };
+    const target = info && info.workspaceValue !== undefined ? T.Workspace : T.Global;
+    try {
+        await cfg.update('language', lang, target);
+    } catch (err) {
+        console.error('MD Pretty Viewer: could not save language setting', err);
+        return;
+    }
+    // A per-folder value (multi-root .vscode/settings.json) still wins.
+    if (info && info.workspaceFolderValue !== undefined && info.workspaceFolderValue !== lang) {
+        vscode.window.showWarningMessage(hostString('languageOverridden'));
+    }
+}
+
+/* Command palette: "MD Pretty Viewer: Change Display Language". */
+async function pickLanguage() {
+    let current = 'auto';
+    try { current = vscode.workspace.getConfiguration('mdPrettyViewer').get('language', 'auto'); } catch (_) {}
+    const mark = (v) => (v === current ? hostString('current') : undefined);
+    const items = [
+        { value: 'auto', label: hostString('langAuto'), description: mark('auto'), detail: hostString('langAutoDetail') },
+        { value: 'en', label: hostString('langEn'), description: mark('en') },
+        { value: 'ko', label: hostString('langKo'), description: mark('ko') }
+    ];
+    const picked = await vscode.window.showQuickPick(items, { placeHolder: hostString('pickLanguage') });
+    if (picked && picked.value !== current) await setLanguageSetting(picked.value);
+}
 
 // The webview panel of the currently-focused pretty editor. Toolbar commands
 // (bold/italic/code/toggleMode) route here ONLY — broadcasting to every open
 // editor would run the command in unfocused documents and, with auto-save,
 // silently corrupt files the user never touched.
 let activePanel = null;
+
+// Every open pretty-editor panel → { lang it was built with, requestRebuild }.
+// A language change rebuilds each stale panel in place (no window reload).
+const openPanels = new Map();
 
 function postToActive(type, payload) {
     if (!activePanel) return;
@@ -29,16 +153,31 @@ function escapeHtml(str) {
               .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
 
-function getHtml(webview, nonce, context, document, docBaseUri, settings) {
+/* JSON that is safe to inline inside a <script> element. Plain
+   JSON.stringify leaves "</script>" intact, so a markdown file that merely
+   MENTIONS that tag (e.g. in an HTML code block) closed the bootstrap script
+   early and the viewer stayed blank. < / \u2028 / \u2029 decode to the
+   exact same string in JS. */
+function jsonForScript(value) {
+    return JSON.stringify(value === undefined ? null : value)
+        .replace(/</g, '\\u003c')
+        .replace(/\u2028/g, '\\u2028')
+        .replace(/\u2029/g, '\\u2029');
+}
+
+function getHtml(webview, nonce, context, document, docBaseUri, settings, restoreState, uiLang) {
     const mediaUri = (file) => webview.asWebviewUri(
         vscode.Uri.joinPath(context.extensionUri, 'media', file)
     );
     const fileName = path.basename(document.uri.fsPath);
     const content = document.getText();
-    const initialMode = settings.defaultMode || 'preview';
+    const MODES = ['preview', 'edit', 'split'];
+    const restoredMode = restoreState && MODES.includes(restoreState.mode) ? restoreState.mode : null;
+    const initialMode = restoredMode || (MODES.includes(settings.defaultMode) ? settings.defaultMode : 'preview');
+    uiLang = uiLang || resolveUiLanguage();
 
     return `<!DOCTYPE html>
-<html lang="ko">
+<html lang="${uiLang}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -54,15 +193,16 @@ function getHtml(webview, nonce, context, document, docBaseUri, settings) {
     <script nonce="${nonce}" src="${mediaUri('katex.min.js')}"></script>
     <script nonce="${nonce}" src="${mediaUri('katex-auto-render.min.js')}"></script>
     <script nonce="${nonce}" src="${mediaUri('highlight.min.js')}"></script>
+    <script nonce="${nonce}">window.__mdpvLang = ${jsonForScript(uiLang)};</script>
     <script nonce="${nonce}" src="${mediaUri('editor.js')}"></script>
     <script nonce="${nonce}">
         // Lazy-loaded heavy libraries: paths passed in for on-demand <script> injection
         window.__lazyAssets = {
-            mermaid: ${JSON.stringify(mediaUri('mermaid.min.js').toString())},
-            html2pdf: ${JSON.stringify(mediaUri('html2pdf.bundle.min.js').toString())},
-            nonce: ${JSON.stringify(nonce)}
+            mermaid: ${jsonForScript(mediaUri('mermaid.min.js').toString())},
+            html2pdf: ${jsonForScript(mediaUri('html2pdf.bundle.min.js').toString())},
+            nonce: ${jsonForScript(nonce)}
         };
-        initEditor(${JSON.stringify(content)}, ${JSON.stringify(fileName)}, ${JSON.stringify(docBaseUri.toString())}, ${JSON.stringify(settings)});
+        initEditor(${jsonForScript(content)}, ${jsonForScript(fileName)}, ${jsonForScript(docBaseUri.toString())}, ${jsonForScript(settings)}, ${jsonForScript(restoreState || null)});
     </script>
 </body>
 </html>`;
@@ -115,10 +255,23 @@ class MdPrettyEditorProvider {
         });
 
         const docBaseUri = webview.asWebviewUri(docDir);
-        const nonce = getNonce();
-        webview.html = getHtml(webview, nonce, context, document, docBaseUri, readSettings());
-
         let isDisposed = false;
+
+        // (Re)build the webview in the current UI language. A fresh nonce
+        // per build keeps the CSP tight across rebuilds.
+        const panelInfo = { lang: null, rebuilding: false, timer: null, requestRebuild: null };
+        const render = (restoreState) => {
+            const lang = resolveUiLanguage();
+            webview.html = getHtml(webview, getNonce(), context, document, docBaseUri,
+                readSettings(), restoreState || null, lang);
+            panelInfo.lang = lang;
+        };
+        render(null);
+        openPanels.set(webviewPanel, panelInfo);
+
+        // Edits still being applied/saved — a language rebuild waits for
+        // them so the new webview is built from the up-to-date document.
+        const pendingApplies = new Set();
         // Provenance guard: while we apply a webview edit AND persist it, VS
         // Code fires onDidChangeTextDocument for our own change — plus, if
         // files.insertFinalNewline / trimTrailingWhitespace is on, a save
@@ -163,20 +316,32 @@ class MdPrettyEditorProvider {
         // Webview → document. Apply as a WorkspaceEdit so VS Code records it on
         // the native undo stack, then persist (preserving the extension's
         // long-standing auto-save behaviour).
-        const msgSub = webview.onDidReceiveMessage(async msg => {
-            if (!msg || isDisposed) return;
-            if (msg.type === 'openLink') {
-                openLinkFromWebview(String(msg.href || ''), uri);
-                return;
-            }
-            if (msg.type !== 'edit') return;
-            if (document.getText() === msg.content) return;   // no-op
+        // Language switch, step 1: ask the live webview to commit any open
+        // block editor, flush its debounced save and report its view state.
+        // If it never answers (crashed / unresponsive), rebuild anyway.
+        const finishRebuild = async (state) => {
+            if (!panelInfo.rebuilding || isDisposed) return;
+            clearTimeout(panelInfo.timer);
+            await Promise.all(Array.from(pendingApplies).map(p => p.catch(() => {})));
+            if (isDisposed || !panelInfo.rebuilding) return;
+            panelInfo.rebuilding = false;
+            render(state && typeof state === 'object' ? state : null);
+        };
+        panelInfo.requestRebuild = () => {
+            if (isDisposed || panelInfo.rebuilding) return;
+            panelInfo.rebuilding = true;
+            safePost({ type: 'prepareRebuild' });
+            panelInfo.timer = setTimeout(() => { finishRebuild(null); }, 3000);
+        };
+
+        const applyEdit = async (content) => {
+            if (document.getText() === content) return;   // no-op
             const fullRange = new vscode.Range(
                 new vscode.Position(0, 0),
                 new vscode.Position(document.lineCount, 0)
             );
             const edit = new vscode.WorkspaceEdit();
-            edit.replace(uri, fullRange, msg.content);
+            edit.replace(uri, fullRange, content);
             applyingDepth++;
             try {
                 const ok = await vscode.workspace.applyEdit(edit);
@@ -196,10 +361,29 @@ class MdPrettyEditorProvider {
             } finally {
                 applyingDepth--;
             }
+        };
+
+        const msgSub = webview.onDidReceiveMessage(msg => {
+            if (!msg || isDisposed) return;
+            if (msg.type === 'openLink') {
+                openLinkFromWebview(String(msg.href || ''), uri);
+            } else if (msg.type === 'setLanguage') {
+                setLanguageSetting(msg.lang);
+            } else if (msg.type === 'rebuildReady') {
+                finishRebuild(msg.state);
+            } else if (msg.type === 'edit') {
+                // Registered synchronously, so a 'rebuildReady' that the
+                // webview posts right after this edit always waits for it.
+                const p = applyEdit(msg.content);
+                pendingApplies.add(p);
+                p.then(() => pendingApplies.delete(p), () => pendingApplies.delete(p));
+            }
         });
 
         webviewPanel.onDidDispose(() => {
             isDisposed = true;
+            clearTimeout(panelInfo.timer);
+            openPanels.delete(webviewPanel);
             if (activePanel === webviewPanel) activePanel = null;
             viewStateSub.dispose();
             changeDocSub.dispose();
@@ -237,7 +421,7 @@ function openLinkFromWebview(href, docUri) {
             : vscode.Uri.joinPath(docUri, '..', path);
     } catch (_) { return; }
     vscode.commands.executeCommand('vscode.open', target).then(undefined, () => {
-        vscode.window.showWarningMessage('MD Pretty Viewer: 링크한 파일을 열 수 없습니다 — ' + href);
+        vscode.window.showWarningMessage(hostString('linkOpenFail') + href);
     });
 }
 
@@ -321,13 +505,14 @@ function showUpdateNotification(context) {
     const previousVersion = context.globalState.get('mdPrettyViewer.lastVersion');
 
     if (previousVersion && previousVersion !== currentVersion) {
-        const message = `🎉 MD Pretty Viewer ${currentVersion} 업데이트됨!`;
+        const message = hostString('updated', { version: currentVersion });
+        const viewChanges = hostString('viewChanges');
         vscode.window.showInformationMessage(
             message,
-            '변경 사항 보기',
-            '닫기'
+            viewChanges,
+            hostString('close')
         ).then(selection => {
-            if (selection === '변경 사항 보기') {
+            if (selection === viewChanges) {
                 vscode.env.openExternal(
                     vscode.Uri.parse(`https://github.com/INNO-HI-Inc/md-viewer/releases/tag/v${currentVersion}`)
                 );
@@ -366,6 +551,21 @@ function activate(context) {
     );
     reopenMarkdownTextTabs();   // convert anything already open (incl. cold start)
 
+    // Language switch: new editors pick it up automatically (getHtml reads
+    // the setting); every open viewer built in another language is rebuilt
+    // in place — after it has committed its edits and handed over its view
+    // state — so no window reload is needed.
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration(e => {
+            if (!e.affectsConfiguration('mdPrettyViewer.language')) return;
+            const lang = resolveUiLanguage();
+            for (const info of openPanels.values()) {
+                if (info.lang !== lang && info.requestRebuild) info.requestRebuild();
+            }
+        }),
+        vscode.commands.registerCommand('mdPrettyViewer.changeLanguage', pickLanguage)
+    );
+
     context.subscriptions.push(
         // "Open Pretty View" — reopens the active markdown in our editor. Still
         // useful after a user picks "Reopen Editor With… › Text Editor".
@@ -394,6 +594,7 @@ function activate(context) {
 
 function deactivate() {
     activePanel = null;
+    openPanels.clear();
     if (_convertTimer) { clearTimeout(_convertTimer); _convertTimer = null; }
     _convertAttempted.clear();
 }

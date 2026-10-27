@@ -376,6 +376,13 @@ body {
     opacity: 0.5;
 }
 .topbar-btn:hover { background: var(--md-toolbar-hover); opacity: 0.8; }
+/* Interface language toggle — a text label instead of an icon */
+.topbar-btn.lang-btn {
+    font-family: inherit;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
 .topbar-btn.active { opacity: 1; background: var(--md-toolbar-hover); }
 
 /* Font size controls group */
@@ -2754,8 +2761,9 @@ mark.preview-search-active {
     background: color-mix(in srgb, var(--md-accent) 14%, transparent);
     color: var(--md-accent);
     font-weight: 600;
-    border-left: 3px solid var(--md-accent);
-    padding-left: calc(var(--outline-item-padding-left, 12px) - 3px);
+    /* No left accent bar: the tinted background marks the active item, and
+       the level-N indentation is kept (the old padding override reset every
+       level to the same 9px, so active sub-headings jumped left). */
     transition: background 120ms, color 120ms;
 }
 

@@ -118,10 +118,10 @@ md-viewer/
 ```bash
 # 1) 버전 + CHANGELOG 갱신 후 커밋
 npm version patch --no-git-tag-version   # package.json만 올림
-git commit -am "v1.0.44 — ..."
+git commit -am "v2.0.1 — ..."
 
 # 2) 태그 푸시 → 워크플로가 빌드·게시
-git tag v1.0.44 && git push origin main --tags
+git tag v2.0.1 && git push origin main --tags
 ```
 
 ### 수동 배포

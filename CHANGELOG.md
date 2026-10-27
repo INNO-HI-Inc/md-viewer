@@ -7,16 +7,22 @@
 
 
 
-## [1.0.43] - 2026-10-09
+## [2.0.0] - 2026-10-27
 
-마켓플레이스에서 더 잘 찾히도록 이름·분류·키워드를 손보고, Open VSX(Cursor·Windsurf·VSCodium)에도 올립니다. 렌더링·편집 동작은 바뀐 것이 없습니다.
+뷰어 화면을 영어로도 쓸 수 있게 했습니다([#7](https://github.com/INNO-HI-Inc/md-viewer/issues/7)). 한국어 화면의 문구와 렌더링·편집 동작은 그대로입니다. 아울러 마켓플레이스에서 더 잘 찾히도록 이름·분류·키워드를 손보고, Open VSX(Cursor·Windsurf·VSCodium)에도 올립니다. (1.0.43은 게시되지 않았고, 그 변경은 모두 이 버전에 들어 있습니다.)
 
 ### Added
 
+- **영어 UI** — 툴바, 블록 메뉴, 표·코드·링크 편집기, PDF 옵션, 단축키 도움말, 찾기/바꾸기, 알림 메시지, 설정 설명까지 모든 화면 문구를 영어로 제공합니다. 영어 모드에서 블록을 삽입하면 기본 내용도 영어(`# Heading`, `| Header |` 등)로 들어갑니다.
+- **설정 `mdPrettyViewer.language`** — `auto`(기본) · `en` · `ko`. `auto`는 VS Code 표시 언어나 운영체제 언어가 한국어면 한국어, 그 외에는 영어로 표시합니다. 영어판 VS Code를 쓰는 한국 사용자도 OS가 한국어면 지금처럼 한국어 화면이 유지됩니다.
+- **언어 전환 버튼** — 상단바의 `EN` / `한` 버튼을 누르면 바로 다른 언어로 바뀝니다. 명령 팔레트의 "MD Pretty Viewer: Change Display Language(화면 언어 변경)"에서도 자동·영어·한국어를 고를 수 있습니다.
+- **창을 다시 로드하지 않고 즉시 전환** — 언어를 바꾸면 열려 있는 모든 뷰어가 그 자리에서 다시 그려집니다. 편집 중이던 블록은 먼저 저장되고, 보기 모드·테마·글자 크기·아웃라인·다이어그램 색상·스크롤 위치·되돌리기 기록이 그대로 유지됩니다.
 - **Open VSX 배포** — Cursor·Windsurf·VSCodium·Gitpod 사용자도 내장 확장 마켓에서 `innohi.md-pretty-viewer`를 바로 설치할 수 있습니다. 릴리스 워크플로가 VS Code Marketplace와 Open VSX에 같은 VSIX를 함께 올립니다.
 
 ### Changed
 
+- 설정 화면의 설명이 한·영 병기 대신 VS Code 표시 언어에 맞춰 한 언어로 나옵니다(`package.nls.json` / `package.nls.ko.json`).
+- 영어 화면 하단 통계가 단수형을 올바르게 씁니다("1 word", "1 line").
 - **표시 이름** — "MD Pretty Viewer — Markdown Preview & PDF". 확장 ID는 그대로라 기존 설치·설정·단축키에 영향이 없습니다.
 - **카테고리** — Other를 빼고 Visualization · Formatters만 남겼습니다.
 - **검색 키워드** — Claude Code·Cursor·Copilot이 써 준 문서를 읽는 용도로도 검색되도록 `claude`, `cursor`, `copilot`, `ai docs`, `markdown pdf`, `markdown preview`를 추가했습니다.
@@ -24,6 +30,7 @@
 
 ### Fixed
 
+- **문서에 `</script>`가 있으면 뷰어가 빈 화면이 되던 문제** — HTML 코드 블록 등에 `</script>`라는 글자만 있어도 뷰어 초기화 스크립트가 중간에 끊겨 아무것도 표시되지 않았습니다. 이제 문서 내용을 안전하게 넣어 정상적으로 열립니다.
 - 패키지에 섞여 들어가던 예시 파일(`mermaid-zoom-예시.md`)을 VSIX에서 제외했습니다.
 
 ### Known issue
